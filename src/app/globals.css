@@ -1,0 +1,270 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: #051D32;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --brand: #051D32;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+ 
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+ 
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --disabled: 210 40% 96.1%;
+    --disabled-foreground: 215.4 16.3% 46.9%;
+
+    /* Custom colors you can add */
+    --success: 142 71% 45%;
+    --success-foreground: 210 40% 98%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 222.2 84% 4.9%;
+    
+    --info: 199 89% 48%;
+    --info-foreground: 210 40% 98%;
+    
+    --urgent: 0 84.2% 60.2%;
+    --urgent-foreground: 210 40% 98%;
+    
+    --highlight: 262 83% 58%;
+    --highlight-foreground: 210 40% 98%;
+    
+    --surface: 210 40% 98%;
+    --surface-foreground: 222.2 84% 4.9%;
+    
+    --overlay: 222.2 84% 4.9%;
+    --overlay-foreground: 210 40% 98%;
+ 
+    --radius: 0.5rem;
+  }
+ 
+  /* TODO: Dark mode temporarily disabled - all dark mode styles commented out
+  .dark {
+    Primary Background: #020817
+    --background: 215 28% 5%;
+    --foreground: 0 0% 100%;
+ 
+    Secondary Background (cards, sections): #0c1b2e
+    --card: 215 35% 11%;
+    --card-foreground: 0 0% 100%;
+ 
+    Accent Background (interactive elements): #12263e
+    --popover: 215 35% 11%;
+    --popover-foreground: 0 0% 100%;
+ 
+    Button Primary: Background #2563eb, Text #ffffff
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+ 
+    Secondary Background for components
+    --secondary: 215 35% 15%;
+    --secondary-foreground: 0 0% 100%;
+ 
+    Muted Text: #94a3b8
+    --muted: 215 35% 15%;
+    --muted-foreground: 215 16% 65%;
+ 
+    Accent Background (interactive elements): #12263e
+    --accent: 215 40% 18%;
+    --accent-foreground: 0 0% 100%;
+ 
+    Danger/Alert: Background #b91c1c, Text #ffffff
+    --destructive: 0 84% 37%;
+    --destructive-foreground: 0 0% 100%;
+ 
+    Border Color: #334155
+    --border: 215 25% 27%;
+    --input: 215 25% 27%;
+    Link Color: #3b82f6
+    --ring: 217 91% 60%;
+
+    --disabled: 215 35% 15%;
+    --disabled-foreground: 215 16% 65%;
+  }
+  */
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom styles for fixed header layout */
+body {
+  @apply overflow-x-hidden;
+}
+
+main {
+  @apply min-h-screen; /* Remove pt-16 */
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+  /* TODO: Dark mode disabled - dark:bg-[#0c1b2e] */
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+  /* TODO: Dark mode disabled - dark:bg-[#334155] */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+  /* TODO: Dark mode disabled - dark:bg-[#475569] */
+}
+
+/* Animations */
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes appear-zoom {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+.animate-appear {
+  animation: appear 0.5s ease-out forwards;
+}
+
+.animate-appear-zoom {
+  animation: appear-zoom 0.5s ease-out forwards;
+}
+
+.animate-marquee {
+  animation: marquee var(--duration) linear infinite;
+}
+
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+.delay-700 {
+  animation-delay: 700ms;
+}
+
+.delay-1000 {
+  animation-delay: 1000ms;
+}
+
+/* Fade bottom effect */
+.fade-bottom::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(to bottom, transparent, var(--background));
+  pointer-events: none;
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 768px) {
+  /* Container padding fix - 8px left and right */
+  .container {
+    @apply px-2;
+  }
+  
+  /* Matching box padding fix - 8px left and right */
+  .mobile-box-padding {
+    @apply px-2;
+  }
+  
+  /* Remove borders from bigger frames on mobile */
+  .border-gray-200 {
+    @apply border-0;
+  }
+  
+  /* Title size reduction for mobile */
+  .mobile-title-large {
+    @apply text-lg;
+  }
+  
+  .mobile-title-medium {
+    @apply text-base;
+  }
+  
+  /* Button padding fix - max 4px top and bottom */
+  .mobile-button-compact {
+    @apply py-1 px-3;
+  }
+  
+  /* Compact text for mobile */
+  .mobile-text-compact {
+    @apply text-sm;
+  }
+  
+  /* Hide search icon on mobile */
+  .mobile-hide-search-icon {
+    @apply hidden;
+  }
+} 

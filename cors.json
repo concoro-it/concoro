@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "https://concoro-fc095.firebasestorage.app",
+      "https://concoro-fc095.web.app",
+      "https://concoro-fc095.firebaseapp.com"
+    ],
+    "method": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Authorization", "Origin", "Content-Length", "Accept"]
+  }
+] 

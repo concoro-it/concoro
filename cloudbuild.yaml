@@ -1,0 +1,53 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/concoro-app'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAgYB038-yWDEHKGAtAPWNj6gsURvDxRbk'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=concoro-fc095.firebaseapp.com'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=concoro-fc095'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=concoro-fc095.firebasestorage.app'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=998579444239'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_APP_ID=1:998579444239:web:169de86589bcd75ecce17a'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-NVD6N18QWW'
+      - '--build-arg'
+      - 'GOOGLE_API_KEY=AIzaSyDBY11OrZcJjweFWJZVpXSKLTwrHF5omB0'
+      - '--build-arg'
+      - 'PINECONE_API_KEY=pcsk_7Dvc6N_QqDaqjzp5CweKEqUBi2qJPBPyXqY9vWg9xM3WtJCaZaWQEtziuBXND5XgLEjx6K'
+      - '--build-arg'
+      - 'PINECONE_INDEX=gemini'
+      - '--build-arg'
+      - 'BREVO_API_KEY=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'
+      - '.'
+  
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/concoro-app']
+  
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+    - 'run'
+    - 'deploy'
+    - 'concoro-app'
+    - '--image'
+    - 'gcr.io/$PROJECT_ID/concoro-app'
+    - '--region'
+    - 'us-central1'
+    - '--platform'
+    - 'managed'
+    - '--allow-unauthenticated'
+    - '--set-env-vars'
+    - 'NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAgYB038-yWDEHKGAtAPWNj6gsURvDxRbk,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=concoro-fc095.firebaseapp.com,NEXT_PUBLIC_FIREBASE_PROJECT_ID=concoro-fc095,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=concoro-fc095.firebasestorage.app,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=998579444239,NEXT_PUBLIC_FIREBASE_APP_ID=1:998579444239:web:169de86589bcd75ecce17a,NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-NVD6N18QWW,GOOGLE_API_KEY=AIzaSyDBY11OrZcJjweFWJZVpXSKLTwrHF5omB0,PINECONE_API_KEY=pcsk_7Dvc6N_QqDaqjzp5CweKEqUBi2qJPBPyXqY9vWg9xM3WtJCaZaWQEtziuBXND5XgLEjx6K,PINECONE_INDEX=gemini,BREVO_API_KEY=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'
+
+images:
+  - 'gcr.io/$PROJECT_ID/concoro-app' 

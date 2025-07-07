@@ -1,0 +1,35 @@
+# Exclude node modules
+node_modules/
+
+# Next.js build and cache directories
+.next/
+out/
+
+# Environment files
+.env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+LICENSE
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Other
+.vscode/
+.idea/ 

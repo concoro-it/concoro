@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+Allow: /blog
+Allow: /articolo
+Allow: /bandi
+
+# Block internal search pages and query parameters
+Disallow: /search
+Disallow: /*?search=*
+Disallow: /*?q=*
+Disallow: /*?query=*
+Disallow: /*?tag=*
+Disallow: /*?filter=*
+Disallow: /*?page=*
+
+# Note: ID-based article URLs are handled via meta robots noindex,follow
+# and 301 redirects to slug-based URLs for SEO compliance
+
+# Sitemap
+Sitemap: https://concoro.it/sitemap.xml 

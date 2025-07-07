@@ -1,0 +1,19 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow read access to all users
+    match /{allPaths=**} {
+      allow read: if true;
+    }
+    
+    // Allow authenticated users to upload to their own folder
+    match /images/users/{userId}/{allPaths=**} {
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow anyone to write to favicons folder (public favicons)
+    match /images/favicons/{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+} 
