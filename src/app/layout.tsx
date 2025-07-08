@@ -3,8 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { ClientLayout } from "@/components/ClientLayout";
 import Script from "next/script";
-// Import for debugging Firebase
-import "@/lib/firebase/debug";
+// Firebase debug removed for better performance
 
 const inter = Inter({ 
   subsets: ["latin"],

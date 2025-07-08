@@ -35,14 +35,6 @@ export function BrandColumn() {
 
   return (
     <div className="hidden lg:flex lg:w-1/2 bg-[#0A1F44] items-center justify-center relative overflow-hidden">
-      <div className="max-w-md text-white p-8 relative z-50 translate-y-[-90%]">
-        <h1 className="text-3xl font-bold mb-4">
-            
-        </h1>
-        <p className="text-lg opacity-80">
-           
-        </p>
-      </div>
 
       <div className="absolute inset-0 before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_bottom_center,#1a3a6b,transparent_70%)] before:opacity-40" />
       

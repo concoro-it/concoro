@@ -236,6 +236,12 @@ export default function BasicInfoPage() {
       return
     }
 
+    // Check if email is verified first
+    if (!user.emailVerified) {
+      router.push("/verify-email")
+      return
+    }
+
     // Check if user has already completed the basic info
     const checkBasicInfo = async () => {
       try {

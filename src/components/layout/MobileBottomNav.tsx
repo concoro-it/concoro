@@ -128,7 +128,7 @@ export function MobileBottomNav() {
 
         {/* Profilo */}
         <Link
-          href="/profile"
+          href={user ? "/profile" : "/signin"}
           className={cn(
             "flex flex-col items-center justify-center h-full",
             pathname === '/profile'

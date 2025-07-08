@@ -6,8 +6,9 @@ import { Providers } from '@/app/providers';
 import Navbar from '@/components/ui/navbar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { AlertCookieNotice } from '@/components/ui/alert-cookie-notice';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { suppressFaviconErrors } from '@/lib/utils/suppress-favicon-errors';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -17,6 +18,11 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                      pathname?.startsWith('/signup') || 
                      pathname?.startsWith('/reset-password') ||
                      pathname?.startsWith('/verify-email');
+
+  // Suppress favicon loading errors in development
+  useEffect(() => {
+    suppressFaviconErrors();
+  }, []);
 
   return (
     <ErrorBoundary>

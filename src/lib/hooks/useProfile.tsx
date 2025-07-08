@@ -4,12 +4,14 @@ import type { UserProfile, Education as FirebaseEducation, Skill } from '@/types
 import { Timestamp } from 'firebase/firestore';
 import * as profileServices from '@/lib/firebase/services';
 import { updateProfile } from 'firebase/auth';
+import { useDeferredDataFetch } from '@/hooks/useDeferredLoading';
 
 export const useProfile = () => {
   const { user, initialized } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const canFetchData = useDeferredDataFetch(); // Defer profile loading
 
   useEffect(() => {
     let mounted = true;
@@ -18,13 +20,13 @@ export const useProfile = () => {
     const fetchProfile = async () => {
       console.log('Fetching profile for user:', user?.uid);
       
-      // Set a timeout to prevent infinite loading
+      // Set a timeout to prevent infinite loading - reduced for better performance
       timeoutId = setTimeout(() => {
         if (mounted && loading) {
           console.log('Profile fetch timeout reached');
           setLoading(false);
         }
-      }, 5000); // 5 second timeout
+      }, 3000); // Reduced to 3 second timeout
       
       if (!user) {
         console.log('No authenticated user');
@@ -212,13 +214,13 @@ export const useProfile = () => {
       }
     };
 
-    console.log('useProfile effect running, initialized:', initialized);
+    console.log('useProfile effect running, initialized:', initialized, 'canFetchData:', canFetchData);
     
-    // Only fetch profile if auth is initialized
-    if (initialized) {
+    // Only fetch profile if auth is initialized AND we can fetch data (deferred)
+    if (initialized && canFetchData) {
       fetchProfile();
     } else {
-      console.log('Auth not initialized yet, waiting...');
+      console.log('Auth not initialized or data fetch deferred, waiting...');
     }
 
     return () => {
@@ -226,7 +228,7 @@ export const useProfile = () => {
       mounted = false;
       clearTimeout(timeoutId);
     };
-  }, [user, initialized]);
+  }, [user, initialized, canFetchData]);
 
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
     if (!user || !profile) {

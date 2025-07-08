@@ -4,11 +4,26 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { BellIcon, SearchIcon, BookmarkIcon, UserIcon, BriefcaseIcon, SparklesIcon } from 'lucide-react';
 import { BentoCard, BentoGrid } from '@/components/ui/bento-grid';
-import { Testimonials } from '@/components/ui/testimonials';
-import { MagicText } from '@/components/ui/magic-text';
 import { MainFooter } from '@/components/ui/main-footer';
-import { CTASection } from '@/components/ui/cta-section';
-import { BackgroundBeams } from '@/components/ui/background-beams';
+import dynamic from 'next/dynamic';
+
+// Lazy load heavy components to reduce initial bundle size
+const BackgroundBeams = dynamic(() => import('@/components/ui/background-beams').then(mod => ({ default: mod.BackgroundBeams })), {
+  ssr: false, // Don't render on server
+  loading: () => null, // No loading state needed for background animation
+});
+
+const Testimonials = dynamic(() => import('@/components/ui/testimonials').then(mod => ({ default: mod.Testimonials })), {
+  loading: () => <div className="h-96 bg-gray-50 animate-pulse rounded-lg" />,
+});
+
+const MagicText = dynamic(() => import('@/components/ui/magic-text').then(mod => ({ default: mod.MagicText })), {
+  loading: () => <div className="h-64 bg-gray-50 animate-pulse rounded-lg" />,
+});
+
+const CTASection = dynamic(() => import('@/components/ui/cta-section').then(mod => ({ default: mod.CTASection })), {
+  loading: () => <div className="h-32 bg-gray-50 animate-pulse rounded-lg" />,
+});
 
 
 const features = [

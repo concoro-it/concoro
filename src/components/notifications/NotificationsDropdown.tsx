@@ -89,46 +89,21 @@ export function NotificationsDropdown({ className }: NotificationsDropdownProps)
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-gray-900">Notifiche</h3>
-            {unreadCount > 0 && (
-              <Badge variant="outline" className="text-xs">
-                {unreadCount} nuove
-              </Badge>
-            )}
-          </div>
+          <h3 className="font-semibold text-gray-900">
+            Notifiche {unreadCount > 0 && `(${unreadCount})`}
+          </h3>
           
-          <div className="flex items-center gap-2">
-            {/* Vedi tutto button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className="h-8 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            >
-              <Link href="/notifiche">
-                Vedi tutto
-              </Link>
-            </Button>
-            
-            {/* Mark all as read button */}
-            {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleMarkAllAsRead}
-                disabled={isMarkingAllAsRead}
-                className="h-8 px-2 text-xs"
-              >
-                {isMarkingAllAsRead ? (
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                ) : (
-                  <CheckCheck className="w-3 h-3 mr-1" />
-                )}
-                Segna tutte come lette
-              </Button>
-            )}
-          </div>
+          {/* Vedi tutto button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="h-8 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          >
+            <Link href="/notifiche">
+              Vedi tutto
+            </Link>
+          </Button>
         </div>
 
         {/* Content */}

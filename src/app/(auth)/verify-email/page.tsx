@@ -43,11 +43,11 @@ export default function VerifyEmailPage() {
       return;
     }
 
-    // If user is verified, redirect to dashboard
+    // If user is verified, redirect to basic-info or appropriate next step
     if (user?.emailVerified && !isRedirecting) {
       
       setIsRedirecting(true);
-      router.push('/dashboard');
+      router.push('/basic-info');
       return;
     }
 
@@ -59,7 +59,7 @@ export default function VerifyEmailPage() {
         if (user.emailVerified) {
           
           setIsRedirecting(true);
-          router.push('/dashboard');
+          router.push('/basic-info');
         }
       } catch (error) {
         console.error('Error checking verification status:', error);
@@ -85,7 +85,7 @@ export default function VerifyEmailPage() {
       setLoading(true);
       setError('');
       await resendVerificationEmail(user);
-      setSuccess('Verification email sent! Please check your inbox.');
+      setSuccess('Email di verifica inviata! Controlla la tua casella di posta.');
       setCountdown(60); // Start 60-second countdown
     } catch (error: any) {
       setError(error.message);
@@ -97,7 +97,7 @@ export default function VerifyEmailPage() {
   // Show loading state while auth initializes
   if (authLoading && !timeoutOccurred) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4">
         <div className="text-center">
           <Spinner variant="infinite" size={48} className="mb-4" />
           <p className="text-muted-foreground">Verifying your email status...</p>
@@ -112,11 +112,11 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-[calc(100vh-4rem)] flex">
       <BrandColumn />
 
       {/* Content Section */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
         <div className="w-full max-w-md text-center">
           <h2 className="text-3xl font-bold mb-4">Controlla la tua Email</h2>
           <p className="text-lg text-muted-foreground mb-8">

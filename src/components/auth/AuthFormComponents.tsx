@@ -93,7 +93,7 @@ export const AuthDivider: React.FC = () => (
     </div>
     <div className="relative flex justify-center text-sm">
       <span className="px-2 bg-background text-muted-foreground">
-        Or continue with
+        Oppure continua con
       </span>
     </div>
   </div>

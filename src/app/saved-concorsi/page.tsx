@@ -274,7 +274,7 @@ export default function SavedConcorsiPage() {
     
     // Get domain for favicon
     const domain = extractDomain(concorso.pa_link);
-    const fallbacks = domain ? getFaviconChain(domain) : ['/placeholder_icon.png'];
+            const fallbacks = domain ? getFaviconChain(domain) : ['/placeholder_icon.png'];
     const currentFaviconIndex = faviconIndices[concorso.id] || 0;
     
     const handleFaviconError = () => {

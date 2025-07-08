@@ -1,5 +1,6 @@
 import { Inter } from 'next/font/google';
 import { Providers } from '@/app/providers';
+import { MinimalAuthNavbar } from '@/components/auth/MinimalAuthNavbar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -10,6 +11,7 @@ export default function AuthLayout({
 }) {
   return (
     <Providers>
+      <MinimalAuthNavbar />
       {children}
     </Providers>
   )

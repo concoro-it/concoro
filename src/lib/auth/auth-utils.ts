@@ -14,6 +14,7 @@ import { auth, db } from '../firebase/config';
 import { SignUpFormData, SignInFormData, BasicInfoFormData } from '@/types/auth';
 import { UserProfile, Education, Experience } from '@/types';
 import { brevoClient } from '@/lib/services/brevoClient';
+import { getItalianError, getItalianErrorMessage } from '@/lib/utils/error-messages';
 
 export const signUp = async (data: SignUpFormData) => {
   try {
@@ -21,7 +22,7 @@ export const signUp = async (data: SignUpFormData) => {
     
     if (!auth) {
       console.error('Firebase auth is not initialized');
-      throw new Error('Authentication service not available');
+      throw new Error(getItalianErrorMessage('generic/authentication-service-unavailable'));
     }
     
     const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
@@ -33,25 +34,15 @@ export const signUp = async (data: SignUpFormData) => {
       
     } catch (verificationError: any) {
       console.error('Error sending verification email:', verificationError);
-      throw new Error('Failed to send verification email. Please try again.');
+      throw new Error(getItalianErrorMessage('generic/verification-email-failed'));
     }
     
     return userCredential.user;
   } catch (error: any) {
     console.error('Signup error:', error);
     
-    switch (error.code) {
-      case 'auth/email-already-in-use':
-        throw new Error('This email is already registered. Please sign in or use a different email.');
-      case 'auth/invalid-email':
-        throw new Error('The email address is not valid.');
-      case 'auth/operation-not-allowed':
-        throw new Error('Email/password accounts are not enabled. Please contact support.');
-      case 'auth/weak-password':
-        throw new Error('The password is too weak. Please choose a stronger password.');
-      default:
-        throw new Error(error.message || 'An error occurred during sign up. Please try again.');
-    }
+    // Use Italian error message utility
+    throw new Error(getItalianError(error));
   }
 };
 
@@ -59,24 +50,20 @@ export const signIn = async (data: SignInFormData) => {
   try {
     if (!auth) {
       console.error('Firebase auth is not initialized');
-      throw new Error('Authentication service not available');
+      throw new Error(getItalianErrorMessage('generic/authentication-service-unavailable'));
     }
     
     const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
     
     if (!userCredential.user.emailVerified) {
       await signOut();
-      throw new Error('Please verify your email before signing in.');
+      throw new Error(getItalianErrorMessage('auth/email-not-verified'));
     }
     
     return userCredential.user;
   } catch (error: any) {
-    if (error.code === 'auth/user-not-found') {
-      throw new Error('No account found with this email. Please sign up first.');
-    } else if (error.code === 'auth/wrong-password') {
-      throw new Error('Incorrect password. Please try again.');
-    }
-    throw new Error(error.message);
+    // Use Italian error message utility
+    throw new Error(getItalianError(error));
   }
 };
 
@@ -186,10 +173,8 @@ export const signInWithGoogle = async () => {
     
     return user;
   } catch (error: any) {
-    if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error('Sign in was cancelled. Please try again.');
-    }
-    throw new Error(error.message);
+    // Use Italian error message utility
+    throw new Error(getItalianError(error));
   }
 };
 
@@ -199,7 +184,7 @@ export const resendVerificationEmail = async (user: User) => {
     return true;
   } catch (error: any) {
     console.error('Error resending verification email:', error);
-    throw new Error('Failed to resend verification email. Please try again later.');
+    throw new Error(getItalianError(error));
   }
 };
 
@@ -207,12 +192,12 @@ export const signOut = async () => {
   try {
     if (!auth) {
       console.error('Firebase auth is not initialized');
-      throw new Error('Authentication service not available');
+      throw new Error(getItalianErrorMessage('generic/authentication-service-unavailable'));
     }
     
     await firebaseSignOut(auth);
   } catch (error: any) {
-    throw new Error(error.message);
+    throw new Error(getItalianError(error));
   }
 };
 
@@ -220,15 +205,13 @@ export const resetPassword = async (email: string) => {
   try {
     if (!auth) {
       console.error('Firebase auth is not initialized');
-      throw new Error('Authentication service not available');
+      throw new Error(getItalianErrorMessage('generic/authentication-service-unavailable'));
     }
     
     await sendPasswordResetEmail(auth, email);
   } catch (error: any) {
-    if (error.code === 'auth/user-not-found') {
-      throw new Error('No account found with this email.');
-    }
-    throw new Error(error.message);
+    // Use Italian error message utility
+    throw new Error(getItalianError(error));
   }
 };
 

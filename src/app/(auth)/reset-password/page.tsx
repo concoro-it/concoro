@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
 
     try {
       await resetPassword(email);
-      setSuccess('Check your inbox for a password reset link.');
+      setSuccess('Controlla la tua casella di posta per il link di reset della password.');
       (e.target as HTMLFormElement).reset();
     } catch (error: any) {
       setError(error.message);
@@ -38,11 +38,11 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-[calc(100vh-4rem)] flex">
       <BrandColumn />
 
       {/* Form Section */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
         <div className="w-full max-w-md">
           <h2 className="text-3xl font-bold mb-8 text-center">Reimposta Password</h2>
 

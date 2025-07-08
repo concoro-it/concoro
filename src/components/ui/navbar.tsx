@@ -557,125 +557,19 @@ const Navbar = (props: NavbarProps) => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          ) : (
-            <Dialog.Root>
-              <Dialog.Trigger asChild>
-                <button
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-input bg-background text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  aria-label="Open menu"
-                >
-                  <Menu className="h-4 w-4" />
-                </button>
-              </Dialog.Trigger>
-              <Dialog.Portal>
-                <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                <Dialog.Content className="fixed inset-y-0 right-0 z-50 h-full w-full border-l bg-background p-6 shadow-lg data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm">
-                  <div className="flex flex-col gap-6">
-                    <div className="flex items-center justify-between">
-                      <Dialog.Title className="text-lg font-semibold">
-                        Menu
-                      </Dialog.Title>
-                      <Dialog.Close className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                        >
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                        <span className="sr-only">Close</span>
-                      </Dialog.Close>
-                    </div>
-                    <Accordion.Root type="single" collapsible>
-                      {menu?.map((item, index) => (
-                        <Accordion.Item
-                          key={item.title}
-                          value={item.title}
-                          className={cn(
-                            "border-b py-4",
-                            index === 0 && "border-t"
-                          )}
-                        >
-                          {item.items ? (
-                            <>
-                              <Accordion.Trigger className="flex w-full items-center justify-between py-1 text-sm font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180">
-                                {item.title}
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="24"
-                                  height="24"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="h-4 w-4 shrink-0 transition-transform duration-200"
-                                >
-                                  <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg>
-                              </Accordion.Trigger>
-                              <Accordion.Content className="overflow-hidden pt-2 text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                                <div className="flex flex-col gap-2 pl-1">
-                                  {item.items.map((subItem) => (
-                                    <a
-                                      key={subItem.title}
-                                      href={subItem.url}
-                                      className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground"
-                                    >
-                                      {subItem.icon}
-                                      <span>{subItem.title}</span>
-                                    </a>
-                                  ))}
-                                </div>
-                              </Accordion.Content>
-                            </>
-                          ) : (
-                            <a
-                              href={item.url}
-                              className="flex w-full items-center justify-between py-1 text-sm font-medium transition-all hover:underline"
-                            >
-                              {item.title}
-                            </a>
-                          )}
-                        </Accordion.Item>
-                      ))}
-                    </Accordion.Root>
-                    <div className="grid grid-cols-2 gap-2">
-                      {mobileExtraLinks?.map((link) => (
-                        <a
-                          key={link.name}
-                          href={link.url}
-                          className="text-sm text-muted-foreground hover:text-foreground"
-                        >
-                          {link.name}
-                        </a>
-                      ))}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <Button variant="ghost" asChild>
-                        <Link href={authProps?.login.url || "/signin"}>
-                          {authProps?.login.text || "Accedi"}
-                        </Link>
-                      </Button>
-                      <Button asChild>
-                        <Link href={authProps?.signup.url || "/signup"}>
-                          {authProps?.signup.text || "Registrati gratuitamente"}
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </Dialog.Content>
-              </Dialog.Portal>
-            </Dialog.Root>
+          ) :
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" asChild className="hidden xs:inline-flex">
+                <Link href={authProps?.login.url || "/signin"}>
+                  {authProps?.login.text || "Accedi"}
+                </Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link href={authProps?.signup.url || "/signup"}>
+                  {authProps?.signup.text || "Registrati"}
+                </Link>
+              </Button>
+            </div>
           )}
         </div>
       </div>

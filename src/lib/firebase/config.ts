@@ -5,32 +5,23 @@ import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
-import { getMessaging, Messaging } from 'firebase/messaging';
-import { getAnalytics, isSupported, Analytics } from 'firebase/analytics';
+// Lazy load Firebase Analytics and Messaging to reduce initial bundle size
+// These will be loaded only when actually needed
 
-// Add debug logging for environment check
-const debugEnvVars = () => {
-  if (typeof window !== 'undefined') {
-    
-    
-    
-    
-    
-    
-    // Print first few characters of API key to help with debugging
+// Simplified environment check - only in development
+const validateEnvVars = () => {
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-    if (apiKey) {
-      const firstChars = apiKey.substring(0, 5);
-      const lastChars = apiKey.substring(apiKey.length - 3);
-      
-    } else {
+    if (!apiKey) {
       console.error('CRITICAL: Firebase API key is missing!');
     }
   }
 };
 
-// Call debug function
-debugEnvVars();
+// Only validate in development
+if (process.env.NODE_ENV === 'development') {
+  validateEnvVars();
+}
 
 // Initialize Firebase configuration
 const firebaseConfig = {
@@ -58,14 +49,10 @@ const isValidConfig = (config: typeof firebaseConfig): boolean => {
   return hasRequiredFields && isApiKeyFormatValid;
 };
 
-// Print config status before initialization
-if (typeof window !== 'undefined') {
+// Only log config status in development
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   if (!isValidConfig(firebaseConfig)) {
-    console.error('Firebase configuration is invalid or incomplete:');
-    console.error('- API Key exists:', !!firebaseConfig.apiKey);
-    console.error('- Auth Domain exists:', !!firebaseConfig.authDomain);
-    console.error('- Project ID exists:', !!firebaseConfig.projectId);
-    console.error('Please check your environment variables (.env, .env.local) and make sure they are properly loaded.');
+    console.error('Firebase configuration is invalid or incomplete');
   }
 }
 
@@ -74,8 +61,8 @@ let firebaseApp: FirebaseApp | undefined;
 let firebaseAuth: Auth | undefined;
 let firebaseDb: Firestore | undefined;
 let firebaseStorage: FirebaseStorage | undefined;
-let firebaseAnalytics: Analytics | undefined;
-let firebaseMessaging: Messaging | undefined;
+let firebaseAnalytics: any | undefined;
+let firebaseMessaging: any | undefined;
 
 // Get Firebase app - initialize if needed
 function getFirebaseApp(): FirebaseApp {
@@ -166,8 +153,8 @@ export function getFirebaseStorage(): FirebaseStorage {
   return firebaseStorage;
 }
 
-// Analytics with lazy initialization (client-side only)
-export function getFirebaseAnalytics(): Analytics | null {
+// Analytics with lazy initialization and dynamic import (client-side only)
+export async function getFirebaseAnalytics(): Promise<any | null> {
   if (typeof window === 'undefined') {
     return null;
   }
@@ -179,18 +166,16 @@ export function getFirebaseAnalytics(): Analytics | null {
   
   if (!firebaseAnalytics) {
     try {
+      // Dynamically import Firebase Analytics to reduce initial bundle
+      const { getAnalytics, isSupported } = await import('firebase/analytics');
+      
       const app = getFirebaseApp();
-      isSupported().then(supported => {
-        if (supported && document.readyState === 'complete') {
-          // Add a small delay to ensure hydration is complete
-          setTimeout(() => {
-            firebaseAnalytics = getAnalytics(app);
-            console.log('[Firebase] Analytics initialized after hydration');
-          }, 500);
-        }
-      }).catch(error => {
-        console.error('Firebase Analytics not supported:', error);
-      });
+      const supported = await isSupported();
+      
+      if (supported && document.readyState === 'complete') {
+        firebaseAnalytics = getAnalytics(app);
+        console.log('[Firebase] Analytics initialized with dynamic import');
+      }
     } catch (error) {
       console.error('Error initializing Firebase Analytics:', error);
     }
@@ -198,17 +183,20 @@ export function getFirebaseAnalytics(): Analytics | null {
   return firebaseAnalytics || null;
 }
 
-// Messaging with lazy initialization (client-side only)
-export function getFirebaseMessaging(): Messaging | null {
+// Messaging with lazy initialization and dynamic import (client-side only)
+export async function getFirebaseMessaging(): Promise<any | null> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     return null;
   }
   
   if (!firebaseMessaging) {
     try {
+      // Dynamically import Firebase Messaging to reduce initial bundle
+      const { getMessaging } = await import('firebase/messaging');
+      
       const app = getFirebaseApp();
       firebaseMessaging = getMessaging(app);
-      
+      console.log('[Firebase] Messaging initialized with dynamic import');
     } catch (error) {
       console.error('Error initializing Firebase Messaging:', error);
     }
@@ -221,8 +209,9 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore | null = null;
 let storage: FirebaseStorage | null = null;
-let analytics: Analytics | null = null;
-let messaging: Messaging | null = null;
+// Analytics and messaging are now async - use getFirebaseAnalytics() and getFirebaseMessaging()
+let analytics: any | null = null;
+let messaging: any | null = null;
 
 // Initialize on the client side only
 if (typeof window !== 'undefined') {

@@ -3,12 +3,14 @@ import React, { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { useDeferredAnimations } from "@/hooks/useDeferredLoading"
 
 export const BackgroundBeams = React.memo(
   ({ className }: { className?: string }) => {
     const isMobile = useMediaQuery("(max-width: 768px)")
     const isLowPerformance = useMediaQuery("(max-width: 480px)")
     const [shouldReduceMotion, setShouldReduceMotion] = useState(false)
+    const canAnimate = useDeferredAnimations(300) // Defer animations by 300ms
 
     // Check for reduced motion preference
     useEffect(() => {
@@ -75,12 +77,12 @@ export const BackgroundBeams = React.memo(
       "M-37 -581C-37 -581 31 -176 495 -49C959 78 1027 483 1027 483",
     ]
 
-    // Reduce paths based on device capabilities
+    // Reduce paths based on device capabilities and deferred loading
     const paths = (() => {
-      if (shouldReduceMotion) return [] // No animation for reduced motion
-      if (isLowPerformance) return allPaths.slice(0, 2) // Only 2 paths for very low-end devices
-      if (isMobile) return allPaths.slice(0, 4) // Reduced to 4 paths for mobile (was 8)
-      return allPaths.slice(0, 12) // Limit desktop paths too for better performance
+      if (shouldReduceMotion || !canAnimate) return [] // No animation for reduced motion or if not ready
+      if (isLowPerformance) return allPaths.slice(0, 1) // Only 1 path for very low-end devices
+      if (isMobile) return allPaths.slice(0, 2) // Further reduced to 2 paths for mobile
+      return allPaths.slice(0, 6) // Reduced desktop paths for better performance
     })()
 
     // Static fallback for reduced motion

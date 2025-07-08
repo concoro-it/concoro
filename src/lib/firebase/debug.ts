@@ -120,10 +120,10 @@ export function logFirebaseStatus() {
   return status;
 }
 
-// Auto-initialize debug session if this module is imported
-if (typeof window !== 'undefined') {
-  // Only run in browser
+// Auto-initialize debug session only in development
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  // Only run in browser and development mode
   setTimeout(() => {
     logFirebaseStatus();
-  }, 2000); // Wait for Firebase to initialize first
+  }, 500); // Reduced delay for faster development feedback
 } 

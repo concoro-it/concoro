@@ -413,13 +413,10 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
           
           const handleFaviconError = () => {
             const nextIndex = Math.min((faviconIndices[job.id] || 0) + 1, fallbacks.length - 1);
-            // Only update if we haven't reached the end of fallbacks
-            if (nextIndex < fallbacks.length - 1) {
-              setFaviconIndices(prev => ({
-                ...prev,
-                [job.id]: nextIndex
-              }));
-            }
+            setFaviconIndices(prev => ({
+              ...prev,
+              [job.id]: nextIndex
+            }));
           };
 
           // Get entity name - display as-is without case conversion
@@ -464,7 +461,12 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
                         style={{ 
                           imageRendering: 'crisp-edges'
                         }}
-                        onError={handleFaviconError}
+                        onError={(e) => {
+                          e.preventDefault();
+                          handleFaviconError();
+                        }}
+                        unoptimized={true}
+                        suppressHydrationWarning={true}
                       />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -526,7 +528,12 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
                           style={{ 
                             imageRendering: 'crisp-edges'
                           }}
-                          onError={handleFaviconError}
+                          onError={(e) => {
+                            e.preventDefault();
+                            handleFaviconError();
+                          }}
+                          unoptimized={true}
+                          suppressHydrationWarning={true}
                         />
                       </div>
                       <div className="min-w-0 flex-1">

@@ -46,17 +46,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Only run on client-side
         if (typeof window === 'undefined') return;
 
-        // Set a timeout to prevent infinite loading
+        // Set a timeout to prevent infinite loading - optimized for performance
         timeoutId = setTimeout(() => {
           setLoading(prevLoading => {
             if (prevLoading) {
-              
+              if (process.env.NODE_ENV === 'development') {
+                console.log('Auth timeout reached - continuing with no user');
+              }
               setInitialized(true);
               return false;
             }
             return prevLoading;
           });
-        }, 3000);
+        }, 800); // Reduced to 800ms for faster loading
 
         // Get Firebase auth instance safely
         let authInstance;
@@ -73,8 +75,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         
         unsubscribe = onAuthStateChanged(authInstance, async (user) => {
-          
-          
           if (user) {
             // Set user and email verification status directly without reloading
             setUser(user);
@@ -87,7 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
           setInitialized(true);
         }, (error) => {
-          console.error("Auth state change error:", error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error("Auth state change error:", error);
+          }
           setAuthError(error as Error);
           setLoading(false);
           setInitialized(true);

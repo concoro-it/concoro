@@ -44,9 +44,9 @@ export default function SignUpPage() {
 
     try {
       await signUp(data);
-      setSuccess('Account created successfully! Please check your email to verify your account.');
+      setSuccess('Account creato con successo! Controlla la tua email per verificare l\'account.');
       setTimeout(() => {
-        router.push('/signin');
+        router.push('/verify-email');
       }, 3000);
     } catch (error: any) {
       console.error('Sign up error:', error);
@@ -71,21 +71,21 @@ export default function SignUpPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4">
         <div className="text-center">
           <Spinner variant="infinite" size={48} className="mb-4" />
-          <p className="text-muted-foreground">Preparing registration...</p>
+          <p className="text-muted-foreground">Preparazione registrazione...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-[calc(100vh-4rem)] flex">
       <BrandColumn />
 
       {/* Form Section */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
         <div className="w-full max-w-md">
           <h2 className="text-3xl font-bold mb-8 text-center">Registrati</h2>
 
@@ -131,7 +131,7 @@ export default function SignUpPage() {
             >
               <div className="flex items-center justify-center gap-2">
                 <img src="/google.svg" alt="Google" className="w-5 h-5" />
-                Continue with Google
+                Continua con Google
               </div>
             </AuthButton>
 

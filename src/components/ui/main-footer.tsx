@@ -14,35 +14,23 @@ const navigation = {
       name: "Concoro",
       sections: [
         {
-          id: "about",
-          name: "About",
+          id: "company",
+          name: "Azienda",
           items: [
             { name: "Chi siamo", href: "/chi-siamo" },
             { name: "Prezzi", href: "/prezzi" },
+            { name: "FAQ", href: "/faq" },
+            { name: "Contatti", href: "/contatti" },
           ],
         },
         {
-          id: "features",
-          name: "Features",
+          id: "services",
+          name: "Servizi",
           items: [
             { name: "Ricerca concorsi", href: "/bandi" },
             { name: "Blog", href: "/blog" },
-          ],
-        },
-        {
-          id: "resources",
-          name: "Risorse",
-          items: [
-            { name: "FAQ", href: "/faq" },
             { name: "Privacy", href: "/privacy-policy" },
-          ],
-        },
-        {
-          id: "support",
-          name: "Supporto",
-          items: [
             { name: "Termini di servizio", href: "/termini-di-servizio" },
-            { name: "Contatti", href: "/contatti" },
           ],
         },
       ],
@@ -80,10 +68,11 @@ export function MainFooter() {
           {navigation.categories.map((category) => (
             <div
               key={category.name}
-              className="grid grid-cols-2 flex-row justify-between gap-6 leading-6 md:flex"
+              className="grid grid-cols-2 gap-6 leading-6"
             >
               {category.sections.map((section) => (
                 <div key={section.name}>
+                  <h3 className="text-sm font-semibold text-dark-text-primary mb-4">{section.name}</h3>
                   <ul
                     role="list"
                     aria-labelledby={`${category.id}-${section.id}-heading-mobile`}
@@ -161,15 +150,16 @@ export function MainFooter() {
       </div>
 
       <div className="mx-auto mb-10 mt-10 flex flex-col justify-between text-center text-xs md:max-w-7xl">
-        <div className="flex flex-row items-center justify-center gap-1 text-dark-text-secondary">
+        <div className="flex flex-row items-center justify-center gap-1 text-dark-text-secondary mb-2">
           <span> © </span>
           <span>{new Date().getFullYear()}</span>
           <span>Concoro</span>
           <Heart className="text-dark-text-primary mx-1 h-4 w-4 fill-dark-text-primary animate-pulse" />
           <span>Tutti i diritti riservati</span>
-          <BriefcaseBusiness className="text-dark-text-primary mx-1 h-4 w-4 fill-dark-text-primary animate-pulse" />
+        </div>
+        <div className="flex flex-row items-center justify-center gap-1 text-dark-text-secondary">
+          <BriefcaseBusiness className="text-dark-text-primary h-4 w-4 fill-dark-text-primary" />
           <span>P.IVA: IT07070220822</span>
-
         </div>
       </div>
     </footer>
