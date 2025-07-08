@@ -7,36 +7,24 @@ import Footer from "@/components/ui/footer";
 import { DynamicLogo } from "@/components/ui/dynamic-logo";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
-const navigation = {
-  categories: [
-    {
-      id: "concoro",
-      name: "Concoro",
-      sections: [
-        {
-          id: "company",
-          name: "Azienda",
-          items: [
-            { name: "Chi siamo", href: "/chi-siamo" },
-            { name: "Prezzi", href: "/prezzi" },
-            { name: "FAQ", href: "/faq" },
-            { name: "Contatti", href: "/contatti" },
-          ],
-        },
-        {
-          id: "services",
-          name: "Servizi",
-          items: [
-            { name: "Ricerca concorsi", href: "/bandi" },
-            { name: "Blog", href: "/blog" },
-            { name: "Privacy", href: "/privacy-policy" },
-            { name: "Termini di servizio", href: "/termini-di-servizio" },
-          ],
-        },
-      ],
-    },
+const footerLinks = [
+  [
+    { name: "Chi siamo", href: "/chi-siamo" },
+    { name: "Prezzi", href: "/prezzi" },
   ],
-};
+  [
+    { name: "FAQ", href: "/faq" },
+    { name: "Contatti", href: "/contatti" },
+  ],
+  [
+    { name: "Ricerca concorsi", href: "/bandi" },
+    { name: "Blog", href: "/blog" },
+  ],
+  [
+    { name: "Privacy", href: "/privacy-policy" },
+    { name: "Termini di servizio", href: "/termini-di-servizio" },
+  ],
+];
 
 const SocialButton = `hover:-translate-y-1 rounded-full p-2.5 transition-all hover:bg-white/10/10`;
 
@@ -65,34 +53,24 @@ export function MainFooter() {
       <div className="mx-auto max-w-7xl px-6 py-10">
         <div className="border-b border-dark-border"> </div>
         <div className="py-10">
-          {navigation.categories.map((category) => (
-            <div
-              key={category.name}
-              className="grid grid-cols-2 gap-6 leading-6"
-            >
-              {category.sections.map((section) => (
-                <div key={section.name}>
-                  <h3 className="text-sm font-semibold text-dark-text-primary mb-4">{section.name}</h3>
-                  <ul
-                    role="list"
-                    aria-labelledby={`${category.id}-${section.id}-heading-mobile`}
-                    className="flex flex-col space-y-2"
-                  >
-                    {section.items.map((item) => (
-                      <li key={item.name} className="flow-root">
-                        <Link
-                          href={item.href}
-                          className="text-sm text-dark-text-secondary hover:text-dark-text-primary md:text-xs"
-                        >
-                          {item.name}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          ))}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 leading-6">
+            {footerLinks.map((column, columnIndex) => (
+              <div key={columnIndex}>
+                <ul role="list" className="flex flex-col space-y-2">
+                  {column.map((link) => (
+                    <li key={link.name} className="flow-root">
+                      <Link
+                        href={link.href}
+                        className="text-sm text-dark-text-secondary hover:text-dark-text-primary md:text-xs"
+                      >
+                        {link.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="border-b border-dark-border"> </div>
       </div>

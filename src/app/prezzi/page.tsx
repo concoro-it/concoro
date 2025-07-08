@@ -1,5 +1,5 @@
 import { Briefcase, Sparkles, Zap, Crown, Target, Bell, BookOpen, Shield, Users, Star } from "lucide-react"
-import { PricingSection } from "@/components/ui/pricing-section"
+import PricingSection from "@/components/ui/pricing-section"
 import { MainFooter } from "@/components/ui/main-footer"
 import Link from "next/link"
 import type { Metadata } from "next"

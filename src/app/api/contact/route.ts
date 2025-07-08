@@ -34,9 +34,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create transporter (using Gmail SMTP as an example)
+    // Create transporter with secure SMTP settings for Google Workspace
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // use SSL
       auth: {
         user: process.env.SMTP_EMAIL,
         pass: process.env.SMTP_PASSWORD,
@@ -45,8 +47,12 @@ export async function POST(request: NextRequest) {
 
     // Define email content
     const mailOptions = {
-      from: process.env.SMTP_EMAIL,
+      from: {
+        name: 'Concoro Contact Form',
+        address: process.env.SMTP_EMAIL
+      },
       to: 'info@concoro.it',
+      replyTo: email,
       subject: `Nuovo messaggio dal sito - ${subject}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -74,7 +80,6 @@ export async function POST(request: NextRequest) {
           </div>
         </div>
       `,
-      // Also include a plain text version
       text: `
         Nuovo messaggio dal sito Concoro
         

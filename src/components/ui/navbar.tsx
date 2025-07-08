@@ -322,17 +322,17 @@ const Navbar = (props: NavbarProps) => {
               
               <div className="flex items-center gap-2">
                 <Button variant="link" asChild>
-                    <a href="/bandi">
+                  <Link href="/bandi">
                     Bandi
-                      <Search className="w-4 h-4 ml-2" />
-                    </a>
+                    <Search className="w-4 h-4 ml-2" />
+                  </Link>
                 </Button>
 
                 <Button variant="link" asChild>
-                <a href="/saved-concorsi">
+                  <Link href="/saved-concorsi">
                     <Bookmark className="w-4 h-4 mr-2" />
                     Salvati
-                    </a>
+                  </Link>
                 </Button>
                 <NotificationsDropdown />
                 
@@ -557,7 +557,7 @@ const Navbar = (props: NavbarProps) => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          ) :
+          ) : (
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" asChild className="hidden xs:inline-flex">
                 <Link href={authProps?.login.url || "/signin"}>

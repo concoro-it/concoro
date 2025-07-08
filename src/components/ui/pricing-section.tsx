@@ -30,7 +30,7 @@ interface PricingSectionProps {
   className?: string
 }
 
-function PricingSection({ tiers, className }: PricingSectionProps) {
+export function PricingSection({ tiers, className }: PricingSectionProps) {
   const [isYearly, setIsYearly] = useState(false)
 
   const buttonStyles = {
@@ -233,4 +233,4 @@ function PricingSection({ tiers, className }: PricingSectionProps) {
   )
 }
 
-export { PricingSection } 
+export default PricingSection 
