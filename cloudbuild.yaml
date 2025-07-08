@@ -29,7 +29,7 @@ steps:
       - 'BREVO_API_KEY=${_BREVO_API_KEY}'
       - '.'
   
-  # Push the container image to Container Registry
+  # Push the container image to Container Registry concoro-app
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/concoro-app']
   
