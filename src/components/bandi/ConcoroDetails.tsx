@@ -22,25 +22,30 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
-import { useAuth } from "@/lib/hooks/useAuth"
+import { useAuthAdapter } from "@/lib/hooks/useAuthAdapter"
+import { GuestSummary } from "@/components/bandi/GuestSummary"
+import { GuestBookmarkButton } from "@/components/ui/guest-bookmark-button"
+import { GuestChatInterface } from "@/components/bandi/GuestChatInterface"
 import React, { useEffect, useState } from "react"
 import {
   PromptInput,
   PromptInputActions,
   PromptInputTextarea,
 } from "@/components/ui/prompt-input"
-import { PromptSuggestion } from "@/components/ui/prompt-suggestion"
 import { ArrowUpIcon } from "lucide-react"
 import { marked } from 'marked'
 import { BookmarkIconButton } from "@/components/ui/bookmark-icon-button"
 import { Spinner } from "@/components/ui/spinner"
 import { ReportModal } from "@/components/ui/report-modal"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
+import { getEnteUrl } from '@/lib/utils/ente-slug-utils'
 import { formatMetodoValutazione, getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { normalizeConcorsoCategory } from "@/lib/utils/category-utils"
-import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
+import { formatLocalitaDisplay, normalizeLocationForSlug } from '@/lib/utils/region-utils'
+import { Concorso } from '@/types/concorso'
 
 // Configure marked for safe HTML rendering
 marked.setOptions({
@@ -48,14 +53,7 @@ marked.setOptions({
   gfm: true,
 })
 
-// Favicon utility functions
-const getFaviconChain = (domain: string): string[] => [
-  `https://faviconkit.com/${domain}/32`,
-  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
-  `https://logo.clearbit.com/${domain}`,
-  `https://www.google.com/s2/favicons?sz=192&domain=${domain}`,
-  `/placeholder_icon.png`
-];
+
 
 const extractDomain = (url: string | undefined): string => {
   if (!url) return '';
@@ -82,42 +80,6 @@ const extractDomain = (url: string | undefined): string => {
     return '';
   }
 };
-
-export interface Concorso {
-  id: string;
-  Titolo?: string;
-  titolo_originale?: string;
-  Stato?: string;
-  Ente?: string;
-  AreaGeografica?: string;
-  DataChiusura?: string | { seconds: number; nanoseconds: number };
-  DataApertura?: string | { seconds: number; nanoseconds: number };
-  numero_di_posti?: number;
-  apply_link?: string;
-  Link?: string;
-  riassunto?: string;
-  Descrizione?: string;
-  Valutazione?: string;
-  publication_date?: string | { seconds: number; nanoseconds: number };
-  concorso_id?: string;
-  pdf_links?: string[];
-  collocazione_organizzativa?: string;
-  tipologia?: string;
-  ambito_lavorativo?: string;
-  categoria?: string;
-  area_categoria?: string;
-  settore?: string;
-  regime?: string;
-  conoscenze_tecnico_specialistiche?: string | string[];
-  capacita_richieste?: string | string[];
-  programma_di_esame?: string | string[];
-  contatti?: string;
-  pa_link?: string;
-  createdAt?: { seconds: number; nanoseconds: number };
-  settore_professionale?: string;
-  regime_impegno?: string;
-  requisiti_generali?: string | string[];
-}
 
 interface ConcoroDetailsProps {
   job: Concorso | null;
@@ -234,7 +196,7 @@ const formatTextWithLinks = (text: string) => {
 export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
   const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 1024px)");
-  const { user } = useAuth();
+  const { user, initializeAuth } = useAuthAdapter();
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi();
   const [inputValue, setInputValue] = useState("")
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([])
@@ -249,6 +211,11 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
+
+  // Auto-initialize auth for logged-in users
+  useEffect(() => {
+    initializeAuth()
+  }, [])
 
   React.useEffect(() => {
     if (chatMessages.length > 0 && isDrawerOpen) {
@@ -328,7 +295,7 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
     }
   };
 
-  const formatDate = (date: string | { seconds: number; nanoseconds: number } | null | undefined) => {
+  const formatDate = (date: string | { seconds?: number; nanoseconds?: number; _seconds?: number; _nanoseconds?: number } | null | undefined) => {
     try {
       if (!date) {
         return null;
@@ -346,8 +313,12 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
 
         const parsedDate = new Date(date);
         return isNaN(parsedDate.getTime()) ? null : parsedDate;
-      } else if (typeof date === 'object' && date !== null && 'seconds' in date) {
-        return new Date(date.seconds * 1000);
+      } else if (typeof date === 'object' && date !== null && ('seconds' in date || '_seconds' in date)) {
+        // Handle both formats: seconds/_seconds
+        const seconds = date.seconds || date._seconds;
+        if (seconds) {
+          return new Date(seconds * 1000);
+        }
       }
       
       return null;
@@ -606,11 +577,15 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <BookmarkIconButton 
-                      isSaved={isConcorsoSaved(job.id)} 
-                      onClick={handleSave}
-                      className="h-9 w-9 p-0 bg-transparent border-0 hover:bg-transparent"
-                    />
+                    {user ? (
+                      <BookmarkIconButton 
+                        isSaved={isConcorsoSaved(job.id)} 
+                        onClick={handleSave}
+                        className="h-9 w-9 p-0 bg-transparent border-0 hover:bg-transparent"
+                      />
+                    ) : (
+                      <GuestBookmarkButton className="h-9 w-9 p-0 bg-transparent border-0 hover:bg-transparent" />
+                    )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="default" size="sm" className="h-9 w-9 p-0 bg-transparent border-0 hover:bg-transparent">
@@ -633,7 +608,7 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                   <div className="flex items-center text-gray-600 mt-2">
                     {(() => {
                       const domain = extractDomain(job.pa_link);
-                      const faviconUrls = domain ? getFaviconChain(domain) : ['/placeholder_icon.png'];
+                      const faviconUrls =  ['/placeholder_icon.png'];
                       
                       const handleFaviconError = () => {
                         setFaviconIndex(prev => Math.min(prev + 1, faviconUrls.length - 1));
@@ -655,7 +630,13 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                             />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <span className="truncate" title={job.Ente}>{job.Ente || ''}</span>
+                            <Link 
+                              href={getEnteUrl(job.Ente)}
+                              className="hover:text-blue-600 hover:underline transition-colors"
+                              title={`Vedi tutti i concorsi di ${job.Ente}`}
+                            >
+                              <span className="truncate">{job.Ente || ''}</span>
+                            </Link>
                           </div>
                         </>
                       );
@@ -666,7 +647,24 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                   <div className="flex items-center">
                     <MapPin className="w-4 h-4 mr-1" />
-                    <span>{formatLocalitaDisplay(job.AreaGeografica || '')}</span>
+                    {(() => {
+                      const locationDisplay = formatLocalitaDisplay(job.AreaGeografica || '');
+                      const locationSlug = normalizeLocationForSlug(job.AreaGeografica || '');
+                      
+                      if (locationSlug && locationDisplay) {
+                        return (
+                          <Link 
+                            href={`/bandi/localita/${locationSlug}`}
+                            className="hover:text-blue-600 hover:underline transition-colors"
+                            title={`Vedi tutti i concorsi in ${locationDisplay}`}
+                          >
+                            {locationDisplay}
+                          </Link>
+                        );
+                      } else {
+                        return <span>{locationDisplay}</span>;
+                      }
+                    })()}
                   </div>
                   <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
@@ -696,16 +694,20 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                 </div>
 
                 {/* Summary Section */}
-                {job.riassunto && (
-                  <div className="rounded-lg p-6" style={{ 
-                    backgroundImage: 'linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)'
-                  }}>
-                    <h2 className="text-lg font-semibold mb-2">Sommario</h2>
-                    <div 
-                      className="prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:p-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_ul]:space-y-1 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_li]:mb-1 [&_strong]:font-semibold"
-                      dangerouslySetInnerHTML={{ __html: marked(job.riassunto) }}
-                    />
-                  </div>
+                {user ? (
+                  job.riassunto && (
+                    <div className="rounded-lg p-6" style={{ 
+                      backgroundImage: 'linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)'
+                    }}>
+                      <h2 className="text-lg font-semibold mb-2">Sommario</h2>
+                      <div 
+                        className="prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:p-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_ul]:space-y-1 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_li]:mb-1 [&_strong]:font-semibold"
+                        dangerouslySetInnerHTML={{ __html: marked(job.riassunto) }}
+                      />
+                    </div>
+                  )
+                ) : (
+                  <GuestSummary jobTitle={job.Titolo || job.titolo_originale} />
                 )}
               </div>
 
@@ -967,7 +969,7 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                   }) || 'Data di pubblicazione non disponibile'}
                 </div>
                 <div>
-                  ID Concorso: {job.concorso_id || 'Non disponibile'}
+                  ID Concorso: {job.concorso_id || job.id || 'Non disponibile'}
                 </div>
               </div>
             </div>
@@ -975,176 +977,181 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
         </div>
       </div>
 
-      {/* Chat Interface - Always visible */}
-      <div className="sticky bottom-0 left-0 right-0" style={{
-        borderTopRightRadius: 8,
-        borderTopLeftRadius: 8,
-        background: 'linear-gradient(to right, rgba(255, 255, 255, 0.8), #c2e9fb)',
-        backdropFilter: 'blur(8px)'
-      }}>
-        <div className="max-w-4xl mx-auto">
-          {/* Header with Chevron */}
-          <div 
-            className="flex justify-between items-center p-4 cursor-pointer"
-            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-          >
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h3 className="font-medium">Genio ti aiuta a fare chiarezza</h3>
-                <Badge className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 h-5">
-                  Beta
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Domande su requisiti o scadenze? Chiedi a Genio, il tuo assistente AI.
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsDrawerOpen(!isDrawerOpen);
-              }}
+      {/* Chat Interface - Conditional based on user authentication */}
+      {user ? (
+        /* Authenticated User Chat Interface */
+        <div className="flex-shrink-0 border-t bg-white" style={{
+          borderTopRightRadius: 8,
+          borderTopLeftRadius: 8,
+          background: 'linear-gradient(to right, rgba(255, 255, 255, 0.95), #c2e9fb)',
+        }}>
+          <div className="max-w-4xl mx-auto">
+            {/* Header with Chevron */}
+            <div 
+              className="flex justify-between items-center p-4 cursor-pointer"
+              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
             >
-              {isDrawerOpen ? (
-                <ChevronDown className="h-6 w-6" />
-              ) : (
-                <ChevronUp className="h-6 w-6" />
-              )}
-            </Button>
-          </div>
-
-          {/* Expandable Content */}
-          <div className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out ${
-            isDrawerOpen ? 'max-h-[600px] p-4' : 'max-h-0'
-          }`}>
-            {/* Chat Messages */}
-            {chatMessages.length > 0 && (
-              <div 
-                className="space-y-4 mb-4 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" 
-                style={{
-                  scrollbarWidth: 'thin',
-                  msOverflowStyle: 'none',
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium">Genio ti aiuta a fare chiarezza</h3>
+                  <Badge className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 h-5">
+                    Beta
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Domande su requisiti o scadenze? Chiedi a Genio, il tuo assistente AI.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsDrawerOpen(!isDrawerOpen);
                 }}
               >
-                {chatMessages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
+                {isDrawerOpen ? (
+                  <ChevronDown className="h-6 w-6" />
+                ) : (
+                  <ChevronUp className="h-6 w-6" />
+                )}
+              </Button>
+            </div>
+
+            {/* Expandable Content */}
+            <div className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out ${
+              isDrawerOpen ? 'max-h-[600px] p-4' : 'max-h-0'
+            }`}>
+              {/* Chat Messages */}
+              {chatMessages.length > 0 && (
+                <div 
+                  className="space-y-4 mb-4 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" 
+                  style={{
+                    scrollbarWidth: 'thin',
+                    msOverflowStyle: 'none',
+                  }}
+                >
+                  {chatMessages.map((message, index) => (
                     <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        message.role === 'user'
-                          ? 'bg-blue-500 text-white'
-                          : message.content.startsWith('Error:')
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
+                      key={index}
+                      className={`flex ${
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
                       }`}
                     >
-                      {message.role === 'assistant' ? (
-                        <div 
-                          className="prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:p-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_ul]:space-y-1 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_li]:mb-1 [&_strong]:font-semibold"
-                          dangerouslySetInnerHTML={{ __html: marked(message.content) }}
-                        />
-                      ) : (
-                        message.content
-                      )}
+                      <div
+                        className={`max-w-[80%] rounded-lg p-3 ${
+                          message.role === 'user'
+                            ? 'bg-blue-500 text-white'
+                            : message.content.startsWith('Error:')
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {message.role === 'assistant' ? (
+                          <div 
+                            className="prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:p-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_ul]:space-y-1 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_li]:mb-1 [&_strong]:font-semibold"
+                            dangerouslySetInnerHTML={{ __html: marked(message.content) }}
+                          />
+                        ) : (
+                          message.content
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {isLoadingResponse && (
-                  <div className="flex justify-start">
-                    <div className="max-w-[80%] rounded-lg p-3 bg-gray-100 text-gray-800 flex items-center">
-                      <Spinner size={16} className="mr-2" />
-                      <span>Genio sta pensando...</span>
+                  ))}
+                  {isLoadingResponse && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[80%] rounded-lg p-3 bg-gray-100 text-gray-800 flex items-center">
+                        <Spinner size={16} className="mr-2" />
+                        <span>Genio sta pensando...</span>
+                      </div>
                     </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+
+              {/* Show loading indicator if it's the first message */}
+              {chatMessages.length === 0 && isLoadingResponse && (
+                <div className="flex justify-start mb-4">
+                  <div className="max-w-[80%] rounded-lg p-3 bg-gray-100 text-gray-800 flex items-center">
+                    <Spinner size={16} className="mr-2" />
+                    <span>Genio sta pensando...</span>
                   </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-
-            {/* Show loading indicator if it's the first message */}
-            {chatMessages.length === 0 && isLoadingResponse && (
-              <div className="flex justify-start mb-4">
-                <div className="max-w-[80%] rounded-lg p-3 bg-gray-100 text-gray-800 flex items-center">
-                  <Spinner size={16} className="mr-2" />
-                  <span>Genio sta pensando...</span>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Suggestion Boxes - Only show when no messages exist */}
-            {chatMessages.length === 0 && !isLoadingResponse && (
-              <div className="space-y-2 mb-4">
-                <p className="text-xs text-gray-500 mb-1">Domande suggerite:</p>
-                <div className="flex flex-wrap gap-2">
-                  <button 
-                    onClick={() => {
-                      setInputValue("Quali sono i requisiti principali?");
-                      setTimeout(() => handleChatSubmit(), 100);
-                    }}
-                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs rounded-full transition-colors"
-                  >
-                    Quali sono i requisiti principali?
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setInputValue("Quando scade il bando?");
-                      setTimeout(() => handleChatSubmit(), 100);
-                    }}
-                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs rounded-full transition-colors"
-                  >
-                    Quando scade il bando?
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setInputValue("Come prepararsi per il concorso?");
-                      setTimeout(() => handleChatSubmit(), 100);
-                    }}
-                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs rounded-full transition-colors"
-                  >
-                    Come prepararsi per il concorso?
-                  </button>
+              {/* Suggestion Boxes - Only show when no messages exist */}
+              {chatMessages.length === 0 && !isLoadingResponse && (
+                <div className="space-y-2 mb-4">
+                  <p className="text-xs text-gray-500 mb-1">Domande suggerite:</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={() => {
+                        setInputValue("Quali sono i requisiti principali?");
+                        setTimeout(() => handleChatSubmit(), 100);
+                      }}
+                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs rounded-full transition-colors"
+                    >
+                      Quali sono i requisiti principali?
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setInputValue("Quando scade il bando?");
+                        setTimeout(() => handleChatSubmit(), 100);
+                      }}
+                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs rounded-full transition-colors"
+                    >
+                      Quando scade il bando?
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setInputValue("Come prepararsi per il concorso?");
+                        setTimeout(() => handleChatSubmit(), 100);
+                      }}
+                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs rounded-full transition-colors"
+                    >
+                      Come prepararsi per il concorso?
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Input Section */}
-            <PromptInput
-              className="border-input bg-background/80 border shadow-sm"
-              value={inputValue}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
-              onSubmit={handleChatSubmit}
-            >
-              <PromptInputTextarea 
-                placeholder="Fai una domanda su questo concorso..." 
+              {/* Input Section */}
+              <PromptInput
+                className="border-input bg-background/80 border shadow-sm"
                 value={inputValue}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
-              />
-              <PromptInputActions className="justify-end">
-                <Button
-                  size="sm"
-                  className="size-9 cursor-pointer rounded-full"
-                  onClick={handleChatSubmit}
-                  disabled={!inputValue.trim() || isLoadingResponse}
-                  aria-label="Invia"
-                >
-                  {isLoadingResponse ? (
-                    <Spinner size={16} />
-                  ) : (
-                    <ArrowUpIcon className="h-4 min-h-4 min-w-4 w-4" />
-                  )}
-                </Button>
-              </PromptInputActions>
-            </PromptInput>
+                onSubmit={handleChatSubmit}
+              >
+                <PromptInputTextarea 
+                  placeholder="Fai una domanda su questo concorso..." 
+                  value={inputValue}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
+                />
+                <PromptInputActions className="justify-end">
+                  <Button
+                    size="sm"
+                    className="size-9 cursor-pointer rounded-full"
+                    onClick={handleChatSubmit}
+                    disabled={!inputValue.trim() || isLoadingResponse}
+                    aria-label="Invia"
+                  >
+                    {isLoadingResponse ? (
+                      <Spinner size={16} />
+                    ) : (
+                      <ArrowUpIcon className="h-4 min-h-4 min-w-4 w-4" />
+                    )}
+                  </Button>
+                </PromptInputActions>
+              </PromptInput>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        /* Guest Chat Interface */
+        <GuestChatInterface />
+      )}
 
       {/* Report Modal */}
       {job && (

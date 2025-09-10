@@ -4,9 +4,8 @@ const ITALIAN_REGIONS = [
   'Basilicata',
   'Calabria',
   'Campania',
-  'Emilia-Romagna',
   'Emilia Romagna',
-  'Friuli-Venezia Giulia',
+  'Friuli Venezia Giulia',
   'Lazio',
   'Liguria',
   'Lombardia',
@@ -147,4 +146,113 @@ export function formatLocalitaDisplay(localita: string): string {
 
   // Fallback: return the original string
   return localita;
+}
+
+/**
+ * Extracts unique locations from AreaGeografica field
+ * Returns normalized location strings suitable for URL slugs
+ */
+export function extractUniqueLocations(concorsi: any[]): string[] {
+  const locations = new Set<string>();
+  
+  concorsi.forEach(concorso => {
+    if (concorso.AreaGeografica) {
+      const normalizedLocation = normalizeLocationForSlug(concorso.AreaGeografica);
+      if (normalizedLocation) {
+        locations.add(normalizedLocation);
+      }
+    }
+  });
+  
+  return Array.from(locations).sort();
+}
+
+/**
+ * Normalizes a location string for use in URL slugs
+ * Handles regions, cities, and combined formats
+ */
+export function normalizeLocationForSlug(areaGeografica: string): string | null {
+  if (!areaGeografica || typeof areaGeografica !== 'string') {
+    return null;
+  }
+
+  // Clean up the string
+  let cleaned = areaGeografica.trim()
+    .replace(/\([^)]*\)/g, '') // Remove parentheses content
+    .replace(/[^\w\s,.-]/g, '') // Remove special characters except comma, period, dash
+    .trim();
+
+  if (!cleaned) return null;
+
+  // Split by comma and take the most significant part
+  const parts = cleaned.split(',').map(part => part.trim()).filter(Boolean);
+  
+  if (parts.length === 0) return null;
+
+  // If it's a single part, use it directly
+  if (parts.length === 1) {
+    return parts[0].toLowerCase().replace(/\s+/g, '-');
+  }
+
+  // For multiple parts, prioritize regions first, then cities
+  for (const part of parts) {
+    const matchedRegion = ITALIAN_REGIONS.find(region => 
+      region.toLowerCase() === part.toLowerCase()
+    );
+    
+    if (matchedRegion) {
+      return matchedRegion.toLowerCase().replace(/\s+/g, '-');
+    }
+  }
+
+  // If no region found, use the first significant part
+  return parts[0].toLowerCase().replace(/\s+/g, '-');
+}
+
+/**
+ * Converts a location slug back to display format
+ */
+export function slugToLocationDisplay(slug: string): string {
+  if (!slug) return '';
+  
+  // Convert slug back to readable format
+  const readable = slug.replace(/-/g, ' ');
+  
+  // Check if it matches a region
+  const matchedRegion = ITALIAN_REGIONS.find(region => 
+    region.toLowerCase() === readable.toLowerCase()
+  );
+  
+  if (matchedRegion) {
+    return matchedRegion;
+  }
+  
+  // Otherwise, return capitalized version
+  return readable.split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
+ * Checks if a location slug is valid (exists in our location data)
+ */
+export function isValidLocationSlug(slug: string, availableLocations: string[]): boolean {
+  return availableLocations.includes(slug);
+}
+
+/**
+ * Filters concorsi by location based on AreaGeografica field
+ */
+export function filterConcorsiByLocation(concorsi: any[], locationSlug: string): any[] {
+  const locationDisplay = slugToLocationDisplay(locationSlug);
+  
+  return concorsi.filter(concorso => {
+    if (!concorso.AreaGeografica) return false;
+    
+    const normalizedLocation = normalizeLocationForSlug(concorso.AreaGeografica);
+    if (normalizedLocation === locationSlug) return true;
+    
+    // Also check if the location display name is contained in AreaGeografica
+    return concorso.AreaGeografica.toLowerCase().includes(locationDisplay.toLowerCase());
+  });
 } 

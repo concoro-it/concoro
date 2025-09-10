@@ -31,10 +31,10 @@ export async function POST(request: NextRequest) {
           profile.firstName
         );
         console.log('Welcome email sent successfully');
-      } catch (emailError: any) {
+      } catch (emailError: unknown) {
         console.error('Failed to send welcome email:', emailError);
         // Don't fail the entire operation if welcome email fails
-        welcomeEmailResult = { error: emailError.message };
+        welcomeEmailResult = { error: emailError instanceof Error ? emailError.message : 'Unknown error' };
       }
     }
 
@@ -47,13 +47,13 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Brevo API error:', error);
     
     return NextResponse.json(
       { 
         error: 'Failed to sync profile with Brevo',
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
@@ -82,13 +82,13 @@ export async function PUT(request: NextRequest) {
       data: result
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Brevo API error:', error);
     
     return NextResponse.json(
       { 
         error: 'Failed to update profile in Brevo',
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
@@ -118,13 +118,13 @@ export async function DELETE(request: NextRequest) {
       data: result
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Brevo API error:', error);
     
     return NextResponse.json(
       { 
         error: 'Failed to delete contact from Brevo',
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );

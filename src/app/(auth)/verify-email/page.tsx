@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { auth } from '@/lib/firebase/config';
 import { resendVerificationEmail } from '@/lib/auth/auth-utils';
 import { AuthButton, AuthError, AuthSuccess } from '@/components/auth/AuthFormComponents';
 import { BrandColumn } from '@/components/auth/BrandColumn';
@@ -87,8 +86,8 @@ export default function VerifyEmailPage() {
       await resendVerificationEmail(user);
       setSuccess('Email di verifica inviata! Controlla la tua casella di posta.');
       setCountdown(60); // Start 60-second countdown
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -125,11 +124,11 @@ export default function VerifyEmailPage() {
 
           <div className="bg-card p-6 rounded-lg shadow-sm border mb-8">
             <p className="text-base text-muted-foreground mb-2">
-              Abbiamo inviato un'email di verifica a:
+              Abbiamo inviato un&apos;email di verifica a:
             </p>
             <p className="text-lg font-medium mb-4">{user?.email}</p>
             <p className="text-sm text-muted-foreground">
-              Clicca sul link nell'email per verificare il tuo account.
+              Clicca sul link nell&apos;email per verificare il tuo account.
               <br />
               Se non la vedi, controlla la cartella spam.
             </p>
@@ -139,7 +138,7 @@ export default function VerifyEmailPage() {
           <AuthSuccess message={success} />
 
           <div className="bg-muted/50 p-6 rounded-lg">
-            <h3 className="text-base font-medium mb-4">Non hai ricevuto l'email?</h3>
+            <h3 className="text-base font-medium mb-4">Non hai ricevuto l&apos;email?</h3>
             <AuthButton
               onClick={handleResendVerification}
               fullWidth
@@ -159,7 +158,7 @@ export default function VerifyEmailPage() {
               onClick={() => router.push('/signin')}
               fullWidth
             >
-              Torna all'Accesso
+              Torna all&apos;Accesso
             </AuthButton>
           </div>
         </div>

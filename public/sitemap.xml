@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 
   DYNAMIC SITEMAP: This file redirects to the API-generated sitemap
-  For current sitemap, visit: https://concoro.it/api/sitemap
-  This ensures daily updates with all published article URLs
+  For current sitemap, visit: https://www.concoro.it/api/sitemap
+  This ensures daily updates with all published article and concorso URLs
 -->
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>https://concoro.it/api/sitemap</loc>
+    <loc>https://www.concoro.it/api/sitemap</loc>
     <lastmod>2024-12-19T12:00:00.000Z</lastmod>
   </sitemap>
 </sitemapindex> 

@@ -1,18 +1,23 @@
 "use client"
 
 import { useState, useEffect, useRef, Suspense } from "react"
-import { collection, getDocs, Timestamp } from "firebase/firestore"
+
+// Force dynamic rendering to prevent caching
+export const dynamic = 'force-dynamic'
+import { collection, getDocs, query, orderBy, limit, where, or, getCountFromServer, Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase/config"
 import { JobSearch } from "@/components/jobs/ConcorsiSearch"
 import { ConcoroList } from "@/components/bandi/ConcoroList"
 import { ConcoroDetails } from "@/components/bandi/ConcoroDetails"
-import { addDays, isAfter, isBefore, startOfDay, startOfMonth, startOfWeek } from "date-fns"
-import { useAuth } from "@/lib/hooks/useAuth"
+// Date functions removed - now using server-side filtering exclusively
+import { useAuthAdapter } from "@/lib/hooks/useAuthAdapter"
 import { useRouter, useSearchParams } from "next/navigation"
+import { getBandoUrl } from "@/lib/utils/bando-slug-utils"
+import { getEnteUrl } from "@/lib/utils/ente-slug-utils"
 import { toast } from "sonner"
 import { Concorso } from "@/types/concorso"
-import { Concorso as ConcoroDetailsType } from "@/components/bandi/ConcoroDetails"
 import { Spinner } from '@/components/ui/spinner'
+import { concorsiFilterService, ConcorsiFilterParams } from "@/lib/services/concorsi-filter-service"
 import { FilterIcon, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -20,7 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { extractAllRegions, localitaContainsRegions } from "@/lib/utils/region-utils"
-import { getAvailableRegimes, normalizeConcorsoRegime, filterByRegime } from "@/lib/utils/regime-utils"
+import { getAvailableRegimes, normalizeConcorsoRegime } from "@/lib/utils/regime-utils"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { AutocompleteInput } from "@/components/ui/autocomplete-input"
@@ -40,9 +45,14 @@ function JobsPage() {
   
   // Core data state
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
   const [jobs, setJobs] = useState<Concorso[]>([])
   const [filteredJobs, setFilteredJobs] = useState<Concorso[]>([])
   const [selectedJob, setSelectedJob] = useState<Concorso | null>(null)
+  const [totalOpenConcorsi, setTotalOpenConcorsi] = useState<number>(0)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(true)
   
   // Filter options
   const [availableLocations, setAvailableLocations] = useState<string[]>([])
@@ -60,20 +70,52 @@ function JobsPage() {
   const isAutoSelectingRef = useRef(false)
   
   // Hooks
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, initializeAuth } = useAuthAdapter()
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // SEO handling for pagination and filters
+  useEffect(() => {
+    const pageParam = searchParams.get('page')
+    const pageNum = pageParam ? parseInt(pageParam, 10) : 1
+    
+    // Get filter count
+    const filterCount = ['ente', 'location', 'settore', 'regime', 'stato'].filter(key => 
+      searchParams.get(key)
+    ).length
+
+    // Update meta robots for toxic combinations
+    const robotsMeta = document.querySelector('meta[name="robots"]')
+    if (filterCount > 2 || pageNum > 5) {
+      if (robotsMeta) {
+        robotsMeta.setAttribute('content', 'noindex,follow')
+      } else {
+        const meta = document.createElement('meta')
+        meta.name = 'robots'
+        meta.content = 'noindex,follow'
+        document.head.appendChild(meta)
+      }
+    } else {
+      if (robotsMeta) {
+        robotsMeta.setAttribute('content', 'index,follow')
+      }
+    }
+
+    // Update title for pagination
+    if (pageNum > 1) {
+      document.title = document.title.replace(' | Concoro', ` - Pagina ${pageNum} | Concoro`)
+    }
+  }, [searchParams])
+
+  // Auto-initialize auth for logged-in users on this page
+  useEffect(() => {
+    initializeAuth()
+  }, [])
   const isMobile = useMediaQuery("(max-width: 1024px)")
 
-  const ITEMS_PER_PAGE = 25
+  const ITEMS_PER_PAGE = 20 // Reduced for better performance
 
-  // Helper function to convert various date formats to Date objects
-  const toDate = (dateValue: any): Date | null => {
-    if (!dateValue) return null
-    if (typeof dateValue === 'string') return new Date(dateValue)
-    if (typeof dateValue === 'object' && dateValue.seconds) return new Date(dateValue.seconds * 1000)
-    return new Date(dateValue)
-  }
+  // Date helper function removed - now using server-side filtering exclusively
 
   // Initialize from URL parameters (only on mount)
   useEffect(() => {
@@ -105,274 +147,311 @@ function JobsPage() {
         const foundJob = jobs.find(job => job.id === idParam)
         if (foundJob) {
           setSelectedJob(foundJob)
-          updateURL(currentPage, foundJob.id)
+          updateURL(currentPage, foundJob.id, foundJob)
+          
+          // If this is an old-style ID URL access, redirect to SEO-friendly URL
+          try {
+            const seoUrl = getBandoUrl(foundJob)
+            if (seoUrl !== `/bandi/${foundJob.id}` && seoUrl !== `/bandi?id=${foundJob.id}`) {
+              // Redirect to the new SEO-friendly URL
+              setTimeout(() => {
+                router.replace(seoUrl)
+              }, 100) // Small delay to ensure state is set
+            }
+          } catch (error) {
+            console.error('Error generating SEO URL for redirect:', error)
+          }
         }
       }
       setInitialUrlHandled(true)
     }
-  }, [jobs.length, selectedJob, initialUrlHandled, currentPage]) // Run when jobs load and no job is selected
+  }, [jobs.length, selectedJob, initialUrlHandled, currentPage, router, searchParams]) // Run when jobs load and no job is selected
 
   // Store current page in sessionStorage for mobile back navigation
   useEffect(() => {
     sessionStorage.setItem('bandiLastPage', currentPage.toString())
   }, [currentPage])
 
-  // Handle authentication
+  // Set static total count to avoid expensive queries
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/signin')
-    }
-  }, [user, authLoading, router])
+    // Use estimated count instead of expensive database query
+    setTotalOpenConcorsi(1628)
+    console.log('⚡ Using static estimated count: 1628 (instant)')
+  }, [])
 
-  // Fetch jobs from Firestore
+  // Fetch initial jobs and filter options using the new API-based service
   useEffect(() => {
-    async function fetchJobs() {
-      if (!user) return
+    async function fetchInitialData() {
+      const startTime = performance.now()
+      console.log('📋 Starting initial data fetch with new API service...')
       
       try {
         setIsLoading(true)
         
-        if (!db) {
-          console.error('Firestore database is not initialized')
-          toast.error('Failed to connect to database. Please try again later.')
-          setIsLoading(false)
-          return
+        // Load initial concorsi with default settings (no filters, just basic sorting)
+        const initialFilters: ConcorsiFilterParams = {
+          sortBy: 'publication-desc', // Default sort by publication date
+          limit: ITEMS_PER_PAGE * 2 // Load 2 pages worth for better initial experience
         }
         
-        const concorsiCollection = collection(db, 'concorsi')
-        const concorsiSnapshot = await getDocs(concorsiCollection)
+        const result = await concorsiFilterService.getFilteredConcorsi(initialFilters)
         
-        const jobsData = concorsiSnapshot.docs.map(doc => {
-          const data = doc.data()
-          return {
-            id: doc.id,
-            ...data
-          }
-        }) as Concorso[]
-
-        // Extract unique values for filters
-        const localitaStrings = jobsData.map(job => job.AreaGeografica)
-          .filter((location): location is string => Boolean(location))
+        console.log(`📋 ✅ Initial API query: ${result.concorsi.length} concorsi in ${(performance.now() - startTime).toFixed(0)}ms`)
         
-        const allRegions = extractAllRegions(localitaStrings)
-        const uniqueEnti = Array.from(new Set(
-          jobsData.map(job => job.Ente).filter(Boolean)
-        )).sort()
-        
-        const settoriSet = new Set<string>()
-        
-        jobsData.forEach(job => {
-          if (job.settore_professionale) settoriSet.add(job.settore_professionale)
-        })
-        
-        const uniqueSettori = Array.from(settoriSet).sort()
-        const uniqueRegimi = getAvailableRegimes(jobsData)
-
+        const jobsData = result.concorsi
         setJobs(jobsData)
-        setAvailableLocations(allRegions)
-        setAvailableEnti(uniqueEnti)
-        setAvailableSettori(uniqueSettori)
-        setAvailableRegimi(uniqueRegimi)
+        setFilteredJobs(jobsData) // Initially, filtered jobs = all jobs
+        setNextCursor(result.nextCursor || null)
+        setHasMore(result.hasMore)
+        
+        // Extract filter options from loaded data
+        const filterOptions = await concorsiFilterService.getAvailableFilterOptions(jobsData)
+        setAvailableLocations(filterOptions.locations)
+        setAvailableEnti(filterOptions.enti)
+        setAvailableSettori(filterOptions.settori)
+        setAvailableRegimi(filterOptions.regimi)
+        
+        const endTime = performance.now()
+        console.log(`✅ Initial data loading completed: ${jobsData.length} documents (total time: ${(endTime - startTime).toFixed(0)}ms)`)
+        
       } catch (error) {
-        console.error('Error fetching jobs:', error)
-        toast.error('Failed to load jobs. Please try again later.')
+        console.error('❌ Error fetching initial data:', error)
+        toast.error('Failed to load concorsi. Please try again later.')
+        
+        // Fallback to legacy method if the new service fails
+        try {
+          console.log('📋 Falling back to legacy data loading...')
+          const { getRegionalConcorsi } = await import('@/lib/services/regional-queries-client')
+          
+          const result = await getRegionalConcorsi({
+            stato: 'open',
+            limit: ITEMS_PER_PAGE * 2,
+            orderByField: 'publication_date',
+            orderDirection: 'desc'
+          })
+          
+          const jobsData = result.concorsi as Concorso[]
+          setJobs(jobsData)
+          setFilteredJobs(jobsData)
+          setNextCursor(result.nextCursor || null)
+          setHasMore(result.hasMore)
+          
+          // Extract filter options using legacy method
+          const localitaStrings = jobsData.map(job => job.AreaGeografica)
+            .filter((location): location is string => Boolean(location))
+          
+          const allRegions = extractAllRegions(localitaStrings)
+          const uniqueEnti = Array.from(new Set(
+            jobsData.map(job => job.Ente).filter(Boolean)
+          )).sort()
+          
+          const settoriSet = new Set<string>()
+          jobsData.forEach(job => {
+            if (job.settore_professionale) settoriSet.add(job.settore_professionale)
+          })
+          
+          const uniqueSettori = Array.from(settoriSet).sort()
+          const uniqueRegimi = getAvailableRegimes(jobsData)
+
+          setAvailableLocations(allRegions)
+          setAvailableEnti(uniqueEnti.filter((ente): ente is string => Boolean(ente)))
+          setAvailableSettori(uniqueSettori)
+          setAvailableRegimi(uniqueRegimi)
+          
+          console.log('📋 ✅ Legacy fallback completed successfully')
+          
+        } catch (fallbackError) {
+          console.error('❌ Legacy fallback also failed:', fallbackError)
+          toast.error('Failed to load data. Please refresh the page.')
+        }
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchJobs()
-  }, [user])
+    fetchInitialData()
+  }, []) // Run once on mount
 
-  // Apply filters and sorting
+  // Apply filters using new API-based filtering service
   useEffect(() => {
-    let filtered = [...jobs]
+    async function fetchFilteredJobs() {
+      try {
+        // Check if we have any active filters
+        const hasActiveFilters = selectedLocations.length > 0 || 
+                                selectedEnti.length > 0 || 
+                                selectedSettori.length > 0 || 
+                                selectedRegimi.length > 0 || 
+                                selectedStati.length > 0 ||
+                                selectedDeadlines.length > 0 ||
+                                searchQuery?.trim() ||
+                                locationQuery?.trim() ||
+                                sortBy
 
-    // Apply default filters first
-    filtered = filtered.filter(job => {
-      // Must have location
-      if (!job.AreaGeografica || job.AreaGeografica.trim() === '') {
-        return false
-      }
-      
-      // Must have deadline
-      if (!job.DataChiusura) {
-        return false
-      }
-      
-      return true
-    })
-
-    // Hide closed concorsi by default - only show if user explicitly selects "chiuso" filter
-    if (selectedStati.length === 0) {
-      // Default behavior: only show open concorsi
-      filtered = filtered.filter(job => {
-        const status = job.Stato?.toLowerCase()
-        return status === 'open' || status === 'aperto' || !status
-      })
-    }
-
-    // Apply search filters
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(job => 
-        (job.Titolo?.toLowerCase().includes(query)) ||
-        (job.Ente?.toLowerCase().includes(query)) ||
-        (job.AreaGeografica?.toLowerCase().includes(query)) ||
-        (job.Descrizione?.toLowerCase().includes(query))
-      )
-    }
-
-    if (locationQuery) {
-      const query = locationQuery.toLowerCase()
-      filtered = filtered.filter(job => 
-        job.AreaGeografica?.toLowerCase().includes(query)
-      )
-    }
-
-    // Apply location filters
-    if (selectedLocations.length > 0) {
-      filtered = filtered.filter(job => 
-        localitaContainsRegions(job.AreaGeografica, selectedLocations)
-      )
-    }
-
-    // Apply other filters
-    if (selectedEnti.length > 0) {
-      filtered = filtered.filter(job => 
-        job.Ente && selectedEnti.some(ente => job.Ente?.includes(ente))
-      )
-    }
-
-    // Use settore_professionale instead of settore for filtering
-    if (selectedSettori.length > 0) {
-      filtered = filtered.filter(job => 
-        job.settore_professionale && selectedSettori.includes(job.settore_professionale)
-      )
-    }
-
-    if (selectedRegimi.length > 0) {
-      filtered = filterByRegime(filtered, selectedRegimi)
-    }
-
-    if (selectedStati.length > 0) {
-      filtered = filtered.filter(job => {
-        const status = job.Stato?.toLowerCase()
-        return selectedStati.some(selectedStatus => {
-          if (selectedStatus === 'aperto') return status === 'open' || status === 'aperto'
-          if (selectedStatus === 'chiuso') return status === 'closed' || status === 'chiuso'
-          return false
-        })
-      })
-    }
-
-    // Apply deadline filters
-    if (selectedDeadlines.length > 0) {
-      const now = new Date()
-      filtered = filtered.filter(job => {
-        const deadlineDate = toDate(job.DataChiusura)
-        
-        return selectedDeadlines.some(filter => {
-          switch (filter) {
-            case 'today':
-              return deadlineDate && isAfter(deadlineDate, startOfDay(now)) && 
-                     isBefore(deadlineDate, addDays(startOfDay(now), 1))
-            case 'week':
-              return deadlineDate && isAfter(deadlineDate, startOfWeek(now, { weekStartsOn: 1 })) &&
-                     isBefore(deadlineDate, addDays(startOfWeek(now, { weekStartsOn: 1 }), 7))
-            case 'month':
-              return deadlineDate && isAfter(deadlineDate, startOfMonth(now)) &&
-                     isBefore(deadlineDate, addDays(startOfMonth(now), 31))
-            case 'next-month':
-              const nextMonth = addDays(startOfMonth(now), 31)
-              return deadlineDate && isAfter(deadlineDate, nextMonth) &&
-                     isBefore(deadlineDate, addDays(nextMonth, 31))
-            default:
-              return false
+        // ALWAYS use API-based filtering for consistency and to avoid limitations of cached data
+        setIsSearching(true)
+        try {
+          const filterParams: ConcorsiFilterParams = {
+            searchQuery: searchQuery?.trim() || undefined,
+            locationQuery: locationQuery?.trim() || undefined,
+            selectedLocations,
+            selectedDeadlines,
+            selectedEnti,
+            selectedSettori,
+            selectedRegimi,
+            selectedStati,
+            sortBy: sortBy || 'publication-desc', // Default sort if none specified
+            currentPage,
+            limit: ITEMS_PER_PAGE * 2 // Load extra for better UX
           }
-        })
-      })
+
+          console.log('🔄 Using API-based filtering:', filterParams)
+          const result = await concorsiFilterService.getFilteredConcorsi(filterParams)
+          
+          setFilteredJobs(result.concorsi)
+          setHasMore(result.hasMore)
+          setNextCursor(result.nextCursor || null)
+          
+          // Update the base jobs array only if no filters are active (for filter options extraction)
+          if (!hasActiveFilters) {
+            setJobs(result.concorsi)
+          }
+          
+          console.log(`✅ API-based filtering: ${result.concorsi.length} results`)
+        } finally {
+          setIsSearching(false)
+        }
+      } catch (error) {
+        console.error('❌ Error in API-based filtering:', error)
+        toast.error('Failed to apply filters. Please try again.')
+        setIsSearching(false)
+        
+        // If API fails, show empty results instead of potentially confusing cached data
+        setFilteredJobs([])
+        setHasMore(false)
+        setNextCursor(null)
+      }
     }
 
-    // Apply sorting
-    if (sortBy === 'publication-desc') {
-      filtered.sort((a, b) => {
-        const aDate = toDate(a.publication_date) || new Date(0)
-        const bDate = toDate(b.publication_date) || new Date(0)
-        return bDate.getTime() - aDate.getTime()
-      })
-    } else if (sortBy === 'posts-desc') {
-      filtered.sort((a, b) => (b.numero_di_posti || 0) - (a.numero_di_posti || 0))
-    } else if (sortBy === 'deadline-asc') {
-      filtered.sort((a, b) => {
-        const aDate = toDate(a.DataChiusura) || new Date('9999-12-31')
-        const bDate = toDate(b.DataChiusura) || new Date('9999-12-31')
-        return aDate.getTime() - bDate.getTime()
-      })
-    }
-
-    setFilteredJobs(filtered)
+    fetchFilteredJobs()
     
     // Reset to page 1 when filters change
     if (currentPage > 1) {
       setCurrentPage(1)
-      // URL will be updated by the separate useEffect
     }
-  }, [jobs, searchQuery, locationQuery, selectedLocations, selectedDeadlines, selectedEnti, 
-      selectedSettori, selectedRegimi, selectedStati, sortBy])
+  }, [searchQuery, locationQuery, selectedLocations, selectedDeadlines, selectedEnti, 
+      selectedSettori, selectedRegimi, selectedStati, sortBy, currentPage])
 
-  // Auto-select first job on desktop when filtered jobs change (not on page change)
+  // Client-side filtering removed - now using API-based filtering exclusively
+
+  // Auto-select first job on desktop (optimized)
   useEffect(() => {
-    if (!isMobile && filteredJobs.length > 0 && !selectedJob) {
-      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-      const currentPageJobs = filteredJobs.slice(startIndex, startIndex + ITEMS_PER_PAGE)
-      
-      if (currentPageJobs.length > 0) {
-        setSelectedJob(currentPageJobs[0])
-        updateURL(currentPage, currentPageJobs[0].id)
+    if (!isMobile && filteredJobs.length > 0 && !selectedJob && currentPage === 1) {
+      // Only auto-select on first page to avoid performance issues
+      const firstJob = filteredJobs[0]
+      if (firstJob) {
+        setSelectedJob(firstJob)
+        updateURL(currentPage, firstJob.id, firstJob)
       }
     }
-  }, [filteredJobs, isMobile, selectedJob, currentPage]) // Only run when jobs change or no job selected
+  }, [filteredJobs.length, isMobile, selectedJob]) // Simplified dependencies
 
   // Handle concorso selection
   const handleConcorsoSelect = (concorso: Concorso) => {
     if (isMobile) {
-      // On mobile, navigate to individual page
-      router.push(`/bandi/${concorso.id}`)
+      // On mobile, navigate to individual page using SEO-friendly URL
+      try {
+        const seoUrl = getBandoUrl(concorso)
+        router.push(seoUrl)
+      } catch (error) {
+        console.error('Error generating SEO URL:', error)
+        // Fallback to ID-based URL
+        router.push(`/bandi/${concorso.id}`)
+      }
     } else {
       // On desktop, show in sidebar
       setSelectedJob(concorso)
       // Update URL immediately for manual selection
-      updateURL(currentPage, concorso.id)
+      updateURL(currentPage, concorso.id, concorso)
     }
   }
 
-  // Handle page changes with mobile scroll behavior
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage)
-    
-    // On mobile, scroll to top of page when pagination is clicked
-    if (isMobile) {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-    
-    // On desktop, manually select first job of the new page
-    if (!isMobile && filteredJobs.length > 0) {
-      const startIndex = (newPage - 1) * ITEMS_PER_PAGE
-      const newPageJobs = filteredJobs.slice(startIndex, startIndex + ITEMS_PER_PAGE)
-      
-      if (newPageJobs.length > 0) {
-        setSelectedJob(newPageJobs[0])
-        updateURL(newPage, newPageJobs[0].id)
-      } else {
-        setSelectedJob(null)
-        updateURL(newPage)
+  // Handle loading more jobs using the new filtering service
+  const handleLoadMore = async () => {
+    if (!nextCursor || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const filterParams: ConcorsiFilterParams = {
+        searchQuery: searchQuery?.trim() || undefined,
+        locationQuery: locationQuery?.trim() || undefined,
+        selectedLocations,
+        selectedDeadlines,
+        selectedEnti,
+        selectedSettori,
+        selectedRegimi,
+        selectedStati,
+        sortBy,
+        limit: ITEMS_PER_PAGE,
+        nextCursor
       }
+
+      const result = await concorsiFilterService.loadMoreConcorsi(filterParams, nextCursor);
+
+      const newJobs = result.concorsi;
+      
+      // If we have active filters, replace the filtered jobs
+      const hasActiveFilters = selectedLocations.length > 0 || 
+                              selectedEnti.length > 0 || 
+                              selectedSettori.length > 0 || 
+                              selectedRegimi.length > 0 || 
+                              selectedStati.length > 0 ||
+                              selectedDeadlines.length > 0 ||
+                              searchQuery?.trim() ||
+                              locationQuery?.trim() ||
+                              sortBy
+
+      if (hasActiveFilters) {
+        // For filtered results, append to filtered jobs
+        setFilteredJobs(prevFiltered => {
+          const existingIds = new Set(prevFiltered.map(job => job.id));
+          const uniqueNewJobs = newJobs.filter(job => !existingIds.has(job.id));
+          return [...prevFiltered, ...uniqueNewJobs];
+        });
+      } else {
+        // For unfiltered results, append to base jobs
+        setJobs(prevJobs => {
+          const existingIds = new Set(prevJobs.map(job => job.id));
+          const uniqueNewJobs = newJobs.filter(job => !existingIds.has(job.id));
+          return [...prevJobs, ...uniqueNewJobs];
+        });
+      }
+      
+      setNextCursor(result.nextCursor || null);
+      setHasMore(result.hasMore);
+
+    } catch (error) {
+      console.error('Error loading more jobs:', error);
+      toast.error('Failed to load more jobs. Please try again.');
+    } finally {
+      setIsLoadingMore(false);
     }
   }
 
   // Update URL without page reload
-  const updateURL = (page: number, jobId?: string) => {
+  const updateURL = (page: number, jobId?: string, job?: Concorso) => {
+    // If we have a job object and it's not mobile, try to use SEO-friendly URL
+    if (job && !isMobile) {
+      try {
+        const seoUrl = getBandoUrl(job)
+        window.history.replaceState(null, '', seoUrl)
+        return
+      } catch (error) {
+        console.error('Error generating SEO URL for desktop:', error)
+        // Fall through to old URL format
+      }
+    }
+    
+    // Fallback to query parameter format (for backward compatibility and when SEO URL fails)
     const params = new URLSearchParams()
     
     if (page > 1) {
@@ -447,19 +526,17 @@ function JobsPage() {
     }
   }, [showFilterSidebar])
 
-  // Don't render anything until auth is checked
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Spinner />
-      </div>
-    )
-  }
+  // Remove auth loading check to allow immediate guest access
 
-  // Don't render if not authenticated (will redirect)
-  if (!user) {
-    return null
-  }
+  // Allow both authenticated and guest users to access the page
+
+  // Calculate pagination - now using server-side pagination
+  // For now, we'll use client-side filtering on the fetched data
+  // In a future optimization, we can move filters to server-side too
+  const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const currentJobs = filteredJobs.slice(startIndex, endIndex)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -497,29 +574,32 @@ function JobsPage() {
             onShowFilterSidebar={() => setShowFilterSidebar(true)}
             onFilterSidebarClose={handleFilterSidebarClose}
             showAdvancedFilters={true}
-            totalCount={filteredJobs.length}
+            totalCount={totalOpenConcorsi}
+            isSearching={isSearching}
           />
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-1 h-[calc(100vh-200px)]">
           {/* Jobs List */}
-          <div className={cn("lg:col-span-2", !isMobile && selectedJob && "lg:col-span-1")}>
-            <ConcoroList
-              jobs={filteredJobs}
-              isLoading={isLoading}
-              selectedJobId={selectedJob?.id || null}
-              onJobSelect={handleConcorsoSelect}
-              currentPage={currentPage}
-              onPageChange={handlePageChange}
-              itemsPerPage={ITEMS_PER_PAGE}
-            />
+          <div className={cn("lg:col-span-2 overflow-hidden", !isMobile && selectedJob && "lg:col-span-1")}>
+            <div className="h-full overflow-y-auto scrollbar-hide mr-2 p-2">
+              <ConcoroList
+                jobs={filteredJobs}
+                isLoading={isLoading}
+                isLoadingMore={isLoadingMore}
+                selectedJobId={selectedJob?.id || null}
+                onJobSelect={handleConcorsoSelect}
+                onLoadMore={handleLoadMore}
+                hasMore={hasMore}
+              />
+            </div>
           </div>
 
           {/* Job Details Sidebar - Desktop Only */}
           {!isMobile && selectedJob && (
-            <div className="lg:col-span-2">
-              <div className="sticky top-24">
+            <div className="lg:col-span-2 overflow-hidden">
+              <div className="h-full overflow-y-auto scrollbar-hide mr-1">
                 <ConcoroDetails
                   job={selectedJob}
                   isLoading={false}
@@ -782,6 +862,8 @@ function JobsPage() {
                </ScrollArea>
              </SheetContent>
            </Sheet>
+
+
       </main>
     </div>
   )

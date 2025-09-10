@@ -10,6 +10,7 @@ import { NotificationItem } from '@/components/notifications/NotificationItem';
 import { Button } from '@/components/ui/button';
 import { CheckCheck, Bell, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { getBandoUrl } from '@/lib/utils/bando-slug-utils';
 
 export default function NotifichePage() {
   const { user, loading, initialized } = useAuth();

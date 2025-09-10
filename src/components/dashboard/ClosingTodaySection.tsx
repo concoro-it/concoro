@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import type { Concorso } from "@/types/concorso"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, MapPin, Calendar, Users, CalendarDays } from "lucide-react"
+import { ArrowRight, MapPin, Users, CalendarDays } from "lucide-react"
 import Link from "next/link"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { BookmarkIconButton } from "@/components/ui/bookmark-icon-button"
@@ -15,6 +15,7 @@ import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
+import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 import Image from "next/image"
 
 const getFaviconChain = (domain: string): string[] => [
@@ -117,16 +118,39 @@ export function ClosingTodaySection() {
   const [faviconIndices, setFaviconIndices] = useState<Record<string, number>>({})
   const router = useRouter()
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi()
+  const { generateUrl } = useBandoUrl()
 
   // Fetch concorsi closing today or with the most imminent deadlines
   useEffect(() => {
     async function fetchClosingTodayConcorsi() {
       try {
         setIsLoading(true)
+        
+        // Try optimized query first
+        try {
+          const { getRegionalConcorsi } = await import('@/lib/services/regional-queries-client')
+          
+          const result = await getRegionalConcorsi({
+            stato: 'open',
+            limit: 100,
+            orderByField: 'publication_date',
+            orderDirection: 'desc'
+          })
+          
+          console.log(`📋 ✅ Optimized closing today query: ${result.concorsi.length} concorsi`)
+          
+          const allConcorsiData = result.concorsi
+          processClosingConcorsi(allConcorsiData as any[])
+          return
+          
+        } catch (optimizedError) {
+          console.log('📋 ⚠️ Optimized closing today query failed, falling back to legacy:', optimizedError)
+        }
+        
+        // Fallback to legacy query
         const db = getFirebaseFirestore()
         const concorsiCollection = collection(db, "concorsi")
 
-        // Get all concorsi and filter/sort client-side for more precise date handling
         const snapshot = await getDocs(concorsiCollection)
         
         if (snapshot.empty) {
@@ -138,36 +162,48 @@ export function ClosingTodaySection() {
           id: doc.id,
           ...doc.data()
         })) as Concorso[]
-
-        // Get today's date (start of day for accurate comparison)
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
         
-        const tomorrow = new Date(today)
-        tomorrow.setDate(today.getDate() + 1)
+        console.log(`📋 🐌 Legacy closing today query: ${allConcorsiData.length} concorsi`)
+        processClosingConcorsi(allConcorsiData)
+      } catch (error) {
+        console.error('Error fetching closing today concorsi:', error)
+        toast.error('Impossibile caricare i concorsi in scadenza')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    // Helper function to process closing concorsi data
+    function processClosingConcorsi(allConcorsiData: any[]) {
+      // Get today's date (start of day for accurate comparison)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      const tomorrow = new Date(today)
+      tomorrow.setDate(today.getDate() + 1)
 
-        // Helper function to parse dates consistently
-        const parseDate = (dateValue: any): Date | null => {
-          if (!dateValue) return null
-          
-          if (typeof dateValue === 'object' && dateValue.seconds) {
-            return new Date(dateValue.seconds * 1000)
-          }
-          
-          if (typeof dateValue === 'string') {
-            const parsed = new Date(dateValue)
-            return isNaN(parsed.getTime()) ? null : parsed
-          }
-          
-          if (dateValue instanceof Date) {
-            return dateValue
-          }
-          
-          return null
+      // Helper function to parse dates consistently
+      const parseDate = (dateValue: any): Date | null => {
+        if (!dateValue) return null
+        
+        if (typeof dateValue === 'object' && dateValue.seconds) {
+          return new Date(dateValue.seconds * 1000)
         }
+        
+        if (typeof dateValue === 'string') {
+          const parsed = new Date(dateValue)
+          return isNaN(parsed.getTime()) ? null : parsed
+        }
+        
+        if (dateValue instanceof Date) {
+          return dateValue
+        }
+        
+        return null
+      }
 
-        // Filter concorsi with valid closing dates and not already closed
-        const validConcorsi = allConcorsiData.filter(concorso => {
+      // Filter concorsi with valid closing dates and not already closed
+      const validConcorsi = allConcorsiData.filter(concorso => {
           const closingDate = parseDate(concorso.DataChiusura)
           if (!closingDate) return false
           
@@ -182,16 +218,10 @@ export function ClosingTodaySection() {
           return dateA.getTime() - dateB.getTime()
         })
 
-        // Get first 5 concorsi (prioritizing those closing today, then soonest)
-        const selectedConcorsi = sortedConcorsi.slice(0, 5)
-        
-        setConcorsi(selectedConcorsi)
-      } catch (error) {
-        console.error('Error fetching closing today concorsi:', error)
-        toast.error('Impossibile caricare i concorsi in scadenza')
-      } finally {
-        setIsLoading(false)
-      }
+      // Get first 5 concorsi (prioritizing those closing today, then soonest)
+      const selectedConcorsi = sortedConcorsi.slice(0, 5)
+      
+      setConcorsi(selectedConcorsi)
     }
 
     fetchClosingTodayConcorsi()
@@ -393,7 +423,7 @@ export function ClosingTodaySection() {
           return (
             <Link 
               key={concorso.id} 
-              href={`/bandi/${concorso.id}`}
+              href={generateUrl(concorso)}
               className="block"
             >
               <div 

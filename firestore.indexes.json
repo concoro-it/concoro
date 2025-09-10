@@ -31,6 +31,74 @@
         { "fieldPath": "settore_professionale", "order": "ASCENDING" },
         { "fieldPath": "publication_date", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION", 
+      "fields": [
+        { "fieldPath": "regione", "order": "ASCENDING" },
+        { "fieldPath": "Stato", "order": "ASCENDING" },
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "regione", "order": "ASCENDING" },
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "Ente", "order": "ASCENDING" },
+        { "fieldPath": "Stato", "order": "ASCENDING" },
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi", 
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "Ente", "order": "ASCENDING" },
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "Ente", "order": "ASCENDING" },
+        { "fieldPath": "stato", "order": "ASCENDING" },
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "Stato", "order": "ASCENDING" },
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "stato", "order": "ASCENDING" },
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION", 
+      "fields": [
+        { "fieldPath": "settore_professionale", "order": "ASCENDING" },
+        { "fieldPath": "Stato", "order": "ASCENDING" },
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

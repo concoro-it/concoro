@@ -1,6 +1,6 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Bookmark, Sparkles, User } from 'lucide-react';
+import { Search, Sparkles, User, Bookmark } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -94,7 +94,7 @@ export function MobileBottomNav() {
 
         {/* Salvati */}
         <Link
-          href="/saved-concorsi"
+          href={user ? "/saved-concorsi" : "/signin"}
           className={cn(
             "flex flex-col items-center justify-center h-full",
             pathname === '/saved-concorsi'
@@ -111,7 +111,7 @@ export function MobileBottomNav() {
 
         {/* Genio AI */}
         <Link
-          href="/chat"
+          href={user ? "/chat" : "/signin"}
           className={cn(
             "flex flex-col items-center justify-center h-full",
             pathname === '/chat'

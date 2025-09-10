@@ -15,6 +15,7 @@ import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
+import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 import Image from "next/image"
 
 const getFaviconChain = (domain: string): string[] => [
@@ -117,20 +118,48 @@ export function MaxiConcorsiSection() {
   const [faviconIndices, setFaviconIndices] = useState<Record<string, number>>({})
   const router = useRouter()
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi()
+  const { generateUrl } = useBandoUrl()
 
   // Fetch 5 concorsi with the highest number of posts
   useEffect(() => {
     async function fetchMaxiConcorsi() {
       try {
         setIsLoading(true)
+        
+        // Try optimized query first
+        try {
+          const { getRegionalConcorsi } = await import('@/lib/services/regional-queries-client')
+          
+          const result = await getRegionalConcorsi({
+            stato: 'open',
+            limit: 50,
+            orderByField: 'publication_date',
+            orderDirection: 'desc'
+          })
+          
+          console.log(`📋 ✅ Optimized maxi concorsi query: ${result.concorsi.length} concorsi`)
+          
+          // Filter and sort by numero_di_posti client-side
+          const concorsiData = result.concorsi
+            .filter((concorso: any) => concorso.numero_di_posti && concorso.numero_di_posti > 0)
+            .sort((a: any, b: any) => (b.numero_di_posti || 0) - (a.numero_di_posti || 0))
+            .slice(0, 5) as Concorso[]
+          
+          setConcorsi(concorsiData)
+          return
+          
+        } catch (optimizedError) {
+          console.log('📋 ⚠️ Optimized maxi concorsi query failed, falling back to legacy:', optimizedError)
+        }
+        
+        // Fallback to legacy query
         const db = getFirebaseFirestore()
         const concorsiCollection = collection(db, "concorsi")
 
-        // Query for concorsi sorted by numero_di_posti in descending order
         const concorsiQuery = query(
           concorsiCollection,
           orderBy("numero_di_posti", "desc"),
-          limit(10) // Get more to filter client-side
+          limit(10)
         )
 
         const snapshot = await getDocs(concorsiQuery)
@@ -145,12 +174,12 @@ export function MaxiConcorsiSection() {
           ...doc.data()
         })) as Concorso[]
         
-        // Filter out concorsi with no posts or invalid posts, then sort client-side as backup
         concorsiData = concorsiData
           .filter(concorso => concorso.numero_di_posti && concorso.numero_di_posti > 0)
           .sort((a, b) => (b.numero_di_posti || 0) - (a.numero_di_posti || 0))
-          .slice(0, 5) // Take top 5
+          .slice(0, 5)
         
+        console.log(`📋 🐌 Legacy maxi concorsi query: ${concorsiData.length} concorsi`)
         setConcorsi(concorsiData)
       } catch (error) {
         console.error('Error fetching maxi concorsi:', error)
@@ -318,7 +347,7 @@ export function MaxiConcorsiSection() {
           return (
             <Link 
               key={concorso.id} 
-              href={`/bandi/${concorso.id}`}
+              href={generateUrl(concorso)}
               className="block"
             >
               <div 

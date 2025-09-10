@@ -21,6 +21,10 @@ ARG PINECONE_INDEX
 # Define build argument for Brevo
 ARG BREVO_API_KEY
 
+# Define build arguments for SMTP
+ARG SMTP_EMAIL
+ARG SMTP_PASSWORD
+
 # Set environment variables for Firebase
 ENV NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY
 ENV NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
@@ -37,6 +41,10 @@ ENV PINECONE_INDEX=$PINECONE_INDEX
 
 # Set environment variables for Brevo
 ENV BREVO_API_KEY=$BREVO_API_KEY
+
+# Set environment variables for SMTP
+ENV SMTP_EMAIL=$SMTP_EMAIL
+ENV SMTP_PASSWORD=$SMTP_PASSWORD
 
 
 # Copy package files

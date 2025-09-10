@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { MainFooter } from '@/components/ui/main-footer';
 import { Contact2 } from '@/components/ui/contact-2';
 import { CTASection } from '@/components/ui/cta-section';

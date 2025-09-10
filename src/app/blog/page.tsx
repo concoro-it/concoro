@@ -13,6 +13,7 @@ import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { CTASection } from "@/components/ui/cta-section"
 import { MainFooter } from "@/components/ui/main-footer"
 import { useSearchParams } from "next/navigation"
+import { BlogSEOUpdater } from "@/components/blog/BlogSEOUpdater"
 
 const ARTICLES_PER_PAGE = 9
 
@@ -132,7 +133,9 @@ export default function BlogPage() {
   }
   
   return (
-    <div className="container mx-auto py-12 px-4 md:px-8">
+    <>
+      <BlogSEOUpdater selectedTag={selectedTag} />
+      <div className="container mx-auto py-12 px-4 md:px-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Blog</h1>
         
@@ -212,6 +215,7 @@ export default function BlogPage() {
       )}
       <CTASection />
       <MainFooter/>
-    </div>
+      </div>
+    </>
   )
 } 

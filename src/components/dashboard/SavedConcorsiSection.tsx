@@ -15,6 +15,7 @@ import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { FaviconImage } from '@/components/common/FaviconImage'
+import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 
 // Note: Favicon logic moved to /lib/services/faviconCache.ts
 
@@ -70,6 +71,7 @@ export function SavedConcorsiSection() {
   const router = useRouter()
   const { user } = useAuth()
   const { fetchSavedConcorsi, isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi()
+  const { generateUrl } = useBandoUrl()
 
   // Fetch saved concorsi
   useEffect(() => {
@@ -232,7 +234,7 @@ export function SavedConcorsiSection() {
           return (
             <Link 
               key={concorso.id} 
-              href={`/bandi/${concorso.id}`}
+              href={generateUrl(concorso)}
               className="block"
             >
               <div 

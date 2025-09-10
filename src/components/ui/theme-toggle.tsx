@@ -1,9 +1,6 @@
 "use client";
 
-import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+// Theme toggle component - currently disabled
 
 export function ThemeToggle() {
   // TODO: Dark mode temporarily disabled - component hidden until further notice

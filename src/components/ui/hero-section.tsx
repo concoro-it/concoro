@@ -1,12 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowRightIcon, MapPinIcon, CalendarIcon, BuildingIcon, SearchIcon } from "lucide-react";
+import { MapPinIcon, CalendarIcon, BuildingIcon, SearchIcon } from "lucide-react";
 import { Mockup, MockupFrame } from "@/components/ui/mockup";
 import { Glow } from "@/components/ui/glow";
 import Image from "next/image";
-import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 
 interface HeroAction {

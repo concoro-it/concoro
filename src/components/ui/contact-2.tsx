@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
-import { Mail, X, Instagram, Facebook, Linkedin, HelpCircle } from "lucide-react";
+import { Mail, X, Instagram, Facebook, Linkedin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

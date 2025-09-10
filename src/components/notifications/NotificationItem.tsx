@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { MapPin, Calendar, Users, Eye } from 'lucide-react';
+import { Calendar, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { NotificationWithConcorso } from '@/types';
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization';
+import { getBandoUrl } from '@/lib/utils/bando-slug-utils';
 
 interface NotificationItemProps {
   notification: NotificationWithConcorso;
@@ -37,13 +38,42 @@ export function NotificationItem({ notification, onMarkAsRead, fullWidth = false
 
   const formatDate = (timestamp: any) => {
     try {
-      const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+      let date: Date;
+      
+      // Handle Firestore Timestamp object
+      if (timestamp?.toDate) {
+        date = timestamp.toDate();
+      }
+      // Handle plain timestamp objects with both formats
+      else if (typeof timestamp === 'object' && timestamp !== null && ('seconds' in timestamp || '_seconds' in timestamp)) {
+        const seconds = timestamp.seconds || timestamp._seconds;
+        if (seconds) {
+          date = new Date(seconds * 1000);
+        } else {
+          return 'Data non disponibile';
+        }
+      }
+      // Handle string dates
+      else if (typeof timestamp === 'string') {
+        date = new Date(timestamp);
+      }
+      // Handle direct Date objects or numeric timestamps
+      else {
+        date = new Date(timestamp);
+      }
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Data non disponibile';
+      }
+      
       return date.toLocaleDateString('it-IT', {
         day: 'numeric',
         month: 'short',
         year: 'numeric'
       });
     } catch (error) {
+      console.error('Error formatting date:', error);
       return 'Data non disponibile';
     }
   };

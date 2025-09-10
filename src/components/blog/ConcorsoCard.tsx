@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/hooks/useAuth"
 import { useMemo } from "react"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { FaviconImage } from '@/components/common/FaviconImage'
+import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 
 interface ConcorsoCardProps {
   concorso: {
@@ -106,6 +107,7 @@ const parseItalianDate = (dateStr: string) => {
 
 export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
   const { user } = useAuth();
+  const { generateUrlWithAuth } = useBandoUrl();
   
   // Format date to display
   const formatDate = (timestamp: any): string => {
@@ -215,7 +217,7 @@ export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
       </div>
       
       <div className="flex flex-col sm:flex-row gap-2">
-        <Link href={user ? `/bandi/${concorso.id}` : `/signin?redirect=/bandi/${concorso.id}`}>
+        <Link href={generateUrlWithAuth(concorso as any, user)}>
           <Button className="gap-2 w-full sm:w-auto">
             {user ? (
               <>

@@ -18,12 +18,13 @@ import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import Image from "next/image"
 import Link from "next/link"
 import { Spinner } from "@/components/ui/spinner"
+// Removed getBandoUrl import to avoid redirect loops
 
 const getFaviconChain = (domain: string): string[] => [
-  `https://faviconkit.com/${domain}/32`,
-  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
+  `https://www.google.com/s2/favicons?sz=32&domain=${domain}`,
   `https://logo.clearbit.com/${domain}`,
-  `https://www.google.com/s2/favicons?sz=192&domain=${domain}`,
+  `https://${domain}/favicon.ico`,
+  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
   `/placeholder_icon.png`,
 ];
 
@@ -48,8 +49,10 @@ const getDeadlineStatus = (deadline: any) => {
   try {
     let deadlineDate: Date;
     
-    if (typeof deadline === 'object' && deadline.seconds) {
-      deadlineDate = new Date(deadline.seconds * 1000);
+    // Handle both _seconds and seconds formats
+    if (typeof deadline === 'object' && (deadline.seconds || deadline._seconds)) {
+      const seconds = deadline.seconds || deadline._seconds;
+      deadlineDate = new Date(seconds * 1000);
     } else if (typeof deadline === 'string') {
       deadlineDate = new Date(deadline);
     } else {
@@ -162,11 +165,17 @@ export default function SavedConcorsiPage() {
       return text.toString()
     }
     
-    if (typeof text === 'object' && text.seconds) {
+    // Handle both _seconds and seconds formats
+    if (typeof text === 'object' && (text.seconds || text._seconds)) {
       try {
-        return new Date(text.seconds * 1000).toLocaleDateString('it-IT')
+        const seconds = text.seconds || text._seconds;
+        return new Date(seconds * 1000).toLocaleDateString('it-IT', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        })
       } catch (e) {
-        return 'Invalid date'
+        return 'Data non valida'
       }
     }
     
@@ -287,10 +296,14 @@ export default function SavedConcorsiPage() {
     // Get entity name - display as-is without case conversion
     const enteName = cleanEnteName(concorso.Ente);
 
+    // Use the [id] route which should handle single IDs
+    // This should hit /bandi/[id]/page.tsx instead of [...slug]
+    const bandoUrl = `/bandi/${concorso.id}`;
+
     return (
       <Link 
         key={concorso.id} 
-        href={`/bandi/${concorso.id}`}
+        href={bandoUrl}
         className="block"
       >
         <div 

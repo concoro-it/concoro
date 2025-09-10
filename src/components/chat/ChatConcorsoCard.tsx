@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/hooks/useAuth"
 import { useMemo, useState } from "react"
 import Image from "next/image"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
+import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 
 interface ChatConcorsoCardProps {
   concorso: {
@@ -94,6 +95,7 @@ const formatDate = (timestamp: any): string => {
 export function ChatConcorsoCard({ concorso, compact = false }: ChatConcorsoCardProps) {
   const { user } = useAuth();
   const [faviconIndex, setFaviconIndex] = useState(0);
+  const { generateUrlWithAuth } = useBandoUrl();
   
   // Format date to display
   const formattedDate = useMemo(() => {
@@ -167,7 +169,7 @@ export function ChatConcorsoCard({ concorso, compact = false }: ChatConcorsoCard
         </div>
       </div>
       
-      <Link href={user ? `/bandi/${concorso.id}` : `/signin?redirect=/bandi/${concorso.id}`}>
+      <Link href={generateUrlWithAuth(concorso as any, user)}>
         <Button 
           className="gap-2 w-full" 
           size={compact ? "sm" : "default"}

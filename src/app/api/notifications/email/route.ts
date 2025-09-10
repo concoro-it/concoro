@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { brevoService } from '@/lib/services/brevo';
-import { NotificationsService } from '@/lib/services/notifications';
 import * as admin from 'firebase-admin';
+import * as path from 'path';
+import * as fs from 'fs';
 
 // Initialize Firebase Admin for API routes
 function initializeFirebaseAdminForAPI() {
@@ -9,9 +10,9 @@ function initializeFirebaseAdminForAPI() {
     try {
       // First try service account file (more reliable than env vars)
       console.log('Trying service account file first...');
-      const serviceAccountPath = require('path').resolve(process.cwd(), 'concoro-fc095-firebase-adminsdk-fbsvc-a817929655.json');
+      const serviceAccountPath = path.resolve(process.cwd(), 'concoro-fc095-firebase-adminsdk-fbsvc-a817929655.json');
       
-      if (require('fs').existsSync(serviceAccountPath)) {
+      if (fs.existsSync(serviceAccountPath)) {
         console.log('Service account file found, using it...');
         admin.initializeApp({
           credential: admin.credential.cert(serviceAccountPath),
@@ -46,9 +47,9 @@ function initializeFirebaseAdminForAPI() {
           throw new Error('No Firebase credentials found (neither service account file nor environment variables)');
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error initializing Firebase Admin:', error);
-      throw new Error(`Firebase Admin initialization failed: ${error.message}`);
+      throw new Error(`Firebase Admin initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
   
@@ -92,12 +93,12 @@ export async function POST(request: NextRequest) {
             brevoResponse: result
           }
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Welcome email error:', error);
         return NextResponse.json(
           { 
             error: 'Failed to send welcome email',
-            details: error.message
+            details: error instanceof Error ? error.message : 'Unknown error'
           },
           { status: 500 }
         );
@@ -126,7 +127,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Enrich notifications with concorso data
-    const notifications: any[] = [];
+    const notifications: Array<{
+      id: string;
+      concorsoId: string;
+      concorsoTitle: string;
+      ente: string;
+      daysLeft: number;
+      closingDate: string;
+      url: string;
+    }> = [];
     for (const notificationDoc of notificationsSnapshot.docs) {
       const notificationData = notificationDoc.data();
       
@@ -176,7 +185,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send email via Brevo
-    const result = await brevoService.sendNotificationEmail(userEmail, userName, notifications as any);
+    const result = await brevoService.sendNotificationEmail(userEmail, userName, notifications);
 
     // Log the email send
     await db
@@ -187,7 +196,7 @@ export async function POST(request: NextRequest) {
         type: 'notification_test',
         sentAt: new Date(),
         notificationCount: notifications.length,
-        urgentCount: notifications.filter((n: any) => n.daysLeft === 0).length,
+        urgentCount: notifications.filter((n) => n.daysLeft === 0).length,
         testSend: true
       });
 
@@ -196,19 +205,19 @@ export async function POST(request: NextRequest) {
       message: 'Email notification sent successfully',
       data: {
         notificationCount: notifications.length,
-        urgentCount: notifications.filter((n: any) => n.daysLeft === 0).length,
+        urgentCount: notifications.filter((n) => n.daysLeft === 0).length,
         brevoResponse: result
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Email notification API error:', error);
     
     return NextResponse.json(
       { 
         error: 'Failed to send email notification',
-        details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
       },
       { status: 500 }
     );
@@ -261,13 +270,13 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Email notification status API error:', error);
     
     return NextResponse.json(
       { 
         error: 'Failed to get email notification status',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }

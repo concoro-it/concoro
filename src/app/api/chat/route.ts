@@ -77,7 +77,7 @@ export async function POST(req: Request) {
 
     // Get relevant concorsi
     let jobDetailsArray: JobDetails[] = [];
-    let context = '';
+    const context = '';
     
     try {
       // If jobDetails is provided directly, use it

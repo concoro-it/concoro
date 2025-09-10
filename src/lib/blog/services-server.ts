@@ -1,5 +1,6 @@
 import { initializeFirebaseAdmin } from '@/lib/firebase-admin';
-import { Articolo } from '@/types';
+import { Articolo, ArticoloWithConcorso } from '@/types';
+import { isDocumentId, isSlug } from '@/lib/utils/slug-utils';
 
 /**
  * Server-side blog services using Firebase Admin SDK
@@ -78,6 +79,47 @@ export const getArticoloBySlugServer = async (slug: string): Promise<Articolo | 
     } as Articolo;
   } catch (error) {
     console.error('Error fetching articolo by slug (server):', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch an article by slug or ID and include its concorso (server-side)
+ */
+export const getArticoloWithConcorsoBySlugOrIdServer = async (
+  slugOrId: string
+): Promise<ArticoloWithConcorso | null> => {
+  try {
+    const firestore = initializeFirebaseAdmin();
+
+    // Resolve article by slug or id
+    let articolo: Articolo | null = null;
+    if (isSlug(slugOrId)) {
+      articolo = await getArticoloBySlugServer(slugOrId);
+    }
+    if (!articolo && isDocumentId(slugOrId)) {
+      articolo = await getArticoloByIdServer(slugOrId);
+    }
+    if (!articolo) {
+      // final fallback: try both
+      articolo = (await getArticoloBySlugServer(slugOrId)) || (await getArticoloByIdServer(slugOrId));
+    }
+    if (!articolo) return null;
+
+    // Fetch concorso by concorso_id
+    const concorsoRef = firestore.collection('concorsi').doc(articolo.concorso_id);
+    const concorsoSnap = await concorsoRef.get();
+
+    if (!concorsoSnap.exists) {
+      return { ...articolo, concorso: undefined } as ArticoloWithConcorso;
+    }
+
+    return {
+      ...articolo,
+      concorso: { id: concorsoSnap.id, ...concorsoSnap.data() } as any,
+    } as ArticoloWithConcorso;
+  } catch (error) {
+    console.error('Error fetching articolo with concorso (server):', error);
     throw error;
   }
 };

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { BellIcon, SearchIcon, BookmarkIcon, UserIcon, BriefcaseIcon, SparklesIcon, Target, Users, TrendingUp } from 'lucide-react';
+import { BellIcon, SearchIcon, BookmarkIcon, BriefcaseIcon, SparklesIcon, Target, Users, TrendingUp } from 'lucide-react';
 import { BentoCard, BentoGrid } from '@/components/ui/bento-grid';
 import { Testimonials } from '@/components/ui/testimonials';
 import { MagicText } from '@/components/ui/magic-text';
@@ -169,7 +169,7 @@ export default function ChiSiamo() {
             Cambia il tuo futuro
           </h1>
           <p className="text-xl text-gray-600 mb-8">
-            Concoro è la piattaforma leader dedicata a semplificare l'accesso ai concorsi pubblici in Italia. Aiutiamo migliaia di cittadini a trovare e candidarsi alle migliori opportunità lavorative nella pubblica amministrazione.
+            Concoro è la piattaforma leader dedicata a semplificare l&apos;accesso ai concorsi pubblici in Italia. Aiutiamo migliaia di cittadini a trovare e candidarsi alle migliori opportunità lavorative nella pubblica amministrazione.
           </p>
           <Link
             href="/signup"

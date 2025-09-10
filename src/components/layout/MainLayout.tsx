@@ -10,7 +10,7 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
   const router = useRouter();
 
   const handleSignOut = async () => {

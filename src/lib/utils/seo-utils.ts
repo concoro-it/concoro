@@ -360,10 +360,10 @@ export function generateSocialImage(
 ): string {
   // For now, return the base image URL or default
   // In production, this could generate dynamic social images
-  if (baseImageUrl && baseImageUrl.includes('concoro.it')) {
+  if (baseImageUrl && baseImageUrl.includes('www.concoro.it')) {
     return baseImageUrl;
   }
   
   // Default social sharing image that should be 1200x630
-  return 'https://concoro.it/blog/default-article-image.png';
+  return 'https://www.concoro.it/blog/default-article-image.png';
 } 

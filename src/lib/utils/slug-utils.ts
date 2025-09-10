@@ -105,12 +105,31 @@ export function generateSlug({ articolo_tags, publication_date, articolo_title }
       const otherTags = normalizedTags.filter(tag => 
         !slugComponents.includes(tag) && 
         tag.length > 2 && // Avoid very short tags
-        !['concorso', 'pubblico', 'bando', 'selezione'].includes(tag) // Skip generic terms
+        !['concorso', 'pubblico', 'bando', 'selezione', 'opportunita', 'lavoro'].includes(tag) // Skip generic terms
       );
       
       // Add up to 2 more tags to reach a reasonable slug length
       const additionalTags = otherTags.slice(0, 3 - slugComponents.length);
       slugComponents.push(...additionalTags);
+    }
+    
+    // Add title-derived uniqueness if slug is still too generic
+    if (slugComponents.length <= 2 && articolo_title) {
+      const titleWords = articolo_title.toLowerCase()
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .split(/\s+/)
+        .filter(word => 
+          word.length > 3 && 
+          !['concorso', 'pubblico', 'bando', 'per', 'del', 'della', 'degli', 'delle'].includes(word)
+        )
+        .slice(0, 2);
+      
+      titleWords.forEach(word => {
+        const normalizedWord = slugify(word, { lower: true, strict: true });
+        if (!slugComponents.includes(normalizedWord)) {
+          slugComponents.push(normalizedWord);
+        }
+      });
     }
     
     // If still no components, fallback to first few tags
@@ -122,8 +141,12 @@ export function generateSlug({ articolo_tags, publication_date, articolo_title }
     // Add year
     slugComponents.push(year);
     
-    // Create final slug
-    const slug = slugComponents.join('-');
+    // Create final slug and clean up any empty components or double hyphens
+    const slug = slugComponents
+      .filter(component => component && component.trim() !== '') // Remove empty components
+      .join('-')
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
     
     // Ensure slug is not too long (max 100 characters for good SEO)
     if (slug.length > 100) {
@@ -135,7 +158,12 @@ export function generateSlug({ articolo_tags, publication_date, articolo_title }
         truncatedComponents.pop();
       }
       
-      return `${truncatedComponents.join('-')}-${year}`;
+      return truncatedComponents
+        .filter(component => component && component.trim() !== '')
+        .concat([year])
+        .join('-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
     }
     
     return slug;

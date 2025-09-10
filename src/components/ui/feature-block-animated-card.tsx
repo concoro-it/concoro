@@ -53,15 +53,13 @@ export function AnimatedCard({ className, title, description, icon, iconClassNam
 
 // Icon animation effect
 function setupIconAnimation() {
-  useEffect(() => {
-    const sequence = [
-      ".circle-1",
-      { scale: [1, 1.1, 1], y: [0, -4, 0] },
-      { duration: 2, repeat: Infinity, repeatDelay: 1 },
-    ]
+  const sequence = [
+    ".circle-1",
+    { scale: [1, 1.1, 1], y: [0, -4, 0] },
+    { duration: 2, repeat: Infinity, repeatDelay: 1 },
+  ]
 
-    animate(sequence[0] as string, sequence[1] as any, sequence[2] as any)
-  }, [])
+  return animate(sequence[0] as string, sequence[1] as Record<string, unknown>, sequence[2] as Record<string, unknown>)
 }
 
 const Container = React.forwardRef<

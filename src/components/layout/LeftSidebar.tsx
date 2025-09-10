@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import Link from 'next/link';
-import { Settings, Briefcase, Sparkles, User, Bookmark, Bell } from 'lucide-react';
+import { Settings, Sparkles, User, Bookmark, Bell } from 'lucide-react';
 import type { UserProfile } from '@/types';
 
 export default function LeftSidebar() {

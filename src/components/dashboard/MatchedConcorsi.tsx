@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, Users, ArrowRight, Info, X, CalendarDays } from "lucide-react";
+import { MapPin, Users, ArrowRight, Info, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { useMatchedConcorsi } from "@/lib/hooks/useMatchedConcorsi";
 import { formatDistanceToNow, parseISO } from 'date-fns';
@@ -15,6 +15,7 @@ import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization';
 import { Pagination } from "@/components/blog/Pagination";
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
+import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 import Image from "next/image"
 
 const getFaviconChain = (domain: string): string[] => [
@@ -130,6 +131,7 @@ export function MatchedConcorsi({ userId, limit, showPagination = false }: Match
   
   const { concorsi, totalCount, isLoading, error } = useMatchedConcorsi(userId, effectiveLimit, offset);
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi();
+  const { generateUrl } = useBandoUrl();
 
   // Calculate total pages for pagination
   const totalPages = useMemo(() => {
@@ -341,7 +343,7 @@ export function MatchedConcorsi({ userId, limit, showPagination = false }: Match
         return (
           <Link 
             key={concorso.id} 
-            href={`/bandi/${concorso.id}`}
+            href={generateUrl(concorso)}
             className="block"
           >
             <div 

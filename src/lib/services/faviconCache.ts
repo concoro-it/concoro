@@ -12,12 +12,12 @@ import {
 } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase/config';
 
-// Get favicon chain for fallbacks
+// Get favicon chain for fallbacks - removed unreliable faviconkit.com
 const getFaviconChain = (domain: string): string[] => [
-  `https://faviconkit.com/${domain}/32`,
-  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
+  `https://www.google.com/s2/favicons?sz=32&domain=${domain}`,
   `https://logo.clearbit.com/${domain}`,
-  `https://www.google.com/s2/favicons?sz=192&domain=${domain}`,
+  `https://${domain}/favicon.ico`,
+  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
   `/placeholder_icon.png`,
 ];
 
@@ -35,17 +35,29 @@ async function fetchFirstWorkingFavicon(domain: string): Promise<Blob | null> {
     }
     
     try {
-      const res = await fetch(url);
-      if (res.ok && res.headers.get('content-type')?.startsWith('image/')) {
-        const blob = await res.blob();
-        // Validate it's actually an image with reasonable size
-        if (blob.size > 0 && blob.size < 1024 * 1024) { // Max 1MB
-          return blob;
+      const res = await fetch(url, { 
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Concoro/1.0; +https://www.concoro.it)',
+        }
+      });
+      
+      if (res.ok) {
+        const contentType = res.headers.get('content-type');
+        // Check if it's actually an image and not HTML
+        if (contentType?.startsWith('image/')) {
+          const blob = await res.blob();
+          // Validate it's actually an image with reasonable size
+          if (blob.size > 0 && blob.size < 1024 * 1024) { // Max 1MB
+            return blob;
+          }
+        } else {
+          console.warn(`Favicon service returned non-image content-type: ${contentType} for ${url}`);
         }
       }
     } catch (err) {
+      console.warn(`Failed to fetch favicon from ${url}:`, err instanceof Error ? err.message : 'Unknown error');
       // Continue to next URL in chain
-      console.warn(`Failed to fetch favicon from ${url}:`, err);
       continue;
     }
   }
@@ -104,7 +116,7 @@ async function getCachedFaviconURL(enteName: string): Promise<string | null> {
       return data.downloadURL || null;
     }
   } catch (error) {
-    console.warn('Error getting cached favicon:', error);
+    // Silently handle cached favicon errors
   }
   
   return null;
@@ -162,7 +174,7 @@ export async function ensureFaviconExists(enteName: string, paLink?: string): Pr
     
     return downloadURL;
   } catch (error) {
-    console.error('Error processing favicon for', enteName, ':', error);
+    // Silently handle favicon processing errors
     return '/placeholder_icon.png';
   }
 }
@@ -191,7 +203,7 @@ export function useFaviconURL(enteName: string, paLink?: string) {
       })
       .catch((err) => {
         if (isMounted) {
-          console.error('Error loading favicon:', err);
+          // Silently handle favicon loading errors
           setError(err.message);
           setFaviconURL('/placeholder_icon.png');
         }

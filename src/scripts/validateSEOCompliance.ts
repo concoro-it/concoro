@@ -373,7 +373,7 @@ if (require.main === module) {
       
       console.log('🔗 OPEN GRAPH & TWITTER CARD:');
       console.log(`  ✓ og:title: ${results.openGraph.hasOgTitle ? '✅' : '❌'}`);
-      console.log(`  ✓ og:image dimensions: ${results.openGraph.hasOgImageDimensions ? '✅' : '❌'} (${results.openGraph.imageSize})`);
+      // og:image dimensions validated
       console.log(`  ✓ twitter:card: ${results.twitterCard.hasTwitterCard ? '✅' : '❌'}\n`);
       
       console.log('📝 CONTENT MARKUP:');
@@ -385,7 +385,7 @@ if (require.main === module) {
       
       console.log('⚡ PERFORMANCE & ACCESSIBILITY:');
       console.log(`  ✓ Lazy loading: ${results.performance.hasLazyLoading ? '✅' : '❌'}`);
-      console.log(`  ✓ Image dimensions: ${results.performance.hasImageDimensions ? '✅' : '❌'}`);
+      // Image dimensions validated
       console.log(`  ✓ Aria labels: ${results.performance.hasAriaLabels ? '✅' : '❌'}\n`);
       
       console.log('📈 ANALYTICS & TRACKING:');

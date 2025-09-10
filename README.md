@@ -31,7 +31,7 @@ Concoro serves as a comprehensive platform for:
 
 ### AI & Machine Learning
 - **Pinecone** - Vector database for embeddings
-- **OpenAI GPT** - AI chat interface and job matching
+- **Gemini** - AI chat interface and job matching
 - **Custom Embeddings** - Semantic search and matching algorithms
 
 ### Development Tools

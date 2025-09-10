@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
+import * as path from 'path';
+import * as fs from 'fs';
 
 // Initialize Firebase Admin for API routes
 function initializeFirebaseAdminForAPI() {
@@ -7,9 +9,9 @@ function initializeFirebaseAdminForAPI() {
     try {
       // First try service account file (more reliable than env vars)
       console.log('Trying service account file first...');
-      const serviceAccountPath = require('path').resolve(process.cwd(), 'concoro-fc095-firebase-adminsdk-fbsvc-a817929655.json');
+      const serviceAccountPath = path.resolve(process.cwd(), 'concoro-fc095-firebase-adminsdk-fbsvc-a817929655.json');
       
-      if (require('fs').existsSync(serviceAccountPath)) {
+      if (fs.existsSync(serviceAccountPath)) {
         console.log('Service account file found, using it...');
         admin.initializeApp({
           credential: admin.credential.cert(serviceAccountPath),
@@ -44,16 +46,16 @@ function initializeFirebaseAdminForAPI() {
           throw new Error('No Firebase credentials found (neither service account file nor environment variables)');
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error initializing Firebase Admin:', error);
-      throw new Error(`Firebase Admin initialization failed: ${error.message}`);
+      throw new Error(`Firebase Admin initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
   
   return admin.firestore();
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('=== Firebase Debug Route ===');
     
@@ -65,14 +67,14 @@ export async function GET(request: NextRequest) {
     };
 
     // Check service account file
-    const serviceAccountPath = require('path').resolve(process.cwd(), 'concoro-fc095-firebase-adminsdk-fbsvc-a817929655.json');
-    const serviceAccountExists = require('fs').existsSync(serviceAccountPath);
+    const serviceAccountPath = path.resolve(process.cwd(), 'concoro-fc095-firebase-adminsdk-fbsvc-a817929655.json');
+    const serviceAccountExists = fs.existsSync(serviceAccountPath);
     
     console.log('Environment variables:', envVars);
     console.log('Service account file exists:', serviceAccountExists);
 
     // Try to initialize Firebase Admin
-    let initializationResult: any;
+    let initializationResult: Record<string, unknown>;
     try {
       const db = initializeFirebaseAdminForAPI();
       initializationResult = {
@@ -88,18 +90,18 @@ export async function GET(request: NextRequest) {
           success: true,
           message: `Firestore connection works, found ${testCollection.size} documents`
         };
-      } catch (firestoreError: any) {
+      } catch (firestoreError: unknown) {
         initializationResult.firestoreTest = {
           success: false,
-          error: firestoreError.message
+          error: firestoreError instanceof Error ? firestoreError.message : 'Unknown error'
         };
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       initializationResult = {
         success: false,
-        error: error.message,
-        stack: error.stack
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
       };
     }
 
@@ -118,13 +120,13 @@ export async function GET(request: NextRequest) {
       initialization: initializationResult
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Debug API error:', error);
     
     return NextResponse.json(
       { 
         error: 'Debug API failed',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }

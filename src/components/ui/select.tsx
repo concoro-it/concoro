@@ -180,6 +180,8 @@ export const SimpleSelect = React.forwardRef<HTMLSelectElement, SimpleSelectProp
   }
 )
 
+SimpleSelect.displayName = "SimpleSelect"
+
 export {
   Select,
   SelectGroup,

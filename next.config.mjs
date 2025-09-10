@@ -93,6 +93,25 @@ const nextConfig = {
         net: false,
         tls: false,
         crypto: false,
+        http2: false,
+        child_process: false,
+        stream: false,
+        url: false,
+        buffer: false,
+        util: false,
+        assert: false,
+        http: false,
+        https: false,
+        os: false,
+        path: false,
+        querystring: false,
+        'firebase-admin': false,
+      };
+      
+      // Exclude problematic WebAssembly modules on client-side
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'farmhash-modern': false,
       };
       
       // Optimize chunk splitting for better main thread performance
@@ -141,6 +160,19 @@ const nextConfig = {
         fullySpecified: false,
       },
     });
+    
+    // Handle WebAssembly modules
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'webassembly/async',
+    });
+    
+    // Enable WebAssembly support for packages like farmhash-modern
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      syncWebAssembly: true,
+    };
     
     return config;
   },

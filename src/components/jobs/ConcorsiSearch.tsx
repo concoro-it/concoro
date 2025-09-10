@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Input } from "@/components/ui/input"
-import { Search, MapPin, Calendar, X, FileText, Briefcase, Clock, Filter as FilterIcon, ArrowUpDown } from "lucide-react"
+import { Search, MapPin, Calendar, X, FileText, Briefcase, Clock, Filter as FilterIcon, ArrowUpDown, Loader2 } from "lucide-react"
 import { FilterPopover } from "./FilterPopover"
 import { Button } from "@/components/ui/button"
 import { FilterBadge } from "@/components/ui/filter-badge"
@@ -42,6 +42,8 @@ interface JobSearchProps {
   showFilterSidebar?: boolean
   // Total count prop
   totalCount?: number
+  // Loading state for API calls
+  isSearching?: boolean
 }
 
 export function JobSearch({
@@ -80,6 +82,8 @@ export function JobSearch({
   showFilterSidebar = false,
   // Total count prop
   totalCount,
+  // Loading state for API calls
+  isSearching = false,
 }: JobSearchProps) {
   const [searchTerm, setSearchTerm] = useState(searchQuery)
 
@@ -89,9 +93,10 @@ export function JobSearch({
   }, [searchQuery])
 
   useEffect(() => {
+    // Increased debounce delay for API calls to reduce server load
     const timer = setTimeout(() => {
       onSearchChange(searchTerm)
-    }, 300)
+    }, 500)
     return () => clearTimeout(timer)
   }, [searchTerm, onSearchChange])
 
@@ -148,12 +153,17 @@ export function JobSearch({
     <div className="space-y-4">
       <div className="flex items-center gap-1">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          {isSearching ? (
+            <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground animate-spin" />
+          ) : (
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          )}
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cerca bandi e avvisi per titolo, ente o descrizione…"
-            className="pl-9"
+            className={cn("pl-9", isSearching && "bg-gray-50")}
+            disabled={isSearching}
           />
         </div>
         

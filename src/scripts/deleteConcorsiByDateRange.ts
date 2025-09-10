@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import * as admin from 'firebase-admin';
 import { ServiceAccount } from 'firebase-admin';
+import readline from 'readline';
 
 // Initialize Firebase Admin with service account
 const serviceAccountPath = path.resolve(process.cwd(), 'concoro-fc095-firebase-adminsdk-fbsvc-a817929655.json');
@@ -274,7 +275,6 @@ async function main() {
       console.log('');
       
       // For safety, require manual confirmation
-      const readline = require('readline');
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout

@@ -2,10 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { BellIcon, SearchIcon, BookmarkIcon, UserIcon, BriefcaseIcon, SparklesIcon } from 'lucide-react';
+import { BellIcon, SearchIcon, BriefcaseIcon, SparklesIcon, UserIcon } from 'lucide-react';
 import { BentoCard, BentoGrid } from '@/components/ui/bento-grid';
 import { MainFooter } from '@/components/ui/main-footer';
 import dynamic from 'next/dynamic';
+import { getOrganizationStructuredData, getWebSiteStructuredData } from '@/lib/utils/guest-seo-utils';
 
 // Lazy load heavy components to reduce initial bundle size
 const BackgroundBeams = dynamic(() => import('@/components/ui/background-beams').then(mod => ({ default: mod.BackgroundBeams })), {
@@ -142,15 +143,29 @@ const testimonials = [
 ];
 
 export default function Home() {
+  const organizationData = getOrganizationStructuredData();
+  const websiteData = getWebSiteStructuredData();
+
   return (
-    <main className="min-h-screen bg-background">
-    
-      {/* Hero Section */}
+    <>
+      {/* Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteData) }}
+      />
+      
+      <main className="min-h-screen bg-background">
+      
+        {/* Hero Section */}
       <section className="bg-background container mx-auto px-4 pt-16 pb-0 flex flex-col md:flex-row justify-between items-center relative overflow-hidden">
         <BackgroundBeams className="opacity-30" />
         <div className="max-w-xl mb-8 md:mb-0 relative z-10">
           <h1 className="text-4xl md:text-5xl font-bold text-[#0A1F44] mb-6">
-            Trova il tuo prossimo concorso pubblico
+            Trova Concorsi Pubblici in Italia
           </h1>
           <p className="text-xl text-gray-600 mb-4">
             Concoro raccoglie e semplifica tutti i concorsi pubblici in un unico posto.
@@ -264,6 +279,7 @@ export default function Home() {
       {/* Footer */}
       <MainFooter />
 
-    </main>
+      </main>
+    </>
   );
 }

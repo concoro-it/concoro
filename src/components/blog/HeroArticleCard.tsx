@@ -20,6 +20,7 @@ import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { getArticleCoverImage, getFallbackCoverImage } from '@/lib/utils/image-utils'
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { getCanonicalUrlParam } from '@/lib/utils/articolo-canonical-utils'
 
 interface HeroArticleCardProps {
   article: Articolo
@@ -68,7 +69,7 @@ export function HeroArticleCard({ article }: HeroArticleCardProps) {
   }
   
   return (
-    <Link href={`/articolo/${article.slug || article.concorso_id}`} className="block w-full">
+    <Link href={`/articolo/${getCanonicalUrlParam(article)}`} className="block w-full">
       <div className="relative w-full rounded-[1.25rem] border-[0.75px] border-border p-3 md:rounded-[1.5rem] md:p-4">
         <GlowingEffect
           spread={60}

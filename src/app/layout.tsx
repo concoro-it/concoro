@@ -15,7 +15,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Concoro - Trova la tua prossima opportunità nel settore pubblico",
   description: "Trova la tua prossima opportunità nel settore pubblico",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://concoro.it' || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.concoro.it' || 'http://localhost:3000'),
   icons: {
     icon: '/favicon.png',
     apple: '/favicon.png',

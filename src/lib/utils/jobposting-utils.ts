@@ -1,5 +1,6 @@
 import { ArticoloWithConcorso } from '@/types';
 import { Timestamp } from 'firebase/firestore';
+import { getArticoloCanonicalUrl } from './articolo-canonical-utils';
 
 /**
  * Generates JobPosting structured data for Google Job Search
@@ -33,6 +34,7 @@ export interface JobPostingStructuredData {
   };
   validThrough?: string;
   employmentType?: string[];
+  directApply?: boolean;
   baseSalary?: {
     "@type": string;
     currency: string;
@@ -171,7 +173,7 @@ export const generateJobPostingStructuredData = (
 
   const concorso = article.concorso;
   const location = parseLocation(concorso.AreaGeografica || article.AreaGeografica);
-  const articleUrl = `${baseUrl}/articolo/${article.slug || article.id}`;
+  const articleUrl = getArticoloCanonicalUrl(article);
   
   // Create description combining article and concorso information
   const description = `
@@ -208,7 +210,9 @@ export const generateJobPostingStructuredData = (
       name: concorso.Ente,
       value: concorso.id || article.concorso_id
     },
+    // Use the job posting page URL; signal direct apply if available
     url: articleUrl,
+    directApply: Boolean(concorso.apply_link),
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": articleUrl

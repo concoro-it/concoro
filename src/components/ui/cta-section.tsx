@@ -1,7 +1,6 @@
 "use client";
 import React from "react";
 import { BackgroundBeams } from "@/components/ui/background-beams";
-import { Input } from "@/components/ui/input";
 import Link from "next/link";
 
 function CTASection() {

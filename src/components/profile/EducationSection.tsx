@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Pencil, Trash2 } from "lucide-react"
-import Image from "next/image"
 import type { Education } from "@/types"
 import { EducationForm } from "./EducationForm"
 import {

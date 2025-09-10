@@ -1,7 +1,5 @@
 import * as Accordion from "@radix-ui/react-accordion";
-import { ChevronDown, HelpCircle, Shield, Search, Bell, Bookmark, CreditCard, Users, FileText, Mail } from 'lucide-react';
-import { cn } from "@/lib/utils";
-import Link from "next/link";
+import { ChevronDown, HelpCircle, Shield, Search, Bell, CreditCard, Users, FileText, Mail } from 'lucide-react';
 import type { Metadata } from "next";
 import { MainFooter } from "@/components/ui/main-footer";
 import { CTASection } from "@/components/ui/cta-section"

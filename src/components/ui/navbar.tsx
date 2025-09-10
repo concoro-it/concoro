@@ -1,19 +1,13 @@
 "use client";
 
-import { Book, Menu, Sunset, Trees, Sparkles, Settings, User, HelpCircle, LogOut, Search, MapPin, Bell, Bookmark, X, ChevronDown } from "lucide-react";
+import { Settings, User, HelpCircle, LogOut, Search, Bell, Bookmark } from "lucide-react";
 import * as NavigationMenu from "@radix-ui/react-navigation-menu";
-import * as Accordion from "@radix-ui/react-accordion";
-import * as Dialog from "@radix-ui/react-dialog";
-import { cn } from "@/lib/utils";
-import { useState, useEffect, useRef, Suspense } from "react";
-import { auth } from "@/lib/firebase/config";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/hooks/useAuth";
+import { useAuthAdapter } from "@/lib/hooks/useAuthAdapter";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,17 +16,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { doc, getDoc, collection, getDocs, query, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { doc, getDoc } from "firebase/firestore";
 import type { UserProfile } from "@/types";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { FilterPopover } from "@/components/jobs/FilterPopover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Checkbox } from "@/components/ui/checkbox";
 import { NotificationsDropdown } from "@/components/notifications";
 import { DynamicLogo } from "@/components/ui/dynamic-logo";
 
@@ -121,18 +107,23 @@ const italianLocations = [
 const Navbar = (props: NavbarProps) => {
   const { logo, menu, mobileExtraLinks, auth: authProps } = { ...defaultProps, ...props };
   // Use centralized auth from useAuth hook instead of managing separate state
-  const { user: currentUser, loading: isAuthLoading } = useAuth();
+  const { user: currentUser, loading: isAuthLoading, initializeAuth, isAuthLoaded } = useAuthAdapter();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const { signOut } = useAuth();
+  const { signOut } = useAuthAdapter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   
+  // Auto-initialize auth for logged-in users
+  useEffect(() => {
+    initializeAuth()
+  }, [])
+
   // Check for initial search params when component mounts
   useEffect(() => {
     if (searchParams) {
@@ -211,11 +202,25 @@ const Navbar = (props: NavbarProps) => {
     const fetchUserProfile = async () => {
       if (currentUser && !isAuthLoading) {
         try {
-          if (!db) {
+          // For lazy auth, we need to ensure Firestore is loaded
+          let firestore;
+          try {
+            if (isAuthLoaded) {
+              const { getFirebaseFirestore } = await import('@/lib/firebase/config');
+              firestore = getFirebaseFirestore();
+            } else {
+              firestore = db; // Use existing import for full auth
+            }
+          } catch (error) {
+            console.error('[Navbar] Failed to get Firestore instance:', error);
+            return;
+          }
+
+          if (!firestore) {
             console.error('[Navbar] Firestore is not initialized');
             return;
           }
-          const userProfileRef = doc(db, 'userProfiles', currentUser.uid);
+          const userProfileRef = doc(firestore, 'userProfiles', currentUser.uid);
           const profileSnap = await getDoc(userProfileRef);
           if (profileSnap.exists()) {
             setUserProfile(profileSnap.data() as UserProfile);
@@ -236,7 +241,7 @@ const Navbar = (props: NavbarProps) => {
     if (!isAuthLoading) {
       fetchUserProfile();
     }
-  }, [currentUser, isAuthLoading]); // Depend on both currentUser and loading state
+  }, [currentUser, isAuthLoading, isAuthLoaded]); // Depend on auth loaded state too
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -329,7 +334,7 @@ const Navbar = (props: NavbarProps) => {
                 </Button>
 
                 <Button variant="link" asChild>
-                  <Link href="/saved-concorsi">
+                  <Link href={currentUser ? "/saved-concorsi" : "/signin"}>
                     <Bookmark className="w-4 h-4 mr-2" />
                     Salvati
                   </Link>
@@ -364,7 +369,7 @@ const Navbar = (props: NavbarProps) => {
                     </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/profile" className="flex items-center transition-colors hover:text-brand">
+                    <Link href={currentUser ? "/profile" : "/signin"} className="flex items-center transition-colors hover:text-brand">
                       <User className="mr-2 h-4 w-4" />
                       <span>Profilo</span>
                     </Link>
@@ -522,14 +527,14 @@ const Navbar = (props: NavbarProps) => {
 
               
                   <DropdownMenuItem asChild>
-                    <Link href="/saved-concorsi" className="flex items-center transition-colors hover:text-brand">
+                    <Link href={currentUser ? "/saved-concorsi" : "/signin"} className="flex items-center transition-colors hover:text-brand">
                       <Bookmark className="mr-2 h-4 w-4" />
                       <span>Salvati</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/profile" className="flex items-center transition-colors hover:text-brand">
+                    <Link href={currentUser ? "/profile" : "/signin"} className="flex items-center transition-colors hover:text-brand">
                       <User className="mr-2 h-4 w-4" />
                       <span>Profilo</span>
                     </Link>

@@ -17,6 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { SignInFormData } from '@/types/auth';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Spinner } from '@/components/ui/spinner';
+import Image from 'next/image';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -25,7 +26,6 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [timeoutOccurred, setTimeoutOccurred] = useState(false);
-  const [success, setSuccess] = useState<string>('');
 
   // Set a timeout to prevent infinite loading
   useEffect(() => {
@@ -79,9 +79,9 @@ export default function SignInPage() {
     try {
       await signIn(data);
       // Redirection will be handled by the useEffect
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign in error:', error);
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -92,9 +92,9 @@ export default function SignInPage() {
       setLoading(true);
       await signInWithGoogle();
       // Redirection will be handled by the useEffect
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Google sign in error:', error);
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,6 @@ export default function SignInPage() {
           <h2 className="text-3xl font-bold mb-8 text-center">Accedi</h2>
 
           <AuthError message={error} />
-          <AuthSuccess message={success} />
 
           <AuthForm onSubmit={handleSubmit}>
             <FormField
@@ -172,7 +171,7 @@ export default function SignInPage() {
               disabled={loading}
             >
               <div className="flex items-center justify-center gap-2">
-                <img src="/google.svg" alt="Google" className="w-5 h-5" />
+                <Image src="/google.svg" alt="Google" width={20} height={20} />
                 Continua con Google
               </div>
             </AuthButton>

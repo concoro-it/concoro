@@ -1,13 +1,11 @@
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { GlowingEffect } from "@/components/ui/glowing-effect"
 import { 
   MapPin, 
-  Building2, 
-  Calendar, 
   CalendarDays,
   Users, 
-  ChevronLeft,
   ChevronRight
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
@@ -17,30 +15,22 @@ import { useRouter } from "next/navigation"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
 import { useAuth } from "@/lib/hooks/useAuth"
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { Concorso } from "@/types/concorso"
 import Image from "next/image"
-import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
-import { normalizeConcorsoCategory } from "@/lib/utils/category-utils"
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
-
-const getFaviconChain = (domain: string): string[] => [
-  `https://faviconkit.com/${domain}/32`,
-  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
-  `https://logo.clearbit.com/${domain}`,
-  `https://www.google.com/s2/favicons?sz=192&domain=${domain}`,
-  `/placeholder_icon.png`,
-];
+import { getBandoUrl } from '@/lib/utils/bando-slug-utils'
+import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 
 interface ConcoroListProps {
   jobs: Concorso[];
   isLoading: boolean;
+  isLoadingMore: boolean;
   selectedJobId: string | null;
   onJobSelect: (job: Concorso) => void;
-  currentPage: number;
-  onPageChange: (page: number) => void;
-  itemsPerPage: number;
+  onLoadMore: () => void;
+  hasMore: boolean;
 }
 
 
@@ -155,17 +145,12 @@ const truncateEnteNameForMobile = (name: string, maxLength: number = 30): string
   return name.substring(0, maxLength) + '...';
 };
 
-export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, currentPage, onPageChange, itemsPerPage }: ConcoroListProps) {
+export function ConcoroList({ jobs, isLoading, isLoadingMore, selectedJobId, onJobSelect, onLoadMore, hasMore }: ConcoroListProps) {
   const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 1024px)");
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi();
   const { user } = useAuth();
   const [faviconIndices, setFaviconIndices] = useState<Record<string, number>>({});
-
-  const totalPages = Math.ceil(jobs.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentJobs = jobs.slice(startIndex, endIndex);
 
   // Scroll to selected card when selection changes
   React.useEffect(() => {
@@ -193,7 +178,13 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
     }
     
     if (isMobile) {
-      router.push(`/bandi/${job.id}`);
+      try {
+        const seoUrl = getBandoUrl(job)
+        router.push(seoUrl);
+      } catch (error) {
+        console.error('Error generating SEO URL:', error)
+        router.push(`/bandi/${job.id}`);
+      }
     } else {
       onJobSelect(job);
     }
@@ -387,7 +378,7 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
     )
   }
 
-  if (jobs.length === 0) {
+  if (!jobs || jobs.length === 0) {
     return (
       <Card className="p-6 text-center text-gray-500">
         Nessun concorso trovato corrispondente ai tuoi criteri.
@@ -398,7 +389,7 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
   return (
     <div className="space-y-4 w-full">
       <div className="space-y-4 w-full">
-        {currentJobs.map((job, index) => {
+        {(jobs || []).map((job, index) => {
           const timeAgo = job.createdAt?.seconds 
             ? formatDistanceToNow(new Date(job.createdAt.seconds * 1000), { addSuffix: true })
             : '';
@@ -408,7 +399,7 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
           
           // Get domain for favicon
           const domain = extractDomain(job.pa_link);
-          const fallbacks = domain ? getFaviconChain(domain) : ['/placeholder_icon.png'];
+          const fallbacks =  ['/placeholder_icon.png'];
           const currentFaviconIndex = faviconIndices[job.id] || 0;
           
           const handleFaviconError = () => {
@@ -425,7 +416,7 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
 
           return (
             <div
-              key={`${job.id}-${currentPage}-${index}`}
+              key={`${job.id}-${index}`}
               data-job-id={job.id}
               role="button"
               tabIndex={0}
@@ -445,7 +436,19 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
                 }
               }}
             >
-              <Card className="p-4 cursor-pointer hover:shadow-md transition-all duration-200 w-full pointer-events-none">
+              <Card className="relative p-4 cursor-pointer hover:shadow-md transition-all duration-200 w-full pointer-events-none overflow-hidden">
+                <div className="absolute inset-0">
+                  <GlowingEffect 
+                    disabled={false}
+                    glow={true}
+                    blur={10}
+                    spread={60}
+                    movementDuration={1}
+                    inactiveZone={0.2}
+                    proximity={100}
+                  />
+                </div>
+                <div className="relative z-10">
               {isMobile ? (
                 // Mobile layout
                 <div className="flex-grow space-y-2 w-full">
@@ -591,42 +594,37 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
                   </div>
                 </div>
               )}
+                </div>
               </Card>
             </div>
           )
         })}
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-4 border-t">
+      {hasMore && (
+        <div className="flex items-center justify-center pt-4 border-t">
           <Button
             type="button"
             variant="default"
-            size="sm"
+            size="lg"
+            className="w-full max-w-sm"
             onClick={(e) => {
               e.stopPropagation();
-              onPageChange(Math.max(1, currentPage - 1));
+              onLoadMore();
             }}
-            disabled={currentPage === 1}
+            disabled={isLoadingMore}
           >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            <span className="sm:inline hidden">Precedente</span>
-          </Button>
-          <span className="text-xs sm:text-sm text-gray-500">
-            Pagina {currentPage} di {totalPages}
-          </span>
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onPageChange(Math.min(totalPages, currentPage + 1));
-            }}
-            disabled={currentPage === totalPages}
-          >
-            <span className="sm:inline hidden">Successivo</span>
-            <ChevronRight className="w-4 h-4 ml-1" />
+            {isLoadingMore ? (
+              <div className="flex items-center">
+                <div className="w-4 h-4 border-2 border-gray-200 border-t-primary rounded-full animate-spin mr-2"></div>
+                Caricamento...
+              </div>
+            ) : (
+              <>
+                <span>Carica altri concorsi</span>
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </>
+            )}
           </Button>
         </div>
       )}

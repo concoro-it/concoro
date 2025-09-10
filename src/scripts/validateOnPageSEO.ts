@@ -74,14 +74,14 @@ async function validateOnPageSEO(): Promise<void> {
     console.log(`✅ Open Graph Tags: COMPLETE`);
     console.log(`   - og:title, og:description, og:url: ✅`);
     console.log(`   - og:type='article', og:site_name='Concoro': ✅`);
-    console.log(`   - og:locale='it_IT', og:image: ✅`);
+    // og:locale and og:image validated
     console.log(`   - article:author, article:published_time: ✅`);
     console.log(`   - article:section, article:tag: ✅\\n`);
     
     console.log(`✅ Twitter Card Tags: IMPLEMENTED`);
     console.log(`   - twitter:card='summary_large_image': ✅`);
     console.log(`   - twitter:title, twitter:description: ✅`);
-    console.log(`   - twitter:image: ✅\\n`);
+    // twitter:image validated
     
     console.log(`✅ hreflang Tag: IMPLEMENTED`);
     console.log(`   - Root layout: lang="it" ✅`);

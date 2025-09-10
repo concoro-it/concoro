@@ -30,13 +30,10 @@ const JPEG_QUALITY = 85;
 async function checkImageMagickInstalled() {
   try {
     await execAsync('magick -version');
-    console.log('✅ ImageMagick is available');
+    // ImageMagick is available
     return true;
   } catch (error) {
-    console.log('❌ ImageMagick not found. Please install it:');
-    console.log('  macOS: brew install imagemagick');
-    console.log('  Ubuntu: sudo apt-get install imagemagick');
-    console.log('  Windows: Download from https://imagemagick.org/script/download.php');
+    // ImageMagick not found
     return false;
   }
 }
@@ -47,11 +44,11 @@ async function optimizeImage(inputPath, outputPath, format = 'webp', quality = 8
     await execAsync(command);
     
     const stats = fs.statSync(outputPath);
-    console.log(`  → ${path.basename(outputPath)}: ${Math.round(stats.size / 1024)}KB`);
+    // Optimized image created
     
     return stats.size;
   } catch (error) {
-    console.error(`  ❌ Failed to optimize ${inputPath}:`, error.message);
+    // Failed to optimize image
     return null;
   }
 }
@@ -70,18 +67,18 @@ async function createResponsiveVariants(inputPath, baseName) {
     try {
       await execAsync(command);
       const stats = fs.statSync(outputPath);
-      console.log(`    → ${variant.suffix}: ${Math.round(stats.size / 1024)}KB`);
+      // Responsive variant created
     } catch (error) {
-      console.error(`    ❌ Failed to create ${variant.suffix} variant:`, error.message);
+      // Failed to create responsive variant
     }
   }
 }
 
 async function optimizeBlogImages() {
-  console.log('🖼️  Optimizing blog images...\n');
+  // Optimizing blog images
 
   if (!fs.existsSync(BLOG_DIR)) {
-    console.log('❌ Blog directory not found:', BLOG_DIR);
+    // Blog directory not found
     return;
   }
 
@@ -93,7 +90,7 @@ async function optimizeBlogImages() {
     !file.includes('-desktop')
   );
 
-  console.log(`Found ${imageFiles.length} images to optimize:\n`);
+  // Found images to optimize
 
   let totalSavings = 0;
   let processedCount = 0;
@@ -103,7 +100,7 @@ async function optimizeBlogImages() {
     const originalStats = fs.statSync(inputPath);
     const originalSize = originalStats.size;
     
-    console.log(`📸 ${file} (${Math.round(originalSize / 1024)}KB)`);
+    // Processing image file
 
     const baseName = path.parse(file).name;
     
@@ -119,26 +116,17 @@ async function optimizeBlogImages() {
       totalSavings += savings;
       processedCount++;
       
-      console.log(`  💾 Saved: ${Math.round(savings / 1024)}KB (${Math.round(savings/originalSize * 100)}%)`);
+      // Image optimization complete
     }
     
-    console.log('');
+
   }
 
-  console.log('📊 Optimization Summary:');
-  console.log(`  Images processed: ${processedCount}`);
-  console.log(`  Total space saved: ${Math.round(totalSavings / 1024 / 1024 * 100) / 100}MB`);
-  console.log(`  Average savings per image: ${Math.round(totalSavings / processedCount / 1024)}KB`);
-  
-  console.log('\n✅ Blog image optimization complete!');
-  console.log('\n📝 Next steps:');
-  console.log('1. Update your image components to use the new .webp files');
-  console.log('2. Implement responsive image loading with the -mobile, -tablet, -desktop variants');
-  console.log('3. Add lazy loading to images below the fold');
+  // Blog image optimization complete
 }
 
 async function optimizeHeroImages() {
-  console.log('🎯 Checking hero images...\n');
+  // Checking hero images
   
   const heroFiles = ['hero-image.png', 'banner.png'].filter(file => 
     fs.existsSync(path.join(PUBLIC_DIR, file))
@@ -153,17 +141,17 @@ async function optimizeHeroImages() {
       const webpPath = path.join(PUBLIC_DIR, `${baseName}.webp`);
       
       if (!fs.existsSync(webpPath)) {
-        console.log(`📸 Optimizing ${file}...`);
+        // Optimizing hero image
         await optimizeImage(inputPath, webpPath, 'webp', 85);
       } else {
-        console.log(`✅ ${baseName}.webp already exists`);
+        // WebP version already exists
       }
     }
   }
 }
 
 async function main() {
-  console.log('🚀 Starting Concoro Image Optimization\n');
+  // Starting image optimization
   
   if (!(await checkImageMagickInstalled())) {
     process.exit(1);
@@ -172,13 +160,12 @@ async function main() {
   await optimizeHeroImages();
   await optimizeBlogImages();
   
-  console.log('\n🎉 All done! Your mobile PageSpeed score should improve significantly.');
-  console.log('💡 Remember to rebuild your Next.js application to see the changes.');
+  // Image optimization completed
 }
 
 // Only run if called directly
 if (require.main === module) {
-  main().catch(console.error);
+  main().catch(() => {});
 }
 
 module.exports = { optimizeImage, optimizeBlogImages }; 

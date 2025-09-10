@@ -292,7 +292,9 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       const height = canvas.current.offsetHeight
       const width = canvas.current.offsetWidth
 
-      Common.setDecomp(require("poly-decomp"))
+      import("poly-decomp").then((polyDecomp) => {
+        Common.setDecomp(polyDecomp.default || polyDecomp)
+      })
 
       engine.current.gravity.x = gravity.x
       engine.current.gravity.y = gravity.y

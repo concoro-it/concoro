@@ -66,7 +66,7 @@ export const MagicText: React.FC<MagicTextProps> = ({ text }) => {
     // First, split by the literal \n\n sequence
     const paragraphs = text.split('\\n\\n');
     
-    let allProcessedWords: { text: string; isBold: boolean; isBreak: boolean }[] = [];
+    const allProcessedWords: { text: string; isBold: boolean; isBreak: boolean }[] = [];
     
     // Process each paragraph
     paragraphs.forEach((paragraph, paragraphIndex) => {

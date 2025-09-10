@@ -7,6 +7,7 @@ import { it } from "date-fns/locale"
 import { Articolo } from "@/types"
 import { getRelatedArticoli } from "@/lib/blog/services"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
+import { getCanonicalUrlParam } from '@/lib/utils/articolo-canonical-utils'
 import { Timestamp } from "firebase/firestore"
 
 interface RelatedArticlesSectionProps {
@@ -56,7 +57,7 @@ export function RelatedArticlesSection({
           sanitizedCategoria,
           sanitizedSettore,
           sanitizedArea,
-          3
+          4
         )
         
         console.log('📝 RelatedArticlesSection - Fetched articles:', articles)
@@ -110,7 +111,7 @@ export function RelatedArticlesSection({
           Scopri questi altri concorsi
         </h2>
         <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="animate-pulse">
               <div className="bg-gray-200 h-48 rounded-lg mb-4"></div>
               <div className="bg-gray-200 h-4 rounded mb-2"></div>
@@ -141,7 +142,7 @@ export function RelatedArticlesSection({
         Scopri questi altri concorsi
       </h2>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {relatedArticles
           .filter((article) => 
             article.articolo_title !== "Non specificato" && 
@@ -157,7 +158,7 @@ export function RelatedArticlesSection({
                 border: '1px solid #e0e0e0'
               }}
             >
-              <Link href={`/articolo/${article.slug || article.id}`}>
+              <Link href={`/articolo/${getCanonicalUrlParam(article)}`}>
                 <div className="space-y-3">
                                     {/* Article Tags */}
                                     {article.articolo_tags && article.articolo_tags.length > 0 && (

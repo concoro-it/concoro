@@ -4,17 +4,10 @@ import { MainFooter } from "@/components/ui/main-footer"
 import Link from "next/link"
 import type { Metadata } from "next"
 import { CTASection } from "@/components/ui/cta-section"
+import { getPricingPageMetadata } from "@/lib/utils/guest-seo-utils"
 
-export const metadata: Metadata = {
-  title: "Prezzi e Piani | Concoro - Scegli il piano perfetto per te",
-  description: "Scopri i piani di Concoro: dal piano gratuito a quello premium con AI personalizzata. Trova il piano perfetto per la tua ricerca di lavoro nel settore pubblico.",
-  keywords: ["prezzi", "piani", "abbonamento", "concorsi pubblici", "Concoro", "premium", "gratis"],
-  openGraph: {
-    title: "Prezzi e Piani | Concoro",
-    description: "Scegli il piano perfetto per la tua ricerca di lavoro nel settore pubblico. Dal piano gratuito al premium con AI.",
-    type: "website",
-  },
-}
+// Generate metadata for pricing page
+export const metadata: Metadata = getPricingPageMetadata()
 
 const concoroTiers = [
   {

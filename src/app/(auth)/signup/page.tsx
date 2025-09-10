@@ -16,6 +16,7 @@ import { BrandColumn } from '@/components/auth/BrandColumn';
 import type { SignUpFormData } from '@/types/auth';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Spinner } from '@/components/ui/spinner';
+import Image from 'next/image';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -48,9 +49,9 @@ export default function SignUpPage() {
       setTimeout(() => {
         router.push('/verify-email');
       }, 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign up error:', error);
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -61,9 +62,9 @@ export default function SignUpPage() {
       setLoading(true);
       await signInWithGoogle();
       // Redirection will be handled by the useEffect
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Google sign up error:', error);
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -130,7 +131,7 @@ export default function SignUpPage() {
               disabled={loading}
             >
               <div className="flex items-center justify-center gap-2">
-                <img src="/google.svg" alt="Google" className="w-5 h-5" />
+                <Image src="/google.svg" alt="Google" width={20} height={20} />
                 Continua con Google
               </div>
             </AuthButton>

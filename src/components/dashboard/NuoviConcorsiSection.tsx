@@ -15,6 +15,7 @@ import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
+import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 import Image from "next/image"
 
 const getFaviconChain = (domain: string): string[] => [
@@ -117,17 +118,39 @@ export function NuoviConcorsiSection() {
   const [faviconIndices, setFaviconIndices] = useState<Record<string, number>>({})
   const router = useRouter()
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi()
+  const { generateUrl } = useBandoUrl()
 
   // Fetch 5 most recently published concorsi
   useEffect(() => {
     async function fetchLatestConcorsi() {
       try {
         setIsLoading(true)
+        
+        // Try optimized query first
+        try {
+          const { getRegionalConcorsi } = await import('@/lib/services/regional-queries-client')
+          
+          const result = await getRegionalConcorsi({
+            stato: 'open',
+            limit: 5,
+            orderByField: 'publication_date',
+            orderDirection: 'desc'
+          })
+          
+          console.log(`📋 ✅ Optimized latest concorsi query: ${result.concorsi.length} concorsi`)
+          
+          const concorsiData = result.concorsi as Concorso[]
+          setConcorsi(concorsiData)
+          return
+          
+        } catch (optimizedError) {
+          console.log('📋 ⚠️ Optimized latest concorsi query failed, falling back to legacy:', optimizedError)
+        }
+        
+        // Fallback to legacy query
         const db = getFirebaseFirestore()
         const concorsiCollection = collection(db, "concorsi")
 
-        // Query for the 5 most recently published concorsi
-        // Using publication_date if available, falling back to DataApertura, then createdAt
         const concorsiQuery = query(
           concorsiCollection,
           orderBy("publication_date", "desc"),
@@ -146,6 +169,7 @@ export function NuoviConcorsiSection() {
           ...doc.data()
         })) as Concorso[]
         
+        console.log(`📋 🐌 Legacy latest concorsi query: ${concorsiData.length} concorsi`)
         setConcorsi(concorsiData)
       } catch (error) {
         console.error('Error fetching latest concorsi:', error)
@@ -313,7 +337,7 @@ export function NuoviConcorsiSection() {
           return (
             <Link 
               key={concorso.id} 
-              href={`/bandi/${concorso.id}`}
+              href={generateUrl(concorso)}
               className="block"
             >
               <div 

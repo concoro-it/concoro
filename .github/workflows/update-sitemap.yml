@@ -1,0 +1,83 @@
+name: Update Sitemap
+
+on:
+  # Run automatically every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+  
+  # Run on push to main branch
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/lib/blog/**'
+      - 'src/lib/concorsi/**'
+      - 'src/lib/utils/bando-slug-utils.ts'
+      - 'src/app/api/sitemap/**'
+
+jobs:
+  update-sitemap:
+    runs-on: ubuntu-latest
+    
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Generate sitemap
+      run: npm run generate-sitemap
+
+    - name: Check if sitemap changed
+      id: check-changes
+      run: |
+        if git diff --quiet public/sitemap-static.xml; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Commit and push sitemap if changed
+      if: steps.check-changes.outputs.changed == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add public/sitemap-static.xml
+        git commit -m "chore: auto-update sitemap [skip ci]"
+        git push
+
+    - name: Ping search engines
+      if: steps.check-changes.outputs.changed == 'true'
+      run: |
+        # Ping Google
+        curl -s "https://www.google.com/ping?sitemap=https://www.concoro.it/api/sitemap" || true
+        # Ping Bing
+        curl -s "https://www.bing.com/ping?sitemap=https://www.concoro.it/api/sitemap" || true
+        echo "Search engines pinged about sitemap update"
+
+    - name: Deploy to production (if needed)
+      if: steps.check-changes.outputs.changed == 'true'
+      run: |
+        echo "Sitemap updated and committed. Production deployment may be triggered."
+        # Add your deployment commands here if needed
+

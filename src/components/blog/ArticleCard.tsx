@@ -1,15 +1,9 @@
 import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription, 
-  CardFooter 
+  Card
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { GlowingEffect } from "@/components/ui/glowing-effect"
 import Link from "next/link"
-import Image from "next/image"
 import {
   GraduationCap,
   MapPin,
@@ -31,9 +25,7 @@ import { it } from "date-fns/locale"
 import { useState } from "react"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { getArticleCoverImage, getFallbackCoverImage } from '@/lib/utils/image-utils'
-import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { getCanonicalUrlParam } from '@/lib/utils/articolo-canonical-utils'
 
 interface ArticleCardProps {
   article: Articolo
@@ -205,7 +197,7 @@ const getArticleIcon = (article: Articolo) => {
 }
   
   return (
-    <Link href={`/articolo/${article.slug || article.concorso_id}`} className="min-h-[14rem] list-none">
+    <Link href={`/articolo/${getCanonicalUrlParam(article)}`} className="min-h-[14rem] list-none">
       <div className="relative h-full rounded-[1.25rem] border-[0.75px] border-border p-2 md:rounded-[1.5rem] md:p-3">
         <GlowingEffect
           spread={40}

@@ -5,11 +5,9 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { GlowingEffect } from "@/components/ui/glowing-effect"
-import { BackgroundBeams } from "@/components/ui/background-beams"
 import { 
   ArrowLeft, 
   CalendarIcon,
-  BookOpen,
   FileText,
   Clock,
 } from "lucide-react"
@@ -23,7 +21,6 @@ import { it } from "date-fns/locale"
 import { Separator } from "@/components/ui/separator"
 import { marked } from 'marked'
 import { ConcorsoCard } from "@/components/blog/ConcorsoCard"
-import { ArticleFooter } from "@/components/blog/ArticleFooter"
 import { Timestamp } from "firebase/firestore"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { cn } from "@/lib/utils"
@@ -34,8 +31,9 @@ import { isDocumentId } from '@/lib/utils/slug-utils'
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { Breadcrumb, BreadcrumbItem } from "@/components/ui/breadcrumb"
 import { RelatedArticlesSection } from "@/components/blog/RelatedArticlesSection"
-import { generateArticleSEO, generateAltText, generateSocialImage, validateIntroRequirements, countWords, calculateKeywordDensity } from '@/lib/utils/seo-utils'
+import { generateArticleSEO, generateAltText, generateSocialImage } from '@/lib/utils/seo-utils'
 import { generateJobPostingStructuredData, validateJobPostingData } from '@/lib/utils/jobposting-utils'
+import { getArticoloCanonicalUrl } from '@/lib/utils/articolo-canonical-utils'
 import { trackArticleView, trackConcorsoEngagement, trackEvent } from '@/lib/analytics'
 
 // Configure marked for safe HTML rendering
@@ -49,7 +47,6 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [imageSrc, setImageSrc] = useState<string>('/blog/default-article-image.png')
-  const [currentUrl, setCurrentUrl] = useState<string>('')
   const router = useRouter()
   
   // Extract role and location for reuse throughout component
@@ -85,12 +82,8 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
         
         setArticle(articleData)
         
-        // Handle redirect if accessed by ID but has a slug
-        if (isDocumentId(params.slugOrId) && articleData.slug) {
-          // Redirect to slug URL with 301 status
-          router.replace(`/articolo/${articleData.slug}`, { scroll: false })
-          return
-        }
+        // Redirect is now handled server-side in layout.tsx for proper SEO
+        // This ensures 301 redirects are properly sent to search engines
         
         // Set the initial image path using the same logic as ArticleCard
         setImageSrc(getArticleCoverImage(articleData.concorso_id))
@@ -227,31 +220,7 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
         article.articolo_meta_description
       );
       
-      // CRITICAL SEO: Add meta robots noindex,follow for ID-based URLs
-      const isIdBasedUrl = isDocumentId(params.slugOrId);
-      const existingRobots = document.querySelector('meta[name="robots"]');
-      
-      if (isIdBasedUrl) {
-        // ID-based URL should have noindex,follow to prevent indexing but allow link following
-        if (existingRobots) {
-          existingRobots.setAttribute('content', 'noindex,follow');
-        } else {
-          const robotsMeta = document.createElement('meta');
-          robotsMeta.name = 'robots';
-          robotsMeta.content = 'noindex,follow';
-          document.head.appendChild(robotsMeta);
-        }
-      } else {
-        // Slug-based URL should be indexed normally
-        if (existingRobots) {
-          existingRobots.setAttribute('content', 'index,follow');
-        } else {
-          const robotsMeta = document.createElement('meta');
-          robotsMeta.name = 'robots';
-          robotsMeta.content = 'index,follow';
-          document.head.appendChild(robotsMeta);
-        }
-      }
+      // Note: robots meta and canonical are now handled server-side in layout.tsx
 
       // Set SEO-optimized title (≤ 60 chars, primary keyword first, ends with "| Concoro")
       document.title = seoData.title;
@@ -281,25 +250,16 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
       // Add hreflang="it-IT" meta tag
       const hreflang = document.querySelector('link[rel="alternate"][hreflang="it-IT"]')
       if (hreflang) {
-        hreflang.setAttribute('href', `https://concoro.it/articolo/${article.slug || article.id}`)
+        hreflang.setAttribute('href', getArticoloCanonicalUrl(article))
       } else {
         const hreflangLink = document.createElement('link')
         hreflangLink.rel = 'alternate'
         hreflangLink.hreflang = 'it-IT'
-        hreflangLink.href = `https://concoro.it/articolo/${article.slug || article.id}`
+        hreflangLink.href = getArticoloCanonicalUrl(article)
         document.head.appendChild(hreflangLink)
       }
       
-      // Inject canonical tag - always point to slug URL if available
-      const existingCanonical = document.querySelector('link[rel="canonical"]')
-      if (existingCanonical) {
-        existingCanonical.remove()
-      }
-      
-      const canonical = document.createElement('link')
-      canonical.rel = 'canonical'
-      canonical.href = `https://concoro.it/articolo/${article.slug || article.id}`
-      document.head.appendChild(canonical)
+      // Note: canonical link is now handled server-side in layout.tsx
       
       // Helper function to safely convert timestamps to ISO strings
       const toISOString = (timestamp: any): string => {
@@ -335,14 +295,14 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
           article.articolo_title,
           role,
           location,
-          imageSrc.startsWith('/') ? `https://concoro.it${imageSrc}` : imageSrc
+          imageSrc.startsWith('/') ? `https://www.concoro.it${imageSrc}` : imageSrc
         );
 
         // Complete Open Graph implementation
         const ogMetaTags = [
           { property: 'og:title', content: seoData.title },
           { property: 'og:description', content: seoData.description },
-          { property: 'og:url', content: `https://concoro.it/articolo/${article.slug || article.id}` },
+          { property: 'og:url', content: getArticoloCanonicalUrl(article) },
           { property: 'og:type', content: 'article' },
           { property: 'og:site_name', content: 'Concoro' },
           { property: 'og:locale', content: 'it_IT' },
@@ -392,36 +352,56 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
         }
       });
       
-      // Add Article structured data for SEO
+      // Add Article structured data for SEO (use BlogPosting for blog articles)
       const articleStructuredData = {
         "@context": "https://schema.org",
-        "@type": "Article",
+        "@type": "BlogPosting",
         "headline": article.articolo_title,
         "description": article.articolo_meta_description || article.articolo_subtitle,
         "datePublished": toISOString(article.publication_date),
         "dateModified": toISOString(article.updatedAt) || toISOString(article.publication_date),
+        "url": getArticoloCanonicalUrl(article),
+        "image": [socialImageUrl],
         "author": {
           "@type": "Organization",
-          "name": "Concoro"
+          "name": "Concoro",
+          "url": "https://www.concoro.it"
         },
         "publisher": {
           "@type": "Organization",
           "name": "Concoro",
+          "url": "https://www.concoro.it",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://concoro.it/concoro-logo-light.svg"
+            "url": "https://www.concoro.it/concoro-favicon-light.jpg"
           }
         },
         "mainEntityOfPage": {
           "@type": "WebPage",
-          "@id": `https://concoro.it/articolo/${article.slug || article.id}`
+          "@id": getArticoloCanonicalUrl(article)
         }
-      }
+      } as const
       
-      // Generate JobPosting structured data if concorso data is available
-      let jobPostingStructuredData = null;
+      // Generate JobPosting structured data only if concorso is active (validThrough in the future)
+      let jobPostingStructuredData = null as any;
       if (article.concorso) {
-        jobPostingStructuredData = generateJobPostingStructuredData(article, 'https://concoro.it');
+        const now = new Date();
+        let closingDate: Date | null = null;
+        const dc: any = (article.concorso as any).DataChiusura;
+        try {
+          if (dc?.toDate && typeof dc.toDate === 'function') {
+            closingDate = dc.toDate();
+          } else if (dc?.seconds && dc?.nanoseconds) {
+            closingDate = new Timestamp(dc.seconds, dc.nanoseconds).toDate();
+          } else if (typeof dc === 'string') {
+            closingDate = new Date(dc);
+          }
+        } catch {}
+
+        const isActive = !closingDate || (closingDate instanceof Date && !isNaN(closingDate.getTime()) && closingDate > now);
+        if (isActive) {
+          jobPostingStructuredData = generateJobPostingStructuredData(article, 'https://www.concoro.it');
+        }
         
         if (jobPostingStructuredData && !validateJobPostingData(jobPostingStructuredData)) {
           console.warn('Generated JobPosting structured data failed validation');
@@ -429,36 +409,7 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
         }
       }
       
-      // Remove existing structured data
-      const existingArticleScript = document.querySelector('script[type="application/ld+json"][data-article]')
-      if (existingArticleScript) {
-        existingArticleScript.remove()
-      }
-      
-      const existingJobScript = document.querySelector('script[type="application/ld+json"][data-jobposting]')
-      if (existingJobScript) {
-        existingJobScript.remove()
-      }
-      
-      // Add Article structured data
-      const articleScript = document.createElement('script')
-      articleScript.type = 'application/ld+json'
-      articleScript.setAttribute('data-article', 'true')
-      articleScript.textContent = JSON.stringify(articleStructuredData)
-      document.head.appendChild(articleScript)
-      
-      // Add JobPosting structured data if available
-      if (jobPostingStructuredData) {
-        const jobScript = document.createElement('script')
-        jobScript.type = 'application/ld+json'
-        jobScript.setAttribute('data-jobposting', 'true')
-        jobScript.textContent = JSON.stringify(jobPostingStructuredData)
-        document.head.appendChild(jobScript)
-        
-        console.log('✅ JobPosting structured data added for:', article.articolo_title);
-      } else {
-        console.log('ℹ️ No JobPosting structured data generated - missing concorso data');
-      }
+      // Note: JSON-LD structured data is now handled server-side in layout.tsx
 
       // Track article view for analytics
       if (article.slug || article.id) {
@@ -626,6 +577,53 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
 
         {/* Article header */}
         <div className="mb-8">
+          {/* Status Badge - Appears before title on mobile, after breadcrumbs */}
+          {article.concorso && (() => {
+            const statusInfo = getConcorsoStatus(article.concorso);
+            if (!statusInfo) return null;
+            
+            const getStatusColor = (status: string) => {
+              switch (status) {
+                case 'open':
+                  return "bg-green-100 text-green-800 hover:bg-green-200";
+                case 'closed':
+                  return "bg-red-100 text-red-800 hover:bg-red-200";
+                default:
+                  return "bg-gray-100 text-gray-800 hover:bg-gray-200";
+              }
+            };
+            
+            const getStatusIcon = (status: string) => {
+              switch (status) {
+                case 'open':
+                  return '';
+                case 'closed':
+                  return '';
+                default:
+                  return '  ';
+              }
+            };
+            
+            return (
+              <div className="mb-4 sm:hidden">
+                <Badge 
+                  variant="secondary"
+                  className={cn(
+                    "text-xs px-3 py-1 font-medium",
+                    getStatusColor(statusInfo.status)
+                  )}
+                >
+                  {getStatusIcon(statusInfo.status)} {statusInfo.message}
+                  {statusInfo.closingDate && (
+                    <span className="ml-2 text-xs opacity-75">
+                      ({statusInfo.closingDate})
+                    </span>
+                  )}
+                </Badge>
+              </div>
+            );
+          })()}
+          
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
             {article.articolo_title}
           </h1>
@@ -638,67 +636,70 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
           
           {/* Article metadata - responsive layout for mobile */}
           <div className="mb-3">
-            {/* Status Badge - First row */}
-            {article.concorso && (() => {
-              const statusInfo = getConcorsoStatus(article.concorso);
-              if (!statusInfo) return null;
-              
-              const getStatusColor = (status: string) => {
-                switch (status) {
-                  case 'open':
-                    return "bg-green-100 text-green-800 hover:bg-green-200";
-                  case 'closed':
-                    return "bg-red-100 text-red-800 hover:bg-red-200";
-                  default:
-                    return "bg-gray-100 text-gray-800 hover:bg-gray-200";
-                }
-              };
-              
-              const getStatusIcon = (status: string) => {
-                switch (status) {
-                  case 'open':
-                    return '';
-                  case 'closed':
-                    return '';
-                  default:
-                    return '  ';
-                }
-              };
-              
-              return (
-                <div className="mb-3">
-                  <Badge 
-                    variant="secondary"
-                    className={cn(
-                      "text-xs px-3 py-1 font-medium",
-                      getStatusColor(statusInfo.status)
-                    )}
-                  >
-                    {getStatusIcon(statusInfo.status)} {statusInfo.message}
-                    {statusInfo.closingDate && (
-                      <span className="ml-2 text-xs opacity-75">
-                        ({statusInfo.closingDate})
-                      </span>
-                    )}
-                  </Badge>
-                </div>
-              );
-            })()}
             
-            {/* Publication date and reading time - Second row with responsive columns */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-gray-500">
-              <div className="flex items-center gap-2">
-                <span>Pubblicato il</span>
-                <CalendarIcon size={16} />
-                <span>{formatDate(article.publication_date)}</span>
+            {/* Publication date and reading time in the same row */}
+            <div className="flex flex-row items-center justify-between gap-2 text-sm text-gray-500 mb-2">
+              <div className="flex flex-row items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <span>Pubblicato il</span>
+                  <CalendarIcon size={16} />
+                  <span>{formatDate(article.publication_date)}</span>
+                </div>
+                
+                <Separator orientation="vertical" className="h-4 mx-2" />
+                
+                <div className="flex items-center gap-2">
+                  <Clock size={16} />
+                  <span>5 min di lettura</span>
+                </div>
               </div>
               
-              <Separator orientation="vertical" className="hidden sm:block h-4" />
-              
-              <div className="flex items-center gap-2">
-                <Clock size={16} />
-                <span>5 min di lettura</span>
-              </div>
+              {/* Status Badge - Only visible on desktop */}
+              {article.concorso && (() => {
+                const statusInfo = getConcorsoStatus(article.concorso);
+                if (!statusInfo) return null;
+                
+                const getStatusColor = (status: string) => {
+                  switch (status) {
+                    case 'open':
+                      return "bg-green-100 text-green-800 hover:bg-green-200";
+                    case 'closed':
+                      return "bg-red-100 text-red-800 hover:bg-red-200";
+                    default:
+                      return "bg-gray-100 text-gray-800 hover:bg-gray-200";
+                  }
+                };
+                
+                const getStatusIcon = (status: string) => {
+                  switch (status) {
+                    case 'open':
+                      return '';
+                    case 'closed':
+                      return '';
+                    default:
+                      return '  ';
+                  }
+                };
+                
+                return (
+                  <div className="hidden sm:block">
+                    <Badge 
+                      variant="secondary"
+                      className={cn(
+                        "text-xs px-3 py-1 font-medium",
+                        getStatusColor(statusInfo.status)
+                      )}
+                    >
+                      {getStatusIcon(statusInfo.status)} {statusInfo.message}
+                      {statusInfo.closingDate && (
+                        <span className="ml-2 text-xs opacity-75">
+                          ({statusInfo.closingDate})
+                        </span>
+                      )}
+                    </Badge>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

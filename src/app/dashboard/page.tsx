@@ -12,9 +12,7 @@ import { hasFilledPreferences } from "@/lib/utils/preferences-utils"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import type { Concorso } from "@/types/concorso"
-import { ConcoroList } from "@/components/bandi/ConcoroList"
-import { FilterPopover } from "@/components/jobs/FilterPopover"
-import { MapPin, Briefcase, Clock, ArrowRight, ArrowUpDown } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MatchedConcorsi } from "@/components/dashboard/MatchedConcorsi"
 import { NuoviConcorsiSection } from "@/components/dashboard/NuoviConcorsiSection"
@@ -22,32 +20,31 @@ import { MaxiConcorsiSection } from "@/components/dashboard/MaxiConcorsiSection"
 import { ClosingTodaySection } from "@/components/dashboard/ClosingTodaySection"
 import { SavedConcorsiSection } from "@/components/dashboard/SavedConcorsiSection"
 import Link from "next/link"
-import { color } from "framer-motion"
+import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 import { Spinner } from '@/components/ui/spinner'
 import { extractAllRegions, localitaContainsRegions } from "@/lib/utils/region-utils"
-import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
-import { getAvailableRegimes, normalizeConcorsoRegime, filterByRegime } from "@/lib/utils/regime-utils"
+import { getAvailableRegimes, filterByRegime } from "@/lib/utils/regime-utils"
 
 export default function DashboardPage() {
   const [concorsi, setConcorsi] = useState<Concorso[]>([])
   const [allConcorsi, setAllConcorsi] = useState<Concorso[]>([]) // Store all concorsi for client-side filtering
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const { user, loading: authLoading, initialized: authInitialized } = useAuth()
   const { preferences, loading: preferencesLoading } = useUserPreferences()
   const { savedConcorsiIds } = useSavedConcorsi()
   const router = useRouter()
+  const { generateUrl } = useBandoUrl()
 
   // Filter states - now using regions instead of full locations
-  const [selectedRegions, setSelectedRegions] = useState<string[]>([])
-  const [selectedRegime, setSelectedRegime] = useState<string[]>([])
-  const [selectedSettore, setSelectedSettore] = useState<string[]>([])
+  const [selectedRegions] = useState<string[]>([])
+  const [selectedRegime] = useState<string[]>([])
+  const [selectedSettore] = useState<string[]>([])
   const [availableRegions, setAvailableRegions] = useState<string[]>([])
   const [availableRegimi, setAvailableRegimi] = useState<string[]>([])
   const [availableSettori, setAvailableSettori] = useState<string[]>([])
   
   // Sorting state
-  const [sortBy, setSortBy] = useState<string>("")
+  const [sortBy] = useState<string>("")
 
   // Redirect to sign-in if user is not authenticated
   useEffect(() => {
@@ -93,7 +90,7 @@ export default function DashboardPage() {
     fetchFilterOptions()
   }, [authInitialized])
 
-  // Fetch all concorsi (we'll filter client-side for regions)
+  // Fetch concorsi with optimized queries
   useEffect(() => {
     async function fetchConcorsi() {
       if (typeof window === 'undefined' || !authInitialized) {
@@ -102,16 +99,39 @@ export default function DashboardPage() {
 
       try {
         setIsLoading(true)
+        
+        // Try optimized query first
+        try {
+          const { getRegionalConcorsi } = await import('@/lib/services/regional-queries-client')
+          
+          const result = await getRegionalConcorsi({
+            settore: selectedSettore.length > 0 ? selectedSettore[0] : undefined,
+            stato: 'open',
+            limit: 100,
+            orderByField: 'publication_date',
+            orderDirection: 'desc'
+          })
+          
+          console.log(`📋 ✅ Optimized dashboard query: ${result.concorsi.length} concorsi`)
+          
+          const concorsiData = result.concorsi as Concorso[]
+          setAllConcorsi(concorsiData)
+          return
+          
+        } catch (optimizedError) {
+          console.log('📋 ⚠️ Dashboard optimized query failed, falling back to legacy:', optimizedError)
+        }
+        
+        // Fallback to legacy query
         const db = getFirebaseFirestore()
         const concorsiCollection = collection(db, "concorsi")
 
-        // Build query conditions (excluding region and regime filtering since we'll do that client-side)
+        // Build query conditions
         const conditions = []
         if (selectedSettore.length > 0) {
           conditions.push(where('settore_professionale', 'in', selectedSettore))
         }
 
-        // Create query with conditions
         const concorsiQuery = conditions.length > 0
           ? query(concorsiCollection, and(...conditions), limit(50))
           : query(concorsiCollection, limit(50))
@@ -129,6 +149,7 @@ export default function DashboardPage() {
           ...doc.data()
         })) as Concorso[]
         
+        console.log(`📋 🐌 Dashboard legacy query: ${concorsiData.length} concorsi`)
         setAllConcorsi(concorsiData)
       } catch (error) {
         console.error('Error fetching concorsi:', error)
@@ -215,7 +236,13 @@ export default function DashboardPage() {
   }, [allConcorsi, selectedRegions, selectedRegime, sortBy])
 
   const handleJobSelect = (job: Concorso) => {
-    router.push(`/bandi/${job.id}`)
+    try {
+      const seoUrl = generateUrl(job)
+      router.push(seoUrl)
+    } catch (error) {
+      console.error('Error generating SEO URL:', error)
+      router.push(`/bandi/${job.id}`)
+    }
   }
 
   if (authLoading || !authInitialized) {

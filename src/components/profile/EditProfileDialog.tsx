@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { UserProfile } from "@/types"
-import { X, Plus } from "lucide-react"
 
 interface EditProfileDialogProps {
   open: boolean

@@ -4,11 +4,11 @@ import { usePathname } from 'next/navigation';
 import { Inter } from 'next/font/google';
 import { Providers } from '@/app/providers';
 import Navbar from '@/components/ui/navbar';
+import LightweightNavbar from '@/components/ui/lightweight-navbar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { AlertCookieNotice } from '@/components/ui/alert-cookie-notice';
 import { Suspense, useEffect } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { suppressFaviconErrors } from '@/lib/utils/suppress-favicon-errors';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,10 +19,29 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                      pathname?.startsWith('/reset-password') ||
                      pathname?.startsWith('/verify-email');
 
-  // Suppress favicon loading errors in development
-  useEffect(() => {
-    suppressFaviconErrors();
-  }, []);
+  // Pages that require full Firebase Auth immediately (same logic as Providers)
+  const requiresFullAuth = 
+    pathname?.startsWith('/signin') || 
+    pathname?.startsWith('/signup') || 
+    pathname?.startsWith('/reset-password') ||
+    pathname?.startsWith('/verify-email') ||
+    pathname?.startsWith('/dashboard') ||
+    pathname?.startsWith('/chat') ||
+    pathname?.startsWith('/settings') ||
+    pathname?.startsWith('/profile') ||
+    pathname?.startsWith('/basic-info') ||
+    pathname?.startsWith('/setup-profile') ||
+    pathname?.startsWith('/saved-concorsi') ||
+    pathname?.startsWith('/preferenze-lavorative') ||
+    pathname?.startsWith('/notifiche');
+
+  // Pages that should use the full navbar (includes bandi pages for auth-aware UI)
+  const useFullNavbar = requiresFullAuth || pathname?.startsWith('/bandi');
+
+  // Use full navbar for auth-aware pages, lightweight for public pages
+  const NavbarComponent = useFullNavbar ? Navbar : LightweightNavbar;
+
+
 
   return (
     <ErrorBoundary>
@@ -31,7 +50,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
           {!isAuthRoute && (
             <ErrorBoundary>
               <Suspense fallback={<div className="h-16 bg-background border-b" />}>
-                <Navbar />
+                <NavbarComponent />
               </Suspense>
             </ErrorBoundary>
           )}

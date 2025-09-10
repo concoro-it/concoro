@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import type { Concorso } from './concorso';
 
 export interface Articolo {
   id: string;
@@ -20,20 +21,5 @@ export interface Articolo {
 }
 
 export interface ArticoloWithConcorso extends Articolo {
-  concorso?: {
-    id: string;
-    Titolo: string;
-    Stato: string;
-    categoria?: string;
-    settore_professionale?: string;
-    AreaGeografica?: string;
-    Ente: string;
-    Descrizione: string;
-    Link?: string;
-    DataChiusura?: any; // Firestore Timestamp
-    numero_di_posti?: number;
-    regime?: string;
-    regime_impegno?: string;
-    // Other concorso fields as needed
-  };
-} 
+  concorso?: Concorso;
+}

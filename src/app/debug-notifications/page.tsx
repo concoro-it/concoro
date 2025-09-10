@@ -202,7 +202,7 @@ export default function DebugNotificationsPage() {
     if (user?.uid) {
       loadEmailLogs();
     }
-  }, [user?.uid]);
+  }, [user?.uid, loadEmailLogs]);
 
   if (!user) {
     return (
