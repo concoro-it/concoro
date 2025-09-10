@@ -209,9 +209,8 @@ This project is proprietary and confidential. All rights reserved.
 ## 🆘 Support
 
 For technical support or questions about the platform:
-- Email: support@concoro.it
-- Documentation: [Internal Wiki]
-- Issue Tracking: GitHub Issues
+- Email: info@concoro.it
+
 
 ## 🗺 Roadmap
 
