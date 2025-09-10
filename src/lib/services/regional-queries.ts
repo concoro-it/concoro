@@ -143,9 +143,9 @@ export const getRegionalConcorsi = async (options: RegionalQueryOptions): Promis
       firestoreQuery = firestoreQuery.where('Ente', '==', ente)
     }
 
-    // Add settore filter (using 'settori' field - FAST!)
+    // Add settore filter (using 'settore_professionale' field - FAST!)
     if (settore) {
-      firestoreQuery = firestoreQuery.where('settori', '==', settore)
+      firestoreQuery = firestoreQuery.where('settore_professionale', '==', settore)
     }
 
     // Add status filter (direct field query - FAST!)
@@ -218,9 +218,9 @@ export const getRegionalConcorsi = async (options: RegionalQueryOptions): Promis
         // Re-apply filters with correct field names
         if (regione && regione.length > 0) {
           if (regione.length === 1) {
-            fallbackQuery = fallbackQuery.where('regione', 'array-contains', regione[0].toLowerCase())
+            fallbackQuery = fallbackQuery.where('province.regione_nome', '==', regione[0])
           } else {
-            fallbackQuery = fallbackQuery.where('regione', 'array-contains-any', regione.map(r => r.toLowerCase()))
+            fallbackQuery = fallbackQuery.where('province.regione_nome', 'in', regione)
           }
         }
         
@@ -229,7 +229,7 @@ export const getRegionalConcorsi = async (options: RegionalQueryOptions): Promis
         }
         
         if (settore) {
-          fallbackQuery = fallbackQuery.where('settori', '==', settore)
+          fallbackQuery = fallbackQuery.where('settore_professionale', '==', settore)
         }
         
         if (Stato !== 'all') {
@@ -275,17 +275,31 @@ export const getRegionalConcorsi = async (options: RegionalQueryOptions): Promis
     // Apply client-side filtering for province.regione_nome if regione filter is specified
     if (regione && regione.length > 0) {
       console.log('🔍 Applying client-side province.regione_nome filtering for:', regione)
+      console.log('🔍 Total concorsi before filtering:', concorsi.length)
+      
+      // Debug: Show sample province data
+      if (concorsi.length > 0) {
+        const sampleProvinces = concorsi.slice(0, 3).map(c => c.province).filter(Boolean);
+        console.log('🔍 Sample province data:', sampleProvinces);
+      }
+      
       concorsi = concorsi.filter((concorso: any) => {
         if (!concorso.province || !Array.isArray(concorso.province)) {
           return false
         }
         
         // Check if any province in the array has a matching regione_nome
-        return concorso.province.some((provincia: any) => 
+        const hasMatch = concorso.province.some((provincia: any) => 
           provincia && 
           provincia.regione_nome && 
           regione.includes(provincia.regione_nome)
         )
+        
+        if (hasMatch) {
+          console.log('✅ Found match for concorso:', concorso.Titolo, 'with provinces:', concorso.province);
+        }
+        
+        return hasMatch;
       })
       console.log(`📋 Province filtering: ${concorsi.length} results after filtering`)
     }
@@ -320,7 +334,7 @@ export const getRegionalCount = async (regione: string): Promise<number> => {
 
     const snapshot = await firestore
       .collection('concorsi')
-      .where('regione', 'array-contains', regione.toLowerCase())
+      .where('province.regione_nome', '==', regione)
       .where('Stato', '==', 'OPEN')
       .get()
       

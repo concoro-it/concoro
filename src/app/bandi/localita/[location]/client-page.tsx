@@ -42,6 +42,7 @@ interface LocationClientProps {
   enti: string[]
   locationSlug: string
   provinces: string[]  // Array of province names
+  isRegion?: boolean   // Whether this is a region or city
 }
 
 export default function LocationClient({ 
@@ -50,7 +51,8 @@ export default function LocationClient({
   totalCount = 0, 
   enti = [],
   locationSlug,
-  provinces = []
+  provinces = [],
+  isRegion = false
 }: LocationClientProps) {
   const router = useRouter()
   
@@ -137,7 +139,7 @@ export default function LocationClient({
           <BreadcrumbSEO
             items={[
               { label: "Concorsi", href: "/bandi" },
-              { label: "Località", href: "/bandi" },
+              { label: isRegion ? "Regioni" : "Località", href: "/bandi" },
               { label: location, href: `/bandi/localita/${locationSlug}` }
             ]}
           />
@@ -153,7 +155,7 @@ export default function LocationClient({
                 Concorsi Pubblici {location}
               </h1>
               <p className="text-gray-600 mt-1">
-                Scopri le opportunità di lavoro nel settore pubblico in {location}
+                Scopri le opportunità di lavoro nel settore pubblico {isRegion ? 'nella regione' : 'in'} {location}
               </p>
             </div>
           </div>
@@ -181,7 +183,7 @@ export default function LocationClient({
                   <CardContent>
                     <div className="text-2xl font-bold">{totalCount}</div>
                     <p className="text-xs text-muted-foreground">
-                      Concorsi aperti in {location}
+                      Concorsi aperti {isRegion ? 'nella regione' : 'in'} {location}
                     </p>
                   </CardContent>
                 </div>
@@ -348,7 +350,7 @@ export default function LocationClient({
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-xl font-semibold text-gray-900">
-                    Concorsi Disponibili ({totalCount}) in {location}
+                    Concorsi Disponibili ({totalCount}) {isRegion ? 'nella regione' : 'in'} {location}
                   </h2>
                 </div>
                 
@@ -374,7 +376,7 @@ export default function LocationClient({
                     Nessun concorso trovato
                   </h3>
                   <p className="text-gray-600 mb-4">
-                    Non ci sono concorsi attivi in {location} al momento.
+                    Non ci sono concorsi attivi {isRegion ? 'nella regione' : 'in'} {location} al momento.
                   </p>
                   <p className="text-sm text-gray-500">
                     Torna più tardi per nuove opportunità o esplora altre località.
@@ -464,16 +466,16 @@ export default function LocationClient({
               </div>
           )}
   <h2 className="text-2xl font-bold text-gray-900 mb-4">
-      Opportunità di Lavoro Pubblico in {location}
+      Opportunità di Lavoro Pubblico {isRegion ? 'nella regione' : 'in'} {location}
   </h2>
   <div className="prose max-w-none text-gray-600">
       <p>
-      Esplora le opportunità di lavoro nel settore pubblico in {location}. 
+      Esplora le opportunità di lavoro nel settore pubblico {isRegion ? 'nella regione' : 'in'} {location}. 
       Concoro ti aiuta a trovare i migliori concorsi pubblici nella tua area, 
       con informazioni dettagliate su requisiti, scadenze e procedure di candidatura.
       </p>
       <p>
-      Monitoriamo costantemente nuovi bandi e concorsi da enti pubblici in {location}, 
+      Monitoriamo costantemente nuovi bandi e concorsi da enti pubblici {isRegion ? 'nella regione' : 'in'} {location}, 
       garantendoti accesso immediato alle ultime opportunità di carriera nel settore pubblico.
       </p>
 </div>
@@ -482,9 +484,9 @@ export default function LocationClient({
   <h3 className="text-xl font-semibold text-gray-900 mb-3">Domande frequenti</h3>
   <div className="space-y-4 text-gray-700">
   <div>
-      <h4 className="font-medium">Come trovare concorsi pubblici in {location}?</h4>
+      <h4 className="font-medium">Come trovare concorsi pubblici {isRegion ? 'nella regione' : 'in'} {location}?</h4>
       <p>
-      Utilizza questa pagina per consultare i concorsi attivi in {location}. Puoi navigare
+      Utilizza questa pagina per consultare i concorsi attivi {isRegion ? 'nella regione' : 'in'} {location}. Puoi navigare
       per ente o provincia e aprire ciascun concorso per i dettagli su requisiti e domanda.
       </p>
   </div>
@@ -492,13 +494,13 @@ export default function LocationClient({
       <h4 className="font-medium">Quali sono le scadenze dei bandi?</h4>
       <p>
       Ogni scheda riporta la data di scadenza aggiornata. Ti consigliamo di candidarti il prima possibile
-      e di verificare spesso eventuali nuovi bandi in {location}.
+      e di verificare spesso eventuali nuovi bandi {isRegion ? 'nella regione' : 'in'} {location}.
       </p>
   </div>
   <div>
-      <h4 className="font-medium">Quali enti pubblicano bandi in {location}?</h4>
+      <h4 className="font-medium">Quali enti pubblicano bandi {isRegion ? 'nella regione' : 'in'} {location}?</h4>
       <p>
-      In {location} pubblicano bandi diversi enti: Comuni, Province, ASL, Università e altri organismi.
+      {isRegion ? 'Nella regione' : 'In'} {location} pubblicano bandi diversi enti: Comuni, Province, ASL, Università e altri organismi.
       Puoi esplorare l'elenco degli enti nella barra laterale e accedere ai relativi bandi.
       </p>
   </div>

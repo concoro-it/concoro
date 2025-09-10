@@ -128,19 +128,13 @@ export function ClosingTodaySection() {
         
         // Try optimized query first
         try {
-          const { getRegionalConcorsi } = await import('@/lib/services/regional-queries-client')
+          const { getClosingSoonConcorsiClient } = await import('@/lib/services/common-concorsi-api-client')
           
-          const result = await getRegionalConcorsi({
-            stato: 'open',
-            limit: 100,
-            orderByField: 'publication_date',
-            orderDirection: 'desc'
-          })
+          const concorsiData = await getClosingSoonConcorsiClient(5)
           
-          console.log(`📋 ✅ Optimized closing today query: ${result.concorsi.length} concorsi`)
+          console.log(`📋 ✅ Optimized closing today query: ${concorsiData.length} concorsi`)
           
-          const allConcorsiData = result.concorsi
-          processClosingConcorsi(allConcorsiData as any[])
+          setConcorsi(concorsiData as Concorso[])
           return
           
         } catch (optimizedError) {

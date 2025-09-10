@@ -41,7 +41,6 @@ interface EnteClientProps {
   totalCount: number
   locations: string[]
   settori: string[]
-  regimes: string[]
   enteSlug: string
 }
 
@@ -51,7 +50,6 @@ export default function EnteClient({
   totalCount = 0, 
   locations = [],
   settori = [],
-  regimes = [],
   enteSlug
 }: EnteClientProps) {
   const router = useRouter()
@@ -257,7 +255,7 @@ export default function EnteClient({
                 </h2>
               </div>
               <CardContent className="">
-                <ScrollArea className="h-[420px] pr-2">
+                <ScrollArea className="pr-2">
                   <div className="space-y-2">
                     {locations.map((location, index) => {
                       // Count concorsi for this location
@@ -300,7 +298,7 @@ export default function EnteClient({
                   </h2>
                 </div>
                 <CardContent className="">
-                  <ScrollArea className="h-[420px] pr-2">
+                  <ScrollArea className="pr-2">
                     <div className="space-y-2">
                       {settori.map((settore, index) => {
                         // Count concorsi for this settore

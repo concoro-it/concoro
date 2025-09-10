@@ -128,24 +128,13 @@ export function MaxiConcorsiSection() {
         
         // Try optimized query first
         try {
-          const { getRegionalConcorsi } = await import('@/lib/services/regional-queries-client')
+          const { getMaxiConcorsiClient } = await import('@/lib/services/common-concorsi-api-client')
           
-          const result = await getRegionalConcorsi({
-            stato: 'open',
-            limit: 50,
-            orderByField: 'publication_date',
-            orderDirection: 'desc'
-          })
+          const concorsiData = await getMaxiConcorsiClient(5)
           
-          console.log(`📋 ✅ Optimized maxi concorsi query: ${result.concorsi.length} concorsi`)
+          console.log(`📋 ✅ Optimized maxi concorsi query: ${concorsiData.length} concorsi`)
           
-          // Filter and sort by numero_di_posti client-side
-          const concorsiData = result.concorsi
-            .filter((concorso: any) => concorso.numero_di_posti && concorso.numero_di_posti > 0)
-            .sort((a: any, b: any) => (b.numero_di_posti || 0) - (a.numero_di_posti || 0))
-            .slice(0, 5) as Concorso[]
-          
-          setConcorsi(concorsiData)
+          setConcorsi(concorsiData as Concorso[])
           return
           
         } catch (optimizedError) {

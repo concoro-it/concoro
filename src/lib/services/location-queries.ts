@@ -1,12 +1,13 @@
 import { getFirestoreForSSR } from '@/lib/firebase/server-config'
 import { slugToLocationDisplay, filterConcorsiByLocation } from '@/lib/utils/region-utils'
+import { deduplicateAsyncWithCleanup } from '@/lib/utils/request-deduplication'
 import admin from 'firebase-admin'
 
 export interface LocationQueryOptions {
   location: string
   ente?: string
   settore?: string
-  Stato?: 'OPEN' | 'CLOSED' | 'ALL'
+  Stato?: 'OPEN' | 'CHIUSO' 
   scadenza?: string
   regime?: string
   limit?: number
@@ -23,11 +24,9 @@ export interface LocationQueryResult {
 }
 
 /**
- * Optimized query for location-based concorsi using AreaGeografica field.
- * Since Firestore doesn't efficiently support partial string matching,
- * we'll fetch a broader set and filter client-side for location matching.
+ * Internal function that performs the actual location query
  */
-export const getLocationConcorsi = async (options: LocationQueryOptions): Promise<LocationQueryResult> => {
+const getLocationConcorsiInternal = async (options: LocationQueryOptions): Promise<LocationQueryResult> => {
   const {
     location,
     ente,
@@ -64,15 +63,11 @@ export const getLocationConcorsi = async (options: LocationQueryOptions): Promis
       firestoreQuery = firestoreQuery.where('Ente', '==', ente)
     }
 
-    // Add settore filter (using 'settori' field - FAST!)
+    // Add settore filter (using 'settore_professionale' field - FAST!)
     if (settore) {
-      firestoreQuery = firestoreQuery.where('settori', '==', settore)
+      firestoreQuery = firestoreQuery.where('settore_professionale', '==', settore)
     }
 
-    // Add status filter (direct field query - FAST!)
-    if (Stato && Stato !== 'ALL') {
-      firestoreQuery = firestoreQuery.where('Stato', '==', Stato)
-    }
 
     // Add regime filter (direct field query - FAST!)
     if (regime) {
@@ -145,6 +140,13 @@ export const getLocationConcorsi = async (options: LocationQueryOptions): Promis
     const filterTime = Date.now() - startFilterTime
 
     console.log(`📋 Client-side location filtering: ${allConcorsi.length} -> ${filteredConcorsi.length} -> ${finalConcorsi.length} in ${filterTime}ms`)
+    console.log(`📋 Location slug: "${location}", decoded: "${decodeURIComponent(location)}"`)
+    
+    // Debug: Show sample AreaGeografica values
+    if (allConcorsi.length > 0) {
+      const sampleAreas = allConcorsi.slice(0, 5).map((c: any) => c.AreaGeografica).filter(Boolean);
+      console.log(`📋 Sample AreaGeografica values:`, sampleAreas);
+    }
 
     // Direct serialization for better performance
     const concorsi = finalConcorsi.map(concorso => ({
@@ -178,9 +180,28 @@ export const getLocationConcorsi = async (options: LocationQueryOptions): Promis
 }
 
 /**
- * Get unique enti for a specific location
+ * Optimized query for location-based concorsi using AreaGeografica field.
+ * Since Firestore doesn't efficiently support partial string matching,
+ * we'll fetch a broader set and filter client-side for location matching.
+ * 
+ * This function includes request deduplication to prevent duplicate queries
+ * during React Strict Mode or concurrent requests.
  */
-export const getLocationEnti = async (location: string): Promise<string[]> => {
+export const getLocationConcorsi = async (options: LocationQueryOptions): Promise<LocationQueryResult> => {
+  // Create a unique cache key based on all query parameters
+  const cacheKey = `location:${options.location}:${options.ente || 'all'}:${options.settore || 'all'}:${options.Stato || 'OPEN'}:${options.scadenza || 'all'}:${options.regime || 'all'}:${options.limit || 100}:${options.orderByField || 'publication_date'}:${options.orderDirection || 'desc'}`
+  
+  return deduplicateAsyncWithCleanup(
+    cacheKey,
+    () => getLocationConcorsiInternal(options),
+    2 * 60 * 1000 // 2 minutes cleanup delay for location queries
+  )
+}
+
+/**
+ * Internal function that gets unique enti for a specific location
+ */
+const getLocationEntiInternal = async (location: string): Promise<string[]> => {
   try {
     const firestore = await getFirestoreForSSR()
     if (!firestore) {
@@ -219,10 +240,22 @@ export const getLocationEnti = async (location: string): Promise<string[]> => {
 }
 
 /**
- * Get available locations from concorsi data
- * This can be used for static generation and validation
+ * Get unique enti for a specific location with request deduplication
  */
-export const getAvailableLocations = async (): Promise<string[]> => {
+export const getLocationEnti = async (location: string): Promise<string[]> => {
+  const cacheKey = `location-enti:${location}`
+  
+  return deduplicateAsyncWithCleanup(
+    cacheKey,
+    () => getLocationEntiInternal(location),
+    5 * 60 * 1000 // 5 minutes cleanup delay for enti queries (they change less frequently)
+  )
+}
+
+/**
+ * Internal function that gets available locations from concorsi data
+ */
+const getAvailableLocationsInternal = async (): Promise<string[]> => {
   try {
     const firestore = await getFirestoreForSSR()
     if (!firestore) {
@@ -251,4 +284,18 @@ export const getAvailableLocations = async (): Promise<string[]> => {
     console.error('📋 ❌ Failed to get available locations:', error)
     return []
   }
+}
+
+/**
+ * Get available locations from concorsi data with request deduplication
+ * This can be used for static generation and validation
+ */
+export const getAvailableLocations = async (): Promise<string[]> => {
+  const cacheKey = 'available-locations:all'
+  
+  return deduplicateAsyncWithCleanup(
+    cacheKey,
+    () => getAvailableLocationsInternal(),
+    10 * 60 * 1000 // 10 minutes cleanup delay for available locations (they change very infrequently)
+  )
 }

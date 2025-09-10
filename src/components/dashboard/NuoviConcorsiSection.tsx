@@ -128,19 +128,13 @@ export function NuoviConcorsiSection() {
         
         // Try optimized query first
         try {
-          const { getRegionalConcorsi } = await import('@/lib/services/regional-queries-client')
+          const { getLatestConcorsiClient } = await import('@/lib/services/common-concorsi-api-client')
           
-          const result = await getRegionalConcorsi({
-            stato: 'open',
-            limit: 5,
-            orderByField: 'publication_date',
-            orderDirection: 'desc'
-          })
+          const concorsiData = await getLatestConcorsiClient(5)
           
-          console.log(`📋 ✅ Optimized latest concorsi query: ${result.concorsi.length} concorsi`)
+          console.log(`📋 ✅ Optimized latest concorsi query: ${concorsiData.length} concorsi`)
           
-          const concorsiData = result.concorsi as Concorso[]
-          setConcorsi(concorsiData)
+          setConcorsi(concorsiData as Concorso[])
           return
           
         } catch (optimizedError) {

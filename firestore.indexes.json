@@ -10,43 +10,26 @@
     },
     {
       "collectionGroup": "articoli",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "AreaGeografica", "order": "ASCENDING" },
-        { "fieldPath": "publication_date", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "articoli",
-      "queryScope": "COLLECTION",
-      "fields": [
+      "queryScope": "COLLECTION",      "fields": [
         { "fieldPath": "categoria", "order": "ASCENDING" },
         { "fieldPath": "publication_date", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "articoli",
+      "collectionGroup": "concorsi",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "settore_professionale", "order": "ASCENDING" },
-        { "fieldPath": "publication_date", "order": "DESCENDING" }
+        { "fieldPath": "Stato", "order": "ASCENDING" }
+
       ]
     },
     {
       "collectionGroup": "concorsi",
       "queryScope": "COLLECTION", 
       "fields": [
-        { "fieldPath": "regione", "order": "ASCENDING" },
-        { "fieldPath": "Stato", "order": "ASCENDING" },
-        { "fieldPath": "publication_date", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "concorsi",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "regione", "order": "ASCENDING" },
-        { "fieldPath": "publication_date", "order": "DESCENDING" }
+        { "fieldPath": "province.regione_nome", "order": "ASCENDING" },
+        { "fieldPath": "Stato", "order": "ASCENDING" }
       ]
     },
     {
@@ -62,17 +45,8 @@
       "collectionGroup": "concorsi", 
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "Ente", "order": "ASCENDING" },
-        { "fieldPath": "publication_date", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "concorsi",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "Ente", "order": "ASCENDING" },
-        { "fieldPath": "stato", "order": "ASCENDING" },
-        { "fieldPath": "publication_date", "order": "DESCENDING" }
+        { "fieldPath": "AreaGeografica", "order": "ASCENDING" },
+        { "fieldPath": "Stato", "order": "ASCENDING" }
       ]
     },
     {
@@ -87,19 +61,20 @@
       "collectionGroup": "concorsi",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "stato", "order": "ASCENDING" },
+        { "fieldPath": "Stato", "order": "ASCENDING" },
+        { "fieldPath": "province.regione_nome", "order": "ASCENDING" },
         { "fieldPath": "publication_date", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "concorsi",
-      "queryScope": "COLLECTION", 
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "settore_professionale", "order": "ASCENDING" },
         { "fieldPath": "Stato", "order": "ASCENDING" },
+        { "fieldPath": "AreaGeografica", "order": "ASCENDING" },
         { "fieldPath": "publication_date", "order": "DESCENDING" }
       ]
     }
   ],
   "fieldOverrides": []
-} 
+}

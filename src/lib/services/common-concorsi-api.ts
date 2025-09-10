@@ -10,7 +10,7 @@ import { memoryCache, getCacheKey, withCache } from '@/lib/cache/memory-cache'
 import { serializeTimestamp } from '@/lib/utils/serialize-firestore'
 
 // Common types for filtering
-export type FilterType = 'regime' | 'scadenza' | 'ente' | 'regione' | 'settore'
+export type FilterType = 'regime' | 'scadenza' | 'Ente' | 'regione' | 'settore'
 export type ScadenzaFilter = 'oggi' | 'questa-settimana' | 'questo-mese' | undefined
 export type RegimeFilter = 'part-time' | 'tempo-determinato' | 'tempo-indeterminato' | 'non-specificato' | undefined
 
@@ -24,7 +24,7 @@ export interface CommonFilterOptions {
   orderDirection?: 'asc' | 'desc'
   additionalFilters?: {
     regione?: string[]
-    ente?: string
+    Ente?: string
     settore?: string
     scadenza?: ScadenzaFilter
     regime?: RegimeFilter
@@ -116,7 +116,7 @@ function normalizeFilterValue(filterType: FilterType, value: string | string[]):
     case 'regione':
       return Array.isArray(value) ? value.map(v => v.toLowerCase()) : [value.toLowerCase()]
 
-    case 'ente':
+    case 'Ente':
     case 'settore':
       return value
 
@@ -140,22 +140,19 @@ function buildQuery(
 
   switch (filterType) {
     case 'regione':
+      // Use the new province.regione_nome field for regional queries
       const regioni = Array.isArray(normalizedValue) ? normalizedValue : [normalizedValue]
       if (regioni.length === 1) {
-        query = query.where('regione', 'array-contains', regioni[0])
+        query = query.where('province.regione_nome', '==', regioni[0])
       } else {
-        query = query.where('regione', 'array-contains-any', regioni)
+        // For multiple regions, we'll need to use array-contains-any or multiple queries
+        query = query.where('province.regione_nome', 'in', regioni)
       }
       break
 
-    case 'ente':
-      // For ente, skip Firestore filtering and do everything client-side
-      // This avoids complex index requirements and handles name variations better
-      console.log(`📋 Ente filter: skipping Firestore where clause, will filter client-side`)
-      break
-
     case 'settore':
-      query = query.where('settori', '==', normalizedValue)
+      // Use settore_professionale field to match the index
+      query = query.where('settore_professionale', '==', normalizedValue)
       break
 
     case 'regime':
@@ -174,22 +171,22 @@ function buildQuery(
 
   // Apply additional filters
   if (options.additionalFilters) {
-    const { regione, ente, settore, scadenza, regime } = options.additionalFilters
+    const { regione, Ente, settore, scadenza, regime } = options.additionalFilters
 
     if (regione && regione.length > 0 && filterType !== 'regione') {
       if (regione.length === 1) {
-        query = query.where('regione', 'array-contains', regione[0].toLowerCase())
+        query = query.where('province.regione_nome', '==', regione[0])
       } else {
-        query = query.where('regione', 'array-contains-any', regione.map(r => r.toLowerCase()))
+        query = query.where('province.regione_nome', 'in', regione)
       }
     }
 
-    if (ente && filterType !== 'ente') {
-      query = query.where('Ente', '==', ente)
+    if (Ente && filterType !== 'Ente') {
+      query = query.where('Ente', '==', Ente)
     }
 
     if (settore && filterType !== 'settore') {
-      query = query.where('settori', '==', settore)
+      query = query.where('settore_professionale', '==', settore)
     }
 
     if (regime && filterType !== 'regime') {
@@ -245,7 +242,7 @@ function processAndSerializeConcorsi(docs: admin.firestore.QueryDocumentSnapshot
   })
 
   // Apply client-side filtering for ente if needed
-  if (filterOptions?.filterType === 'ente' && typeof filterOptions.filterValue === 'string') {
+  if (filterOptions?.filterType === 'Ente' && typeof filterOptions.filterValue === 'string') {
     const searchEnte = filterOptions.filterValue
     processedDocs = processedDocs.filter(doc => {
       const ente = doc.Ente || ''
@@ -298,7 +295,7 @@ function processAndSerializeConcorsi(docs: admin.firestore.QueryDocumentSnapshot
 function extractUniqueValues(concorsi: any[], filterType: FilterType) {
   const result: any = {}
 
-  if (filterType !== 'ente') {
+  if (filterType !== 'Ente') {
     result.enti = Array.from(new Set(
       concorsi.map(c => c.Ente).filter(Boolean)
     )).sort()
@@ -361,7 +358,7 @@ function getDisplayName(filterType: FilterType, filterValue: string | string[]):
     case 'regione':
       return Array.isArray(filterValue) ? filterValue.join(', ') : String(filterValue)
 
-    case 'ente':
+    case 'Ente':
     case 'settore':
       return String(filterValue)
 
@@ -397,7 +394,7 @@ export const getConcorsiByFilter = cache(async (options: CommonFilterOptions): P
 
       // Add limit - for ente filtering, get more docs since we filter client-side
       if (limit) {
-        const effectiveLimit = filterType === 'ente' ? Math.max(limit * 5, 500) : limit + 1
+        const effectiveLimit = filterType === 'Ente' ? Math.max(limit * 5, 500) : limit + 1
         query = query.limit(effectiveLimit)
       }
 
@@ -416,7 +413,7 @@ export const getConcorsiByFilter = cache(async (options: CommonFilterOptions): P
       let hasMore = false
       let lastDoc = null
       
-      if (filterType === 'ente') {
+      if (filterType === 'Ente') {
         hasMore = concorsi.length > limit
         lastDoc = hasMore ? snapshot.docs[snapshot.docs.length - 1] : null
       } else {
@@ -437,7 +434,7 @@ export const getConcorsiByFilter = cache(async (options: CommonFilterOptions): P
       let finalConcorsi = concorsi
       let finalTotalCount = concorsi.length
       
-      if (filterType === 'ente') {
+      if (filterType === 'Ente') {
         // For ente, slice to the requested limit
         finalConcorsi = concorsi.slice(0, limit)
         finalTotalCount = concorsi.length
@@ -497,7 +494,7 @@ export const getConcorsiByScadenza = (scadenza: string, options: Partial<CommonF
   getConcorsiByFilter({ ...options, filterType: 'scadenza', filterValue: scadenza })
 
 export const getConcorsiByEnte = (ente: string, options: Partial<CommonFilterOptions> = {}) =>
-  getConcorsiByFilter({ ...options, filterType: 'ente', filterValue: ente })
+  getConcorsiByFilter({ ...options, filterType: 'Ente', filterValue: ente })
 
 export const getConcorsiByRegione = (regione: string | string[], options: Partial<CommonFilterOptions> = {}) =>
   getConcorsiByFilter({ ...options, filterType: 'regione', filterValue: regione })

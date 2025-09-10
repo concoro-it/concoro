@@ -51,7 +51,7 @@ export function BreadcrumbSEO({
         const primaryRegion = regions[0]; // Use the first region as primary
         hierarchicalItems.push({
           label: primaryRegion,
-          href: `/bandi/regione/${encodeURIComponent(primaryRegion.toLowerCase().replace(/\s+/g, '-'))}`
+          href: `/bandi/localita/${encodeURIComponent(primaryRegion.toLowerCase().replace(/\s+/g, '-'))}`
         });
       }
     }

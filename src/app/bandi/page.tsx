@@ -221,10 +221,11 @@ function JobsPage() {
         // Fallback to legacy method if the new service fails
         try {
           console.log('📋 Falling back to legacy data loading...')
-          const { getRegionalConcorsi } = await import('@/lib/services/regional-queries-client')
+          const { getConcorsiByFilterClient } = await import('@/lib/services/common-concorsi-api-client')
           
-          const result = await getRegionalConcorsi({
-            stato: 'open',
+          const result = await getConcorsiByFilterClient({
+            filterType: 'regione',
+            filterValue: 'all',
             limit: ITEMS_PER_PAGE * 2,
             orderByField: 'publication_date',
             orderDirection: 'desc'
@@ -233,7 +234,7 @@ function JobsPage() {
           const jobsData = result.concorsi as Concorso[]
           setJobs(jobsData)
           setFilteredJobs(jobsData)
-          setNextCursor(result.nextCursor || null)
+          setNextCursor(null) // Common API doesn't use cursor pagination
           setHasMore(result.hasMore)
           
           // Extract filter options using legacy method

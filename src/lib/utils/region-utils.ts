@@ -244,15 +244,44 @@ export function isValidLocationSlug(slug: string, availableLocations: string[]):
  * Filters concorsi by location based on AreaGeografica field
  */
 export function filterConcorsiByLocation(concorsi: any[], locationSlug: string): any[] {
-  const locationDisplay = slugToLocationDisplay(locationSlug);
+  // Decode URL-encoded slug if needed
+  const decodedSlug = decodeURIComponent(locationSlug);
+  const locationDisplay = slugToLocationDisplay(decodedSlug);
   
-  return concorsi.filter(concorso => {
+  console.log(`🔍 Filtering ${concorsi.length} concorsi for location: "${locationSlug}" (decoded: "${decodedSlug}", display: "${locationDisplay}")`);
+  
+  const filtered = concorsi.filter(concorso => {
     if (!concorso.AreaGeografica) return false;
     
     const normalizedLocation = normalizeLocationForSlug(concorso.AreaGeografica);
-    if (normalizedLocation === locationSlug) return true;
     
-    // Also check if the location display name is contained in AreaGeografica
-    return concorso.AreaGeografica.toLowerCase().includes(locationDisplay.toLowerCase());
+    // Check exact match with both encoded and decoded slugs
+    if (normalizedLocation === locationSlug || normalizedLocation === decodedSlug) {
+      console.log(`✅ Exact match found: "${concorso.AreaGeografica}" -> "${normalizedLocation}"`);
+      return true;
+    }
+    
+    // Check if the location display name is contained in AreaGeografica
+    if (concorso.AreaGeografica.toLowerCase().includes(locationDisplay.toLowerCase())) {
+      console.log(`✅ Contains match found: "${concorso.AreaGeografica}" contains "${locationDisplay}"`);
+      return true;
+    }
+    
+    // For combined locations like "Veneto, Treviso", check if any part matches
+    if (decodedSlug.includes(',')) {
+      const parts = decodedSlug.split(',').map(part => part.trim().toLowerCase());
+      const hasMatch = parts.some(part => 
+        concorso.AreaGeografica.toLowerCase().includes(part)
+      );
+      if (hasMatch) {
+        console.log(`✅ Part match found: "${concorso.AreaGeografica}" contains one of [${parts.join(', ')}]`);
+      }
+      return hasMatch;
+    }
+    
+    return false;
   });
+  
+  console.log(`🔍 Filtered ${concorsi.length} -> ${filtered.length} concorsi`);
+  return filtered;
 } 

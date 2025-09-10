@@ -15,20 +15,15 @@ export function initializeFirebaseAdminForSSR() {
   if (!admin.apps.length) {
     try {
       // First try service account file (more reliable than env vars)
-      console.log('SSR: Trying service account file first...');
       const serviceAccountPath = path.resolve(process.cwd(), 'concoro-fc095-firebase-adminsdk-fbsvc-a817929655.json');
       
       if (fs.existsSync(serviceAccountPath)) {
-        console.log('SSR: Service account file found, using it...');
         admin.initializeApp({
           credential: admin.credential.cert(serviceAccountPath),
         });
-        console.log('SSR: Firebase Admin initialized with service account file');
       } else {
         // Fallback to environment variables
-        console.log('SSR: Service account file not found, trying environment variables...');
         if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-          console.log('SSR: Initializing Firebase Admin with environment variables...');
           
           // Parse the private key correctly
           let privateKey = process.env.FIREBASE_PRIVATE_KEY;
@@ -48,7 +43,6 @@ export function initializeFirebaseAdminForSSR() {
             }),
           });
           
-          console.log('SSR: Firebase Admin initialized successfully with environment variables');
         } else {
           throw new Error('SSR: No Firebase credentials found (neither service account file nor environment variables)');
         }

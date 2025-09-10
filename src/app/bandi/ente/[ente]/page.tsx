@@ -34,75 +34,24 @@ async function getEnteData(enteSlug: string) {
     return null
   }
 
-  return await fetchEnteDataFromFirestore(ente, enteSlug)
+  return await fetchEnteDataFromService(ente)
 }
 
-async function fetchEnteDataFromFirestore(ente: string, enteSlug: string) {
+async function fetchEnteDataFromService(ente: string) {
   const startTime = Date.now()
-  console.log(`🏢 Fetching data for ente: ${ente} (optimized query)`)
-  
-  const { getConcorsiByEnte } = await import('@/lib/services/common-concorsi-api')
+  console.log(`🏢 Fetching data for ente: ${ente} (single service call)`)
   
   try {
-    // Use the ente service with optimized query
-    const result = await getConcorsiByEnte(ente, {
-      Stato: 'OPEN',
-      limit: 500, // Get more concorsi for ente pages
-      orderByField: 'publication_date',
-      orderDirection: 'desc'
-    })
-
-    if (!result || result.concorsi.length === 0) {
-      return null
-    }
-
-    // Direct serialization for better performance
-    const concorsi = result.concorsi.map(concorso => ({
-      id: String(concorso.id),
-      Titolo: String(concorso.Titolo || ''),
-      Ente: String(concorso.Ente || ''),
-      AreaGeografica: String(concorso.AreaGeografica || ''),
-      numero_di_posti: Number(concorso.numero_di_posti) || undefined,
-      settore_professionale: String(concorso.settore_professionale || ''),
-      regime: String(concorso.regime || ''),
-      DataChiusura: concorso.DataChiusura ? (concorso.DataChiusura.seconds ? { seconds: concorso.DataChiusura.seconds, nanoseconds: concorso.DataChiusura.nanoseconds } : concorso.DataChiusura) : null,
-      riassunto: String(concorso.riassunto || ''),
-      publication_date: concorso.publication_date ? (concorso.publication_date.seconds ? { seconds: concorso.publication_date.seconds, nanoseconds: concorso.publication_date.nanoseconds } : concorso.publication_date) : null,
-      province: concorso.province || []
-    }))
-    
-    // Extract unique locations and settori from the filtered concorsi
-    const uniqueLocations = new Set<string>()
-    const uniqueSettori = new Set<string>()
-    const uniqueRegimes = new Set<string>()
-    
-    concorsi.forEach(concorso => {
-      if (concorso.AreaGeografica && concorso.AreaGeografica.trim()) {
-        uniqueLocations.add(concorso.AreaGeografica.trim())
-      }
-      if (concorso.settore_professionale && concorso.settore_professionale.trim()) {
-        uniqueSettori.add(concorso.settore_professionale.trim())
-      }
-      if (concorso.regime && concorso.regime.trim()) {
-        uniqueRegimes.add(concorso.regime.trim())
-      }
-    })
-
-    const resultData = {
-      ente: String(ente),
-      concorsi,
-      totalCount: concorsi.length,
-      locations: Array.from(uniqueLocations).sort(),
-      settori: Array.from(uniqueSettori).sort(),
-      regimes: Array.from(uniqueRegimes).sort()
-    }
+    // Single, clean service call using Firebase index
+    const { getEnteData } = await import('@/lib/services/ente-service')
+    const data = await getEnteData(ente)
     
     const duration = Date.now() - startTime
-    console.log(`🏢 ✅ Optimized query: ${concorsi.length} concorsi for ${ente} in ${duration}ms`)
+    console.log(`🏢 ✅ Single service call: ${data?.concorsi?.length || 0} concorsi for ${ente} in ${duration}ms`)
     
-    return resultData
+    return data
   } catch (error) {
-    console.error('Error fetching ente data:', error)
+    console.error('Error fetching ente data from service:', error)
     return null
   }
 }
@@ -164,14 +113,11 @@ export async function generateMetadata({ params }: EntePageProps): Promise<Metad
 // Generate static params for common enti
 export async function generateStaticParams() {
   try {
-    // Get available enti from our service
-    const { getFilterOptions } = await import('@/lib/services/concorsi/query-service')
-    const enti = await getFilterOptions('enti')
+    // Use the simple ente service
+    const { getAvailableEnti } = await import('@/lib/services/ente-service')
+    const enti = await getAvailableEnti(50) // Get first 50 enti
     
-    // Limit to most common enti for static generation
-    const commonEnti = enti.slice(0, 50) // Take first 50 enti
-    
-    return commonEnti.map(ente => ({
+    return enti.map(ente => ({
       ente: encodeURIComponent(ente)
     }))
   } catch (error) {
@@ -297,7 +243,6 @@ export default async function EntePage({ params }: EntePageProps) {
           totalCount={data.totalCount}
           locations={data.locations}
           settori={data.settori}
-          regimes={data.regimes}
           enteSlug={params.ente}
         />
       </Suspense>

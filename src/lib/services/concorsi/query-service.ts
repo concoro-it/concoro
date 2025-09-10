@@ -160,9 +160,9 @@ export const getFilteredConcorsi = cache(async (
   }
 
   if (options.regione && options.regione.length === 1) {
-    query = query.where('regione', 'array-contains', options.regione[0].toLowerCase())
+    query = query.where('province.regione_nome', '==', options.regione[0])
   } else if (options.regione && options.regione.length > 1) {
-    query = query.where('regione', 'array-contains-any', options.regione.map(r => r.toLowerCase()))
+    query = query.where('province.regione_nome', 'in', options.regione)
   }
 
   if (options.scadenza) {

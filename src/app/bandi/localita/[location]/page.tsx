@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { Metadata } from 'next'
-import { slugToLocationDisplay } from '@/lib/utils/region-utils'
+import { slugToLocationDisplay, getItalianRegions } from '@/lib/utils/region-utils'
 import { getBandoUrl } from '@/lib/utils/bando-slug-utils'
 import LocationClient from './client-page'
 
@@ -12,6 +12,7 @@ interface LocationPageProps {
 }
 
 // Normalize location slug to proper location name
+// Now handles both regions and cities
 function normalizeLocationSlug(slug: string): string | null {
   if (!slug || typeof slug !== 'string') {
     return null
@@ -21,15 +22,30 @@ function normalizeLocationSlug(slug: string): string | null {
   const decoded = decodeURIComponent(slug).toLowerCase()
   
   // Basic validation - ensure it doesn't contain invalid characters
-  if (!/^[a-z0-9\s-]+$/.test(decoded)) {
+  if (!/^[a-z0-9\s,-]+$/.test(decoded)) {
     return null
   }
   
   return slugToLocationDisplay(decoded)
 }
 
+// Check if the location is a region
+function isRegion(location: string): boolean {
+  const regions = getItalianRegions()
+  const isRegionResult = regions.some(region => 
+    region.toLowerCase() === location.toLowerCase()
+  )
+  
+  console.log(`🔍 Checking if "${location}" is a region. Available regions:`, regions)
+  console.log(`🔍 Is region result: ${isRegionResult}`)
+  
+  return isRegionResult
+}
+
 async function getLocationData(locationSlug: string) {
   const location = normalizeLocationSlug(locationSlug)
+  
+  console.log(`🔍 Location slug: "${locationSlug}" -> normalized: "${location}"`)
   
   if (!location) {
     return null
@@ -42,15 +58,46 @@ async function fetchLocationDataFromFirestore(location: string, locationSlug: st
   const startTime = Date.now()
   console.log(`📋 Fetching data for location: ${location} (optimized query)`)
   
-  const { getLocationConcorsi, getLocationEnti } = await import('@/lib/services/location-queries')
+  // Check if this is a region or city
+  const isRegionLocation = isRegion(location)
   
-  // Use the location service with optimized query
-  // Get concorsi for this location
-  const concorsiResult = await getLocationConcorsi({
-    location: locationSlug,
-    Stato: 'OPEN',
-    limit: 500 // Increased limit to get more concorsi
-  })
+  console.log(`🔍 Location: "${location}", isRegion: ${isRegionLocation}`)
+  
+  let concorsiResult
+  let enti: string[] = []
+  
+  if (isRegionLocation) {
+    // Use regional queries for regions
+    const { getRegionalConcorsi, getRegionalEnti } = await import('@/lib/services/regional-queries')
+    
+    const [concorsiData, entiData] = await Promise.all([
+      getRegionalConcorsi({
+        regione: [location],
+        Stato: 'OPEN',
+        limit: 500,
+        indexId: 'CICAgOi3kJAJ'
+      }),
+      getRegionalEnti(location)
+    ])
+    
+    concorsiResult = concorsiData
+    enti = entiData
+  } else {
+    // Use location queries for cities
+    const { getLocationConcorsi, getLocationEnti } = await import('@/lib/services/location-queries')
+    
+    const [concorsiData, entiData] = await Promise.all([
+      getLocationConcorsi({
+        location: locationSlug,
+        Stato: 'OPEN',
+        limit: 500
+      }),
+      getLocationEnti(locationSlug)
+    ])
+    
+    concorsiResult = concorsiData
+    enti = entiData
+  }
   
   // Direct serialization for better performance
   const concorsi = concorsiResult.concorsi.map(concorso => ({
@@ -67,15 +114,27 @@ async function fetchLocationDataFromFirestore(location: string, locationSlug: st
     province: concorso.province || []
   }))
   
-  // Extract unique enti and provinces from the filtered concorsi
-  const uniqueEnti = new Set<string>()
+  // For regions, we already have enti from the regional query
+  // For cities, we need to extract unique enti from concorsi
+  let finalEnti: string[] = []
   const uniqueProvinces = new Set<string>()
   
+  if (isRegionLocation) {
+    // Use enti from regional query
+    finalEnti = enti
+  } else {
+    // Extract unique enti from concorsi for cities
+    const uniqueEnti = new Set<string>()
+    concorsi.forEach(concorso => {
+      if (concorso.Ente && concorso.Ente.trim()) {
+        uniqueEnti.add(concorso.Ente.trim())
+      }
+    })
+    finalEnti = Array.from(uniqueEnti).sort()
+  }
+  
+  // Extract provinces from the province array for both regions and cities
   concorsi.forEach(concorso => {
-    if (concorso.Ente && concorso.Ente.trim()) {
-      uniqueEnti.add(concorso.Ente.trim())
-    }
-    // Extract provinces from the province array
     if (Array.isArray(concorso.province)) {
       concorso.province.forEach(p => {
         if (p.provincia_nome && p.provincia_nome.trim()) {
@@ -93,8 +152,9 @@ async function fetchLocationDataFromFirestore(location: string, locationSlug: st
     location: String(location),
     concorsi,
     totalCount: concorsi.length,
-    enti: Array.from(uniqueEnti).sort(),
-    provinces: sortedProvinces
+    enti: finalEnti,
+    provinces: sortedProvinces,
+    isRegion: isRegionLocation
   }
   
   const duration = Date.now() - startTime
@@ -112,6 +172,10 @@ export async function generateMetadata({ params }: LocationPageProps): Promise<M
       description: 'La località richiesta non è stata trovata.'
     }
   }
+
+  const isRegionLocation = isRegion(location)
+  const locationType = isRegionLocation ? 'regione' : 'località'
+  const locationTypePlural = isRegionLocation ? 'regione' : 'località'
 
   // Use static text for metadata to avoid slow queries
   return {
@@ -157,17 +221,28 @@ export async function generateMetadata({ params }: LocationPageProps): Promise<M
   }
 }
 
-// Generate static params for common locations
+// Generate static params for common locations and all regions
 export async function generateStaticParams() {
   try {
     // Get available locations from our service
     const { getAvailableLocations } = await import('@/lib/services/location-queries')
     const locations = await getAvailableLocations()
     
+    // Get all Italian regions
+    const regions = getItalianRegions()
+    
+    // Create region slugs
+    const regionSlugs = regions.map(region => 
+      region.toLowerCase().replace(/\s+/g, '-')
+    )
+    
     // Limit to most common locations for static generation
     const commonLocations = locations.slice(0, 50) // Take first 50 locations
     
-    return commonLocations.map(location => ({
+    // Combine regions and common locations
+    const allLocations = [...regionSlugs, ...commonLocations]
+    
+    return allLocations.map(location => ({
       location: location
     }))
   } catch (error) {
@@ -214,7 +289,7 @@ export default async function LocationPage({ params }: LocationPageProps) {
             '@type': 'Place',
             address: {
               '@type': 'PostalAddress',
-              addressLocality: data.location,
+              ...(data.isRegion ? { addressRegion: data.location } : { addressLocality: data.location }),
               addressCountry: 'IT'
             }
           },
@@ -233,11 +308,14 @@ export default async function LocationPage({ params }: LocationPageProps) {
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.concoro.it' },
       { '@type': 'ListItem', position: 2, name: 'Concorsi', item: 'https://www.concoro.it/bandi' },
-      { '@type': 'ListItem', position: 3, name: 'Località', item: 'https://www.concoro.it/bandi' },
+      { '@type': 'ListItem', position: 3, name: data.isRegion ? 'Regioni' : 'Località', item: 'https://www.concoro.it/bandi' },
       { '@type': 'ListItem', position: 4, name: `Concorsi Pubblici ${data.location}`, item: `https://www.concoro.it/bandi/localita/${params.location}` }
     ]
   }
 
+  const locationType = data.isRegion ? 'regione' : 'località'
+  const locationTypePlural = data.isRegion ? 'regione' : 'località'
+  
   const faqStructuredData = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -252,7 +330,7 @@ export default async function LocationPage({ params }: LocationPageProps) {
       },
       {
         '@type': 'Question',
-        name: `Quali sono le scadenze per i concorsi a ${data.location}?`,
+        name: `Quali sono le scadenze per i concorsi in ${data.location}?`,
         acceptedAnswer: {
           '@type': 'Answer',
           text: `Ogni scheda concorso riporta la data di scadenza. Aggiorniamo quotidianamente i bandi in ${data.location}.`
@@ -294,6 +372,7 @@ export default async function LocationPage({ params }: LocationPageProps) {
           enti={data.enti}
           locationSlug={params.location}
           provinces={data.provinces}
+          isRegion={data.isRegion}
         />
       </Suspense>
     </>

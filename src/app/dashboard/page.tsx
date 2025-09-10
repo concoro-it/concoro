@@ -102,14 +102,17 @@ export default function DashboardPage() {
         
         // Try optimized query first
         try {
-          const { getRegionalConcorsi } = await import('@/lib/services/regional-queries-client')
+          const { getConcorsiByFilterClient } = await import('@/lib/services/common-concorsi-api-client')
           
-          const result = await getRegionalConcorsi({
-            settore: selectedSettore.length > 0 ? selectedSettore[0] : undefined,
-            stato: 'open',
+          const result = await getConcorsiByFilterClient({
+            filterType: 'regione',
+            filterValue: 'all', // Get all regions
             limit: 100,
             orderByField: 'publication_date',
-            orderDirection: 'desc'
+            orderDirection: 'desc',
+            additionalFilters: selectedSettore.length > 0 ? {
+              settore: selectedSettore[0]
+            } : undefined
           })
           
           console.log(`📋 ✅ Optimized dashboard query: ${result.concorsi.length} concorsi`)

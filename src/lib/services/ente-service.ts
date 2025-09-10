@@ -1,4 +1,8 @@
-import { NextRequest } from 'next/server'
+/**
+ * Simple, clean ente service using Firebase index
+ * Replaces multiple complex service calls with a single optimized query
+ */
+
 import { getFirestoreForSSR } from '@/lib/firebase/server-config'
 import { cache } from 'react'
 
@@ -44,8 +48,20 @@ const serializeToPlainObject = (value: any): any => {
   return value;
 };
 
-// Simple, clean ente data fetcher using Firebase index
-const getEnteDataCached = cache(async (enteName: string) => {
+export interface EnteData {
+  ente: string
+  concorsi: any[]
+  totalCount: number
+  locations: string[]
+  settori: string[]
+  regimes: string[]
+}
+
+/**
+ * Get ente data using optimized Firebase index
+ * Uses the composite index: Ente + Stato + publication_date
+ */
+export const getEnteData = cache(async (enteName: string): Promise<EnteData | null> => {
   const firestore = await getFirestoreForSSR()
   if (!firestore) {
     throw new Error('Firestore not available')
@@ -55,7 +71,7 @@ const getEnteDataCached = cache(async (enteName: string) => {
   const snapshot = await firestore.collection('concorsi')
     .where('Ente', '==', enteName)
     .where('Stato', '==', 'OPEN')
-    .limit(500) // Get more concorsi for ente pages
+    .limit(500)
     .get()
 
   if (snapshot.empty) {
@@ -116,43 +132,29 @@ const getEnteDataCached = cache(async (enteName: string) => {
   }
 })
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { ente: string } }
-) {
-  const { ente } = params
-
-  // Decode and validate ente parameter
-  const exactEnteName = decodeURIComponent(ente)
-  if (!exactEnteName?.trim()) {
-    return new Response(JSON.stringify({ error: 'Ente parameter is required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' }
-    })
+/**
+ * Get list of available enti for static generation
+ */
+export const getAvailableEnti = cache(async (limit: number = 50): Promise<string[]> => {
+  const firestore = await getFirestoreForSSR()
+  if (!firestore) {
+    return []
   }
 
-  try {
-    const enteData = await getEnteDataCached(exactEnteName)
-    
-    if (!enteData) {
-      return new Response(JSON.stringify({ error: 'Ente not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      })
+  // Simple query to get unique enti
+  const snapshot = await firestore.collection('concorsi')
+    .where('Stato', '==', 'OPEN')
+    .select('Ente')
+    .limit(2000) // Get enough docs to find unique enti
+    .get()
+
+  const entiSet = new Set<string>()
+  snapshot.docs.forEach(doc => {
+    const ente = doc.data().Ente
+    if (ente && entiSet.size < limit) {
+      entiSet.add(ente)
     }
-
-    return new Response(JSON.stringify(enteData), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300, s-maxage=300', // Cache for 5 minutes
-      }
-    })
-  } catch (error) {
-    console.error('Error fetching ente data:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    })
-  }
-}
+  })
+  
+  return Array.from(entiSet)
+})
