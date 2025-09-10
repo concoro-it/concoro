@@ -381,6 +381,9 @@ function JobsPage() {
 
     setIsLoadingMore(true);
     try {
+      // Always use a default sort if none specified
+      const effectiveSortBy = sortBy || 'publication-desc';
+      
       const filterParams: ConcorsiFilterParams = {
         searchQuery: searchQuery?.trim() || undefined,
         locationQuery: locationQuery?.trim() || undefined,
@@ -390,16 +393,15 @@ function JobsPage() {
         selectedSettori,
         selectedRegimi,
         selectedStati,
-        sortBy,
+        sortBy: effectiveSortBy,
         limit: ITEMS_PER_PAGE,
         nextCursor
       }
 
       const result = await concorsiFilterService.loadMoreConcorsi(filterParams, nextCursor);
-
       const newJobs = result.concorsi;
       
-      // If we have active filters, replace the filtered jobs
+      // Check for active filters (excluding sortBy since we always want a sort)
       const hasActiveFilters = selectedLocations.length > 0 || 
                               selectedEnti.length > 0 || 
                               selectedSettori.length > 0 || 
@@ -407,18 +409,17 @@ function JobsPage() {
                               selectedStati.length > 0 ||
                               selectedDeadlines.length > 0 ||
                               searchQuery?.trim() ||
-                              locationQuery?.trim() ||
-                              sortBy
+                              locationQuery?.trim();
 
-      if (hasActiveFilters) {
-        // For filtered results, append to filtered jobs
-        setFilteredJobs(prevFiltered => {
-          const existingIds = new Set(prevFiltered.map(job => job.id));
-          const uniqueNewJobs = newJobs.filter(job => !existingIds.has(job.id));
-          return [...prevFiltered, ...uniqueNewJobs];
-        });
-      } else {
-        // For unfiltered results, append to base jobs
+      // Always update filteredJobs since that's what the UI displays
+      setFilteredJobs(prevFiltered => {
+        const existingIds = new Set(prevFiltered.map(job => job.id));
+        const uniqueNewJobs = newJobs.filter(job => !existingIds.has(job.id));
+        return [...prevFiltered, ...uniqueNewJobs];
+      });
+
+      // If no active filters, also update the base jobs array to keep it in sync
+      if (!hasActiveFilters) {
         setJobs(prevJobs => {
           const existingIds = new Set(prevJobs.map(job => job.id));
           const uniqueNewJobs = newJobs.filter(job => !existingIds.has(job.id));
