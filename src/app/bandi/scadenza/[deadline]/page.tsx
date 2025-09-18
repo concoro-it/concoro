@@ -52,7 +52,7 @@ async function fetchScadenzaDataFromFirestore(scadenza: string, deadlineSlug: st
   const startTime = Date.now()
   console.log(`📅 Fetching data for scadenza: ${scadenza} (optimized query)`)
   
-  const { getConcorsiByScadenza } = await import('@/lib/services/common-concorsi-api')
+  const { concorsiService } = await import('@/lib/services/concorsi-service')
   
   try {
     // Map deadline display names to API values
@@ -69,7 +69,7 @@ async function fetchScadenzaDataFromFirestore(scadenza: string, deadlineSlug: st
     const apiScadenza = scadenzaApiMap[scadenza] || deadlineSlug
 
     // Use the scadenza service with optimized query
-    const result = await getConcorsiByScadenza(apiScadenza, {
+    const result = await concorsiService.getConcorsiByScadenza(apiScadenza, {
       Stato: 'OPEN',
       limit: 500, // Get more concorsi for scadenza pages
       orderByField: 'DataChiusura',

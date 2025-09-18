@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { GlowingEffect } from "@/components/ui/glowing-effect"
+import { Pagination, PaginationInfo } from "@/components/ui/pagination"
 import { 
   MapPin, 
   CalendarDays,
@@ -15,7 +16,7 @@ import { useRouter } from "next/navigation"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
 import { useAuth } from "@/lib/hooks/useAuth"
-import React, { useState } from "react"
+import React, { useState, memo, useCallback } from "react"
 import { Concorso } from "@/types/concorso"
 import Image from "next/image"
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
@@ -26,11 +27,14 @@ import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 interface ConcoroListProps {
   jobs: Concorso[];
   isLoading: boolean;
-  isLoadingMore: boolean;
   selectedJobId: string | null;
   onJobSelect: (job: Concorso) => void;
-  onLoadMore: () => void;
-  hasMore: boolean;
+  // Pagination props
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
 }
 
 
@@ -145,7 +149,17 @@ const truncateEnteNameForMobile = (name: string, maxLength: number = 30): string
   return name.substring(0, maxLength) + '...';
 };
 
-export function ConcoroList({ jobs, isLoading, isLoadingMore, selectedJobId, onJobSelect, onLoadMore, hasMore }: ConcoroListProps) {
+function ConcoroListComponent({ 
+  jobs, 
+  isLoading, 
+  selectedJobId, 
+  onJobSelect, 
+  currentPage,
+  totalPages,
+  totalCount,
+  itemsPerPage,
+  onPageChange
+}: ConcoroListProps) {
   const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 1024px)");
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi();
@@ -601,33 +615,46 @@ export function ConcoroList({ jobs, isLoading, isLoadingMore, selectedJobId, onJ
         })}
       </div>
 
-      {hasMore && (
-        <div className="flex items-center justify-center pt-4 border-t">
-          <Button
-            type="button"
-            variant="default"
-            size="lg"
-            className="w-full max-w-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onLoadMore();
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-8 space-y-4 border-t pt-6">
+          <PaginationInfo
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            itemsPerPage={itemsPerPage}
+            className="text-center"
+          />
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page) => {
+              onPageChange(page)
+              // Scroll to top when changing pages
+              window.scrollTo({ top: 0, behavior: 'smooth' })
             }}
-            disabled={isLoadingMore}
-          >
-            {isLoadingMore ? (
-              <div className="flex items-center">
-                <div className="w-4 h-4 border-2 border-gray-200 border-t-primary rounded-full animate-spin mr-2"></div>
-                Caricamento...
-              </div>
-            ) : (
-              <>
-                <span>Carica altri concorsi</span>
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </>
-            )}
-          </Button>
+            className="justify-center"
+          />
         </div>
       )}
     </div>
   )
-} 
+}
+
+// Memoized export with optimized comparison
+export const ConcoroList = memo(ConcoroListComponent, (prevProps, nextProps) => {
+  // Only re-render if essential props change
+  return (
+    prevProps.isLoading === nextProps.isLoading &&
+    prevProps.selectedJobId === nextProps.selectedJobId &&
+    prevProps.currentPage === nextProps.currentPage &&
+    prevProps.totalPages === nextProps.totalPages &&
+    prevProps.totalCount === nextProps.totalCount &&
+    prevProps.itemsPerPage === nextProps.itemsPerPage &&
+    prevProps.jobs.length === nextProps.jobs.length &&
+    // Check if the first few jobs are the same (efficient shallow comparison)
+    prevProps.jobs.slice(0, 5).every((job, index) => 
+      nextProps.jobs[index]?.id === job.id
+    )
+  )
+}) 

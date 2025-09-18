@@ -4,7 +4,7 @@ import { Timestamp, getFirestore, doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from '@/types/profile';
 import { pinecone } from '../pinecone';
 import { embedText } from '../embeddings';
-import { firestore } from '../firebase/firebase';
+import { app as firestore } from '../firebase/config';
 
 // ----------------------
 // Interfaces

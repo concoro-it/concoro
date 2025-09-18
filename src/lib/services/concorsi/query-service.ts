@@ -17,7 +17,7 @@ async function buildBaseQuery(
 
   // Status filter (default to open)
   if (options.stato !== 'all') {
-    const statusValue = options.stato === 'open' ? 'OPEN' : 'CLOSED'
+    const statusValue = options.stato === 'open' ? 'OPEN' : 'CHIUSO'
     query = query.where('Stato', '==', statusValue)
   }
 

@@ -41,6 +41,7 @@ export interface Concorso {
   createdAt?: { seconds: number; nanoseconds: number };
   updatedAt?: { seconds: number; nanoseconds: number };
   requisiti_generali?: string | string[];
+  tags?: string[];
 }
 
 export interface Match {

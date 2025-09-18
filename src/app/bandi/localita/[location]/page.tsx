@@ -67,35 +67,41 @@ async function fetchLocationDataFromFirestore(location: string, locationSlug: st
   let enti: string[] = []
   
   if (isRegionLocation) {
-    // Use regional queries for regions
-    const { getRegionalConcorsi, getRegionalEnti } = await import('@/lib/services/regional-queries')
+    // Use unified ConcorsiService for region queries
+    console.log(`📍 Using unified service for region: ${location}`)
+    const { concorsiService } = await import('@/lib/services/concorsi-service')
     
     const [concorsiData, entiData] = await Promise.all([
-      getRegionalConcorsi({
-        regione: [location],
-        Stato: 'OPEN',
-        limit: 500,
-        indexId: 'CICAgOi3kJAJ'
-      }),
-      getRegionalEnti(location)
-    ])
-    
-    concorsiResult = concorsiData
-    enti = entiData
-  } else {
-    // Use location queries for cities
-    const { getLocationConcorsi, getLocationEnti } = await import('@/lib/services/location-queries')
-    
-    const [concorsiData, entiData] = await Promise.all([
-      getLocationConcorsi({
-        location: locationSlug,
+      concorsiService.getConcorsiByLocation(locationSlug, {
         Stato: 'OPEN',
         limit: 500
       }),
-      getLocationEnti(locationSlug)
+      concorsiService.getFilterOptions('enti', { regione: [location] })
     ])
     
-    concorsiResult = concorsiData
+    concorsiResult = {
+      concorsi: concorsiData.concorsi,
+      location: location,
+      totalCount: concorsiData.totalCount
+    }
+    enti = entiData
+  } else {
+    // Use unified ConcorsiService for cities
+    const { concorsiService } = await import('@/lib/services/concorsi-service')
+    
+    const [concorsiData, entiData] = await Promise.all([
+      concorsiService.getConcorsiByLocation(locationSlug, {
+        Stato: 'OPEN',
+        limit: 500
+      }),
+      concorsiService.getFilterOptions('enti', { areaGeografica: location })
+    ])
+    
+    concorsiResult = {
+      concorsi: concorsiData.concorsi,
+      location: location,
+      totalCount: concorsiData.totalCount
+    }
     enti = entiData
   }
   
@@ -224,9 +230,9 @@ export async function generateMetadata({ params }: LocationPageProps): Promise<M
 // Generate static params for common locations and all regions
 export async function generateStaticParams() {
   try {
-    // Get available locations from our service
-    const { getAvailableLocations } = await import('@/lib/services/location-queries')
-    const locations = await getAvailableLocations()
+    // Get available locations from unified service
+    const { concorsiService } = await import('@/lib/services/concorsi-service')
+    const locations = await concorsiService.getFilterOptions('regioni')
     
     // Get all Italian regions
     const regions = getItalianRegions()

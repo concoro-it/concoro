@@ -41,15 +41,16 @@ async function fetchSettoreDataFromFirestore(settore: string, settoreSlug: strin
   const startTime = Date.now()
   console.log(`🏛️ Fetching data for settore: ${settore} (optimized query)`)
   
-  const { getConcorsiBySettore } = await import('@/lib/services/common-concorsi-api')
+  const { concorsiService } = await import('@/lib/services/concorsi-service')
   
   try {
     // Use the settore service with optimized query
-    const result = await getConcorsiBySettore(settore, {
+    const result = await concorsiService.getConcorsiBySettore(settore, {
       Stato: 'OPEN',
-      limit: 500, // Get more concorsi for settore pages
-      orderByField: 'publication_date',
-      orderDirection: 'desc'
+      limit: 500 // Get more concorsi for settore pages
+      // Temporarily remove orderBy to avoid index issues
+      // orderByField: 'publication_date',
+      // orderDirection: 'desc'
     })
 
     if (!result || result.concorsi.length === 0) {
@@ -70,6 +71,13 @@ async function fetchSettoreDataFromFirestore(settore: string, settoreSlug: strin
       publication_date: concorso.publication_date ? (concorso.publication_date.seconds ? { seconds: concorso.publication_date.seconds, nanoseconds: concorso.publication_date.nanoseconds } : concorso.publication_date) : null,
       province: concorso.province || []
     }))
+
+    // Sort concorsi by publication_date in descending order (newest first)
+    concorsi.sort((a, b) => {
+      const dateA = a.publication_date?.seconds || 0
+      const dateB = b.publication_date?.seconds || 0
+      return dateB - dateA
+    })
     
     // Extract unique enti, locations and regimes from the filtered concorsi
     const uniqueEnti = new Set<string>()

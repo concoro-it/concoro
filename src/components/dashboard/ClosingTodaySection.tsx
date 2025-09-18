@@ -128,7 +128,7 @@ export function ClosingTodaySection() {
         
         // Try optimized query first
         try {
-          const { getClosingSoonConcorsiClient } = await import('@/lib/services/common-concorsi-api-client')
+          const { getClosingSoonConcorsiClient } = await import('@/lib/services/concorsi-service-client')
           
           const concorsiData = await getClosingSoonConcorsiClient(5)
           

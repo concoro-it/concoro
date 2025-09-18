@@ -29,11 +29,13 @@ interface ConcorsoData {
 
 import { BreadcrumbSEO } from '@/components/ui/breadcrumb-seo'
 import { ConcoroList } from '@/components/bandi/ConcoroList'
+import RegionProvinceList from '@/components/bandi/RegionProvinceList'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Building2, Users, Calendar } from 'lucide-react'
 import { GlowingEffect } from '@/components/ui/glowing-effect'
+import { categorizeProvincesByRegion } from '@/lib/utils/province-categorization'
 
 interface LocationClientProps {
   location: string
@@ -69,13 +71,19 @@ export default function LocationClient({
     }
   }, [concorsi])
 
+  // Categorize provinces by region
+  const regionsWithProvinces = useMemo(() => {
+    return categorizeProvincesByRegion(displayedConcorsi)
+  }, [displayedConcorsi])
+
   // Debug log for provinces
   useEffect(() => {
     console.log('Provinces in client:', provinces)
+    console.log('Regions with provinces:', regionsWithProvinces)
     if (provinces.length > 0) {
       console.log('First concorso province data:', displayedConcorsi[0]?.province)
     }
-  }, [provinces, displayedConcorsi])
+  }, [provinces, displayedConcorsi, regionsWithProvinces])
 
   // Memoize deadline status function to avoid recreation on every render
   const getDeadlineStatus = useMemo(() => (closingDate: any) => {
@@ -257,7 +265,7 @@ export default function LocationClient({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Sidebar - Enti List - Desktop */}
-          <div className="hidden lg:block lg:col-span-1 order-1 lg:order-2 lg:sticky lg:top-20 lg:self-start">
+          <div className="hidden lg:block lg:col-span-1 order-1 lg:order-2 lg:sticky lg:self-start">
             <Card className="">
               <div className="flex justify-between items-center pt-6 pl-6 pr-3">
                 <h2 className="text-xl font-semibold text-gray-900">
@@ -299,55 +307,19 @@ export default function LocationClient({
               </CardContent>
             </Card>
 
-            {/* Province List */}
-            {provinces.length > 0 && (
-              <Card className="mt-6">
-                <div className="flex justify-between items-center pt-6 pl-6 pr-3">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Province ({provinces.length})
-                  </h2>
-                </div>
-                <CardContent className="">
-                  <ScrollArea className="h-[420px] pr-2">
-                    <div className="space-y-2">
-                      {provinces.map((provincia, index) => {
-                        // Count concorsi for this province
-                        const provinceCount = displayedConcorsi.filter(c => 
-                          c.province?.some(p => 
-                            p.provincia_nome?.toLowerCase() === provincia.toLowerCase()
-                          )
-                        ).length;
-                        
-                        return (
-                          <Link 
-                            key={index}
-                            href={`/bandi/provincia/${encodeURIComponent(provincia)}`}
-                            className="block"
-                          >
-                            <div 
-                              className="p-2 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
-                            >
-                              <div className="font-medium text-sm line-clamp-2" title={provincia}>
-                                {provincia}
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                {provinceCount} {provinceCount === 1 ? 'concorso' : 'concorsi'}
-                              </div>
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
+            {/* Region-Province List */}
+            {regionsWithProvinces.length > 0 && (
+              <RegionProvinceList 
+                regions={regionsWithProvinces} 
+                className="mt-2"
+              />
             )}
           </div>
 
           {/* Main Content - Concorsi List */}
           <div className="lg:col-span-3 order-2 lg:order-1">
             {displayedConcorsi.length > 0 ? (
-              <div className="space-y-6">
+              <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <h2 className="text-xl font-semibold text-gray-900">
                     Concorsi Disponibili ({totalCount}) {isRegion ? 'nella regione' : 'in'} {location}

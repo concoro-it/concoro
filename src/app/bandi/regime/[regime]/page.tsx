@@ -52,11 +52,11 @@ async function fetchRegimeDataFromFirestore(regime: string, regimeSlug: string) 
   const startTime = Date.now()
   console.log(`⚙️ Fetching data for regime: ${regime} (optimized query)`)
   
-  const { getConcorsiByRegime } = await import('@/lib/services/common-concorsi-api')
+  const { concorsiService } = await import('@/lib/services/concorsi-service')
   
   try {
-    // Use the regime service with optimized query
-    const result = await getConcorsiByRegime(regime, {
+    // Use the unified service with optimized query
+    const result = await concorsiService.getConcorsiByRegime(regime, {
       Stato: 'OPEN',
       limit: 500, // Get more concorsi for regime pages
       orderByField: 'publication_date',

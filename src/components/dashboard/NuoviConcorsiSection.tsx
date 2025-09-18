@@ -128,7 +128,7 @@ export function NuoviConcorsiSection() {
         
         // Try optimized query first
         try {
-          const { getLatestConcorsiClient } = await import('@/lib/services/common-concorsi-api-client')
+          const { getLatestConcorsiClient } = await import('@/lib/services/concorsi-service-client')
           
           const concorsiData = await getLatestConcorsiClient(5)
           

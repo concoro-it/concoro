@@ -39,19 +39,29 @@ async function getEnteData(enteSlug: string) {
 
 async function fetchEnteDataFromService(ente: string) {
   const startTime = Date.now()
-  console.log(`🏢 Fetching data for ente: ${ente} (single service call)`)
+  console.log(`🏢 Fetching data for ente: ${ente} (unified service call)`)
   
   try {
-    // Single, clean service call using Firebase index
-    const { getEnteData } = await import('@/lib/services/ente-service')
-    const data = await getEnteData(ente)
+    // Use unified server-side ConcorsiService
+    const { concorsiService } = await import('@/lib/services/concorsi-service')
+    const result = await concorsiService.getConcorsiByEnte(ente, { limit: 500 })
+    
+    // Transform result to match expected EnteData format
+    const data = {
+      ente: ente,
+      concorsi: result.concorsi,
+      totalCount: result.totalCount || result.concorsi.length,
+      locations: result.metadata?.uniqueValues?.regioni || [],
+      settori: result.metadata?.uniqueValues?.settori || [],
+      regimes: result.metadata?.uniqueValues?.regimi || []
+    }
     
     const duration = Date.now() - startTime
-    console.log(`🏢 ✅ Single service call: ${data?.concorsi?.length || 0} concorsi for ${ente} in ${duration}ms`)
+    console.log(`🏢 ✅ Unified service call: ${data.concorsi.length} concorsi for ${ente} in ${duration}ms`)
     
     return data
   } catch (error) {
-    console.error('Error fetching ente data from service:', error)
+    console.error('Error fetching ente data from unified service:', error)
     return null
   }
 }
@@ -113,11 +123,14 @@ export async function generateMetadata({ params }: EntePageProps): Promise<Metad
 // Generate static params for common enti
 export async function generateStaticParams() {
   try {
-    // Use the simple ente service
-    const { getAvailableEnti } = await import('@/lib/services/ente-service')
-    const enti = await getAvailableEnti(50) // Get first 50 enti
+    // Use the unified service to get available enti
+    const { concorsiService } = await import('@/lib/services/concorsi-service')
+    const enti = await concorsiService.getFilterOptions('enti')
     
-    return enti.map(ente => ({
+    // Limit to first 50 for static generation
+    const limitedEnti = enti.slice(0, 50)
+    
+    return limitedEnti.map(ente => ({
       ente: encodeURIComponent(ente)
     }))
   } catch (error) {

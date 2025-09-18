@@ -128,7 +128,7 @@ export function MaxiConcorsiSection() {
         
         // Try optimized query first
         try {
-          const { getMaxiConcorsiClient } = await import('@/lib/services/common-concorsi-api-client')
+          const { getMaxiConcorsiClient } = await import('@/lib/services/concorsi-service-client')
           
           const concorsiData = await getMaxiConcorsiClient(5)
           

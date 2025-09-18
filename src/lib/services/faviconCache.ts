@@ -223,4 +223,5 @@ export function useFaviconURL(enteName: string, paLink?: string) {
 }
 
 // For backward compatibility, export the original function
-export { getFaviconChain }; 
+export { getFaviconChain };
+

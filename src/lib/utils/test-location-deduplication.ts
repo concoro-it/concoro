@@ -5,8 +5,7 @@
  * the same location query is triggered multiple times simultaneously.
  */
 
-import { getLocationConcorsi } from '@/lib/services/location-queries'
-import { getDeduplicationStats } from '@/lib/utils/request-deduplication'
+import { getConcorsiByLocation } from '@/lib/services/concorsi-service'
 
 /**
  * Test location query deduplication
@@ -15,27 +14,18 @@ export async function testLocationDeduplication() {
   console.log('🧪 Testing location query deduplication...')
   
   const location = 'veneto'
-  const options = {
-    location,
-    Stato: 'OPEN' as const,
-    limit: 500
-  }
-  
   const startTime = Date.now()
   
   // Simulate React Strict Mode: trigger the same query multiple times
   console.log('📄 Starting multiple concurrent requests for the same location...')
   
   const promises = [
-    getLocationConcorsi(options),
-    getLocationConcorsi(options),
-    getLocationConcorsi(options)
+    getConcorsiByLocation(location, { Stato: 'OPEN', limit: 500 }),
+    getConcorsiByLocation(location, { Stato: 'OPEN', limit: 500 }),
+    getConcorsiByLocation(location, { Stato: 'OPEN', limit: 500 })
   ]
   
-  // Check deduplication stats before waiting
-  const statsBefore = getDeduplicationStats()
-  console.log(`📊 Deduplication stats before completion:`, statsBefore)
-  
+
   try {
     const results = await Promise.all(promises)
     const endTime = Date.now()
@@ -50,20 +40,10 @@ export async function testLocationDeduplication() {
     
     console.log(`📊 Results are identical: ${allIdentical}`)
     console.log(`📊 Each result has ${firstResult.concorsi.length} concorsi`)
-    console.log(`📊 Location: ${firstResult.location}`)
     
-    // Check final deduplication stats
-    const statsAfter = getDeduplicationStats()
-    console.log(`📊 Deduplication stats after completion:`, statsAfter)
+
     
-    return {
-      success: true,
-      duration: endTime - startTime,
-      resultsIdentical: allIdentical,
-      concorsiCount: firstResult.concorsi.length,
-      statsBefore,
-      statsAfter
-    }
+
     
   } catch (error) {
     console.error('❌ Test failed:', error)
@@ -84,9 +64,9 @@ export async function testLocationDeduplicationWithDifferentParams() {
   
   // These should NOT be deduplicated (different parameters)
   const promises = [
-    getLocationConcorsi({ location: 'veneto', Stato: 'OPEN', limit: 100 }),
-    getLocationConcorsi({ location: 'veneto', Stato: 'OPEN', limit: 200 }),
-    getLocationConcorsi({ location: 'lombardia', Stato: 'OPEN', limit: 100 })
+    getConcorsiByLocation('veneto', { Stato: 'OPEN', limit: 100 }),
+    getConcorsiByLocation('veneto', { Stato: 'OPEN', limit: 200 }),
+    getConcorsiByLocation('lombardia', { Stato: 'OPEN', limit: 100 })
   ]
   
   try {
@@ -103,7 +83,7 @@ export async function testLocationDeduplicationWithDifferentParams() {
     return {
       success: true,
       duration: endTime - startTime,
-      results: results.map(r => ({ location: r.location, count: r.concorsi.length }))
+      results: results.map(r => ({ location: r.metadata?.displayName || 'Unknown', count: r.concorsi.length }))
     }
     
   } catch (error) {

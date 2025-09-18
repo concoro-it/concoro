@@ -102,7 +102,7 @@ export default function DashboardPage() {
         
         // Try optimized query first
         try {
-          const { getConcorsiByFilterClient } = await import('@/lib/services/common-concorsi-api-client')
+          const { getConcorsiByFilterClient } = await import('@/lib/services/concorsi-service-client')
           
           const result = await getConcorsiByFilterClient({
             filterType: 'regione',
