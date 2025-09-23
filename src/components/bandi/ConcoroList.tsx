@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { 
   MapPin, 
-  Building2, 
-  Calendar, 
   CalendarDays,
   Users, 
   ChevronLeft,
@@ -12,17 +10,12 @@ import {
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
-import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
-import { useAuth } from "@/lib/hooks/useAuth"
-import React, { useEffect, useState } from "react"
+import React, { useEffect } from "react"
 import { Concorso } from "@/types/concorso"
-import Image from "next/image"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
-import { normalizeConcorsoCategory } from "@/lib/utils/category-utils"
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { FaviconImage } from "@/components/common/FaviconImage"
 import { getEnteUrl } from '@/lib/utils/ente-utils'
@@ -90,12 +83,6 @@ interface ConcoroListProps {
 
 
 
-const formatStatus = (status: string) => {
-  if (!status) return 'Stato non disponibile';
-  return status.toLowerCase() === 'open' ? 'Aperto' : 
-         status.toLowerCase() === 'closed' ? 'Chiuso' : 
-         status;
-};
 
 const getDeadlineStatus = (deadline: any) => {
   const deadlineCountdown = getDeadlineCountdown(deadline);
@@ -157,15 +144,6 @@ const cleanEnteName = (str: string | undefined): string => {
   return str.trim();
 };
 
-// Function to truncate text to specified length if needed
-const truncateIfNeeded = (text: string, maxLength: number, hasDeadline: boolean): string => {
-  if (!hasDeadline) return text; // Don't truncate if no deadline badge
-  
-  if (text.length > maxLength) {
-    return text.substring(0, maxLength) + '...';
-  }
-  return text;
-};
 
 // Function to truncate entity name for mobile
 const truncateEnteNameForMobile = (name: string, maxLength: number = 30): string => {
@@ -177,8 +155,6 @@ const truncateEnteNameForMobile = (name: string, maxLength: number = 30): string
 export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, currentPage, onPageChange, itemsPerPage }: ConcoroListProps) {
   const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 1024px)");
-  const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi();
-  const { user } = useAuth();
 
   const totalPages = Math.ceil(jobs.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -217,111 +193,13 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
     }
   };
 
-  const handleSaveJob = async (jobId: string) => {
-    try {
-      if (!user) {
-        toast.error("Effettua l'accesso per salvare i concorsi");
-        return;
-      }
-      await toggleSaveConcorso(jobId);
-      toast.success(isConcorsoSaved(jobId) ? "Concorso rimosso dai salvati" : "Concorso salvato con successo");
-    } catch (error) {
-      console.error('Error saving concorso:', error);
-      toast.error("Impossibile salvare il concorso. Riprova.");
-    }
-  };
 
-  const handleShareJob = (jobId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const url = `${window.location.origin}/concorsi/${jobId}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Link copiato negli appunti");
-  };
-
-  const handleReportJob = (jobId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    toast.success("Grazie per la segnalazione");
-  };
 
   const toSentenceCase = (str: string | undefined | null) => {
     if (!str) return '';
     return toItalianSentenceCase(str);
   };
 
-  const parseItalianDate = (dateStr: string) => {
-    try {
-      if (!dateStr) {
-        return null;
-      }
-
-      const monthMap: { [key: string]: number } = {
-        'Gen': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'Mag': 4, 'Giu': 5,
-        'Lug': 6, 'Ago': 7, 'Set': 8, 'Ott': 9, 'Nov': 10, 'Dic': 11
-      };
-
-      const parts = dateStr.split(' ');
-
-      if (parts.length < 4) {
-        return null;
-      }
-
-      const [day, month, year, time] = parts;
-      const timeParts = time.split(':');
-      
-      if (timeParts.length !== 2) {
-        return null;
-      }
-      
-      const [hours, minutes] = timeParts;
-      const monthNum = monthMap[month];
-      
-      if (monthNum === undefined) {
-        return null;
-      }
-
-      const date = new Date(
-        parseInt(year),
-        monthNum,
-        parseInt(day),
-        parseInt(hours),
-        parseInt(minutes)
-      );
-
-      return isNaN(date.getTime()) ? null : date;
-    } catch (error) {
-      console.error('Error parsing Italian date:', error);
-      return null;
-    }
-  };
-
-  const formatDate = (date: string | { seconds: number; nanoseconds: number } | null | undefined) => {
-    try {
-      if (!date) {
-        return null;
-      }
-      
-      if (typeof date === 'string') {
-        if (!date.trim()) {
-          return null;
-        }
-        
-        const italianDate = parseItalianDate(date);
-        if (italianDate) {
-          return italianDate;
-        }
-
-        const parsedDate = new Date(date);
-        return isNaN(parsedDate.getTime()) ? null : parsedDate;
-      } else if (typeof date === 'object' && date !== null && 'seconds' in date) {
-        return new Date(date.seconds * 1000);
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return null;
-    }
-  };
 
   if (isLoading) {
     return (
@@ -421,7 +299,6 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
             ? formatDistanceToNow(new Date(job.createdAt.seconds * 1000), { addSuffix: true })
             : '';
 
-          const closingDate = formatDate(job.DataChiusura);
           const deadlineStatus = getDeadlineStatus(job.DataChiusura);
           
 

@@ -87,12 +87,16 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
         setLocalita(locationName)
         
         const concorsiCollection = collection(db, 'concorsi')
-        // Fetch all concorsi and filter by location containing the search term
-        const allConcorsiQuery = query(concorsiCollection)
-        const allConcorsiSnapshot = await getDocs(allConcorsiQuery)
+        
+        // Only fetch open concorsi from the database (server-side filtering)
+        const openConcorsiQuery = query(
+          concorsiCollection,
+          where('Stato', 'in', ['open', 'aperto', 'OPEN', 'APERTO'])
+        )
+        const openConcorsiSnapshot = await getDocs(openConcorsiQuery)
         
         // Filter concorsi that contain the location name in their AreaGeografica
-        const concorsiData = allConcorsiSnapshot.docs
+        const concorsiData = openConcorsiSnapshot.docs
           .map(doc => {
             const data = doc.data()
             return {
@@ -130,7 +134,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
 
         // Debug: Log some sample locations to understand the data structure
         if (processedConcorsiData.length === 0) {
-          const sampleLocations = allConcorsiSnapshot.docs
+          const sampleLocations = openConcorsiSnapshot.docs
             .slice(0, 10)
             .map(doc => (doc.data() as any).AreaGeografica)
             .filter(Boolean);
@@ -138,31 +142,22 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
           console.log('Searching for:', locationName);
         }
 
-        // Filter only open concorsi for display
-        const openConcorsi = processedConcorsiData.filter(concorso => 
-          concorso.Stato?.toLowerCase() === 'open' || 
-          concorso.Stato?.toLowerCase() === 'aperto'
-        )
-
+        // All fetched concorsi are already open, so no need for additional filtering
         setConcorsi(processedConcorsiData)
-        setDisplayedConcorsi(openConcorsi)
+        setDisplayedConcorsi(processedConcorsiData)
 
-        // Extract unique enti (all enti from all concorsi in this location)
-        const allUniqueEnti = Array.from(new Set(
+        // Extract unique enti (all enti from open concorsi in this location)
+        const activeEnti = Array.from(new Set(
           processedConcorsiData
             .map(c => c.Ente)
             .filter(Boolean)
         )).sort()
 
-        // Extract enti with active concorsi only
-        const activeEnti = Array.from(new Set(
-          openConcorsi
-            .map(c => c.Ente)
-            .filter(Boolean)
-        )).sort()
+        // Since we only fetched open concorsi, all enti are active
+        const allUniqueEnti = activeEnti
 
-        // Extract related provinces from all locations in the database
-        const allLocations = allConcorsiSnapshot.docs
+        // Extract related provinces from open concorsi locations
+        const allLocations = openConcorsiSnapshot.docs
           .map(doc => (doc.data() as any).AreaGeografica)
           .filter(Boolean)
         

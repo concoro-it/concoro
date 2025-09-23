@@ -77,10 +77,11 @@ export default function SettorePage({ params }: SettorePageProps) {
         setSettore(settoreName)
         
         const concorsiCollection = collection(db, 'concorsi')
-        // Fetch all concorsi for this settore (both open and closed for stats)
+        // Only fetch open concorsi for this settore (server-side filtering)
         const settoreQuery = query(
           concorsiCollection,
-          where('settore_professionale', '==', settoreName)
+          where('settore_professionale', '==', settoreName),
+          where('Stato', 'in', ['open', 'aperto', 'OPEN', 'APERTO'])
         )
         const concorsiSnapshot = await getDocs(settoreQuery)
         
@@ -92,14 +93,11 @@ export default function SettorePage({ params }: SettorePageProps) {
           }
         }) as Concorso[]
 
-        // Filter only open concorsi for display
-        const openConcorsi = concorsiData.filter(concorso => 
-          concorso.Stato?.toLowerCase() === 'open' || 
-          concorso.Stato?.toLowerCase() === 'aperto'
-        )
+        // All fetched concorsi are already open, so no need for additional filtering
+        const openConcorsi = concorsiData
 
         // Group concorsi by concorso_id to handle multiple regions
-        const groupedConcorsi = groupConcorsiByConcorsoId(openConcorsi)
+        const groupedConcorsi = groupConcorsiByConcorsoId(concorsiData)
         const groupedDisplayedConcorsi = Object.values(groupedConcorsi).map(group => 
           createGroupedConcorso(group)
         ).filter(Boolean)
