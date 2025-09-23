@@ -120,7 +120,7 @@ export function JobSearch({
     onSettoriChange([])
     onRegimiChange([])
     onStatiChange([])
-    onSortChange("")
+    onSortChange("publication-desc") // Reset to default sorting
     if (onClearFilters) {
       onClearFilters()
     }
@@ -133,7 +133,7 @@ export function JobSearch({
     selectedSettori.length > 0 ||
     selectedRegimi.length > 0 ||
     selectedStati.length > 0 ||
-    Boolean(sortBy)
+    (sortBy && sortBy !== "publication-desc")
 
   const totalActiveFilters = 
     selectedLocations.length + 
@@ -142,7 +142,7 @@ export function JobSearch({
     selectedSettori.length +
     selectedRegimi.length +
     selectedStati.length +
-    (sortBy ? 1 : 0)
+    (sortBy && sortBy !== "publication-desc" ? 1 : 0)
 
   return (
     <div className="space-y-4">
@@ -150,6 +150,8 @@ export function JobSearch({
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            id="search-input"
+            name="search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cerca bandi e avvisi per titolo, ente o descrizione…"
@@ -286,11 +288,11 @@ export function JobSearch({
                     </button>
                   </div>
                 ))}
-                {sortBy && (
+                {sortBy && sortBy !== "publication-desc" && (
                   <div className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs">
                     <span>Ordinato</span>
                     <button
-                      onClick={() => onSortChange("")}
+                      onClick={() => onSortChange("publication-desc")}
                       className="ml-1 hover:bg-indigo-200 rounded-full p-0.5"
                     >
                       <X className="h-3 w-3" />
@@ -364,16 +366,7 @@ export function JobSearch({
               selectedValues={selectedRegimi}
               onChange={onRegimiChange}
             />
-            <FilterPopover
-              icon={<FileText className="h-3 w-3" />}
-              title="Stato"
-              options={[
-                { label: "Aperto", value: "aperto" },
-                { label: "Chiuso", value: "chiuso" }
-              ]}
-              selectedValues={selectedStati}
-              onChange={onStatiChange}
-            />
+
             
             {/* Spacer to push right-side buttons to the right */}
             <div className="flex-1"></div>
@@ -382,13 +375,20 @@ export function JobSearch({
             <FilterPopover
               icon={<ArrowUpDown className="h-3 w-3" />}
               title="Ordina"
+              triggerText={sortBy ? 
+                (sortBy === "deadline-asc" ? "Scadenza vicina" :
+                 sortBy === "publication-desc" ? "Pubblicati recenti" :
+                 sortBy === "posts-desc" ? "Più posti" : "Ordina") 
+                : "Ordina"}
               options={[
-                { label: "Scadenza (più vicina)", value: "deadline-asc" },
-                { label: "Data di pubblicazione (più recente)", value: "publication-desc" },
-                { label: "Posti disponibili (più posti)", value: "posts-desc" }
+                { label: "Scadenza vicina", value: "deadline-asc" },
+                { label: "Pubblicati recenti", value: "publication-desc" },
+                { label: "Più posti", value: "posts-desc" }
               ]}
               selectedValues={sortBy ? [sortBy] : []}
               onChange={(values) => onSortChange(values[0] || "")}
+              alwaysShowDropdown={true}
+              singleSelection={true}
             />
             
             {(hasActiveFilters || searchTerm) && (

@@ -21,26 +21,8 @@ interface ChatConcorsoCardProps {
   compact?: boolean
 }
 
-// Extract domain from URL
-const extractDomain = (url: string | undefined): string => {
-  if (!url) return '';
-  
-  // Basic URL validation
-  if (!url.includes('.')) return '';
-  
-  try {
-    const domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
-    return domain;
-  } catch (error) {
-    return '';
-  }
-};
 
-// Get favicon chain for fallbacks
-const getFaviconChain = (domain: string): string[] => [
-  `https://www.google.com/s2/favicons?sz=32&domain=${domain}`,
-  `/placeholder_icon.png`,
-];
+import { FaviconImage } from "@/components/common/FaviconImage"
 
 // Parse Italian date format or Timestamp
 const formatDate = (timestamp: any): string => {
@@ -93,20 +75,12 @@ const formatDate = (timestamp: any): string => {
 
 export function ChatConcorsoCard({ concorso, compact = false }: ChatConcorsoCardProps) {
   const { user } = useAuth();
-  const [faviconIndex, setFaviconIndex] = useState(0);
   
   // Format date to display
   const formattedDate = useMemo(() => {
     return concorso.DataChiusura ? formatDate(concorso.DataChiusura) : "Data non disponibile";
   }, [concorso.DataChiusura]);
   
-  // Get domain for favicon
-  const domain = useMemo(() => extractDomain(concorso.pa_link), [concorso.pa_link]);
-  const faviconUrls = useMemo(() => domain ? getFaviconChain(domain) : ['/placeholder_icon.png'], [domain]);
-  
-  const handleFaviconError = () => {
-    setFaviconIndex(prev => Math.min(prev + 1, faviconUrls.length - 1));
-  };
   
   return (
     <div 
@@ -115,18 +89,12 @@ export function ChatConcorsoCard({ concorso, compact = false }: ChatConcorsoCard
       <div className={`${compact ? 'mb-3' : 'mb-4'}`}>
         {/* Ente with favicon */}
         <div className="flex items-center gap-2 mb-2">
-          {domain && (
-            <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
-              <Image 
-                src={faviconUrls[faviconIndex]}
-                alt={`Logo of ${concorso.Ente || 'entity'}`}
-                width={16} 
-                height={16}
-                className="object-contain"
-                onError={handleFaviconError}
-              />
-            </div>
-          )}
+          <FaviconImage 
+            enteName={concorso.Ente || ''}
+            paLink={concorso.pa_link}
+            size={16}
+            className="flex-shrink-0"
+          />
           <div className="min-w-0 flex-1">
             <p className="text-xs text-muted-foreground truncate font-medium" title={concorso.Ente}>
               {concorso.Ente}

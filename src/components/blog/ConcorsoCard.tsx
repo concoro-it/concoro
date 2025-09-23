@@ -33,9 +33,6 @@ const getFirstPartOfEnte = (ente: string): string => {
   return dashIndex > 0 ? ente.substring(0, dashIndex).trim() : ente;
 };
 
-// Note: Domain extraction logic moved to /lib/services/faviconCache.ts
-
-// Note: Favicon logic moved to /lib/services/faviconCache.ts
 
 // Parse Italian date format
 const parseItalianDate = (dateStr: string) => {
@@ -161,7 +158,6 @@ export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
   const titleInSentenceCase = useMemo(() => toSentenceCase(concorso.Titolo), [concorso.Titolo]);
   const enteFirstPart = useMemo(() => getFirstPartOfEnte(toSentenceCase(concorso.Ente || '')), [concorso.Ente]);
   
-  // Note: Favicon logic is now handled by useFaviconURL hook
   
   return (
     <div 

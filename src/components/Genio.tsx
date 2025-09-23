@@ -329,6 +329,8 @@ export default function Genio({ className }: GenioProps) {
           {/* Input section */}
           <div className="relative mb-2">
             <input
+              id="genio-input"
+              name="genio-message"
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}

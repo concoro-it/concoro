@@ -1,6 +1,5 @@
 import React from 'react';
 import Image from 'next/image';
-import { useFaviconURL } from '@/lib/services/faviconCache';
 
 interface FaviconImageProps {
   enteName: string;
@@ -8,7 +7,6 @@ interface FaviconImageProps {
   size?: number;
   className?: string;
   alt?: string;
-  showLoading?: boolean;
 }
 
 export function FaviconImage({ 
@@ -16,25 +14,13 @@ export function FaviconImage({
   paLink, 
   size = 16, 
   className = "",
-  alt,
-  showLoading = true
+  alt
 }: FaviconImageProps) {
-  const { faviconURL, isLoading } = useFaviconURL(enteName, paLink);
-  
   const altText = alt || `Logo of ${enteName || 'entity'}`;
-  
-  if (showLoading && isLoading) {
-    return (
-      <div 
-        className={`bg-gray-200 rounded animate-pulse ${className}`}
-        style={{ width: size, height: size }}
-      />
-    );
-  }
   
   return (
     <Image 
-      src={faviconURL}
+      src="/placeholder_icon.png"
       alt={altText}
       width={size} 
       height={size}

@@ -557,7 +557,7 @@ const Navbar = (props: NavbarProps) => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          ) :
+          ) : (
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" asChild className="hidden xs:inline-flex">
                 <Link href={authProps?.login.url || "/signin"}>

@@ -62,6 +62,8 @@ const PromptInputTextarea = React.forwardRef<
   return (
     <textarea
       ref={ref}
+      id="prompt-textarea"
+      name="prompt"
       className={cn(
         "min-h-[60px] w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
         className

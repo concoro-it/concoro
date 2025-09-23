@@ -1,5 +1,13 @@
 import { Timestamp } from 'firebase/firestore';
 
+export interface Provincia {
+  provincia_codice: string;
+  provincia_geopoint: [number, number];
+  provincia_nome: string;
+  regione_geopoint: [number, number];
+  regione_nome: string;
+}
+
 export interface Concorso {
   id: string;
   AreaGeografica: string;
@@ -33,8 +41,14 @@ export interface Concorso {
   sommario: string;
   tipologia?: string;
   titolo_originale: string;
+  provinca?: Provincia[];
   createdAt: { seconds: number; nanoseconds: number };
   updatedAt: { seconds: number; nanoseconds: number };
+  // New fields for grouped regions functionality
+  isGrouped?: boolean;
+  regions?: string[];
+  regionCount?: number;
+  allConcorsi?: any[];
 }
 
 export interface Match {

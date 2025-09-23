@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { doc, getDoc, Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase/config"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,6 +29,8 @@ import {
 import { marked } from 'marked'
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { formatMetodoValutazione } from '@/lib/utils/date-utils'
+import { getEnteUrl } from '@/lib/utils/ente-utils'
+import { getLocalitaUrl, splitLocationString } from '@/lib/utils/localita-utils'
 
 // Configure marked for safe HTML rendering
 marked.setOptions({
@@ -95,6 +97,11 @@ interface Job {
   regime_impegno?: string;
   conoscenze_tecnico_specialistiche?: string | string[];
   requisiti_generali?: string | string[];
+  // New fields for grouped regions functionality
+  isGrouped?: boolean;
+  regions?: string[];
+  regionCount?: number;
+  allConcorsi?: any[];
 }
 
 const parseDate = (dateStr: string | undefined): Date | null => {
@@ -203,6 +210,88 @@ const getDeadlineStatus = (dateStr: string | undefined | { seconds: number, nano
 
 const toSentenceCase = (str: string) => {
   return toItalianSentenceCase(str);
+};
+
+// Helper function to render grouped regions
+const renderGroupedRegions = (job: Job) => {
+  if (job.isGrouped && job.regions && job.regions.length > 1) {
+    return (
+      <div className="flex flex-wrap items-center gap-1">
+        <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+        <div className="flex flex-wrap gap-1">
+          {job.regions.slice(0, 3).map((region: string, index: number) => (
+            <React.Fragment key={region}>
+              <Link 
+                href={getLocalitaUrl(region)}
+                className="hover:text-foreground transition-colors text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md"
+              >
+                {region}
+              </Link>
+              {index < Math.min((job.regions?.length || 0) - 1, 2) && (
+                <span className="text-xs text-gray-400">•</span>
+              )}
+            </React.Fragment>
+          ))}
+          {(job.regions?.length || 0) > 3 && (
+            <span className="text-xs text-gray-500">
+              +{(job.regions?.length || 0) - 3} altre
+            </span>
+          )}
+        </div>
+        <span className="text-xs text-gray-500 ml-1">
+          ({job.regionCount || job.regions?.length || 0} regioni)
+        </span>
+      </div>
+    );
+  }
+  
+  // Single region display or split combined regions
+  const locationText = job.job_location || job.AreaGeografica || 'Località non specificata';
+  const regions = splitLocationString(locationText);
+  
+  if (regions.length > 1) {
+    return (
+      <div className="flex flex-wrap items-center gap-1">
+        <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+        <div className="flex flex-wrap gap-1">
+          {regions.slice(0, 3).map((region: string, index: number) => (
+            <React.Fragment key={region}>
+              <Link 
+                href={getLocalitaUrl(region)}
+                className="hover:text-foreground transition-colors text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md"
+              >
+                {region}
+              </Link>
+              {index < Math.min(regions.length - 1, 2) && (
+                <span className="text-xs text-gray-400">•</span>
+              )}
+            </React.Fragment>
+          ))}
+          {regions.length > 3 && (
+            <span className="text-xs text-gray-500">
+              +{regions.length - 3} altre
+            </span>
+          )}
+        </div>
+        <span className="text-xs text-gray-500 ml-1">
+          ({regions.length} regioni)
+        </span>
+      </div>
+    );
+  }
+  
+  // Single region display
+  return (
+    <div className="flex items-center">
+      <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+      <Link 
+        href={getLocalitaUrl(locationText)}
+        className="hover:text-foreground transition-colors"
+      >
+        <span>{locationText}</span>
+      </Link>
+    </div>
+  );
 };
 
 const formatListItem = (text: string) => {
@@ -478,19 +567,20 @@ export default function JobPage({ params }: { params: { id: string } }) {
                 <div className="flex items-center text-gray-600 mt-2">
                   <Building2 className="w-4 h-4 mr-1 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <span className="truncate" title={safeText(job["Ente di riferimento"] || job.Ente)}>
+                    <Link 
+                      href={getEnteUrl(safeText(job["Ente di riferimento"] || job.Ente))}
+                      className="truncate hover:text-foreground transition-colors"
+                      title={safeText(job["Ente di riferimento"] || job.Ente)}
+                    >
                       {safeText(job["Ente di riferimento"] || job.Ente)}
-                    </span>
+                    </Link>
                   </div>
                 </div>
               </div>
 
               {/* Location and Date */}
               <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                <div className="flex items-center">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  <span>{safeText(job.job_location || job.AreaGeografica || 'Località non specificata')}</span>
-                </div>
+                {renderGroupedRegions(job)}
                 <div className="flex items-center">
                   <Calendar className="w-4 h-4 mr-1" />
                   <span>Chiusura: {safeText(job["Data chiusura candidature"] || job.DataChiusura || 'Data non specificata')}</span>

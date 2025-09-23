@@ -17,7 +17,7 @@ const nextConfig = {
   // Suppress favicon image loading errors in development
   ...(process.env.NODE_ENV === 'development' && {
     compiler: {
-      removeConsole: false, // Keep console logs in development but filter them
+      removeConsole: true, // Keep console logs in development but filter them
     },
   }),
   experimental: {
@@ -60,22 +60,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'faviconkit.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
         hostname: 'firebasestorage.googleapis.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'besticon-demo.herokuapp.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'logo.clearbit.com',
         pathname: '/**',
       },
       {

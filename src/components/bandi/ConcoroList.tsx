@@ -24,14 +24,59 @@ import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { normalizeConcorsoCategory } from "@/lib/utils/category-utils"
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
+import { FaviconImage } from "@/components/common/FaviconImage"
+import { getEnteUrl } from '@/lib/utils/ente-utils'
+import { getLocalitaUrl } from '@/lib/utils/localita-utils'
+import Link from "next/link"
 
-const getFaviconChain = (domain: string): string[] => [
-  `https://faviconkit.com/${domain}/32`,
-  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
-  `https://logo.clearbit.com/${domain}`,
-  `https://www.google.com/s2/favicons?sz=192&domain=${domain}`,
-  `/placeholder_icon.png`,
-];
+// Helper function to render grouped regions
+const renderGroupedRegions = (job: any, isMobile: boolean = false) => {
+  if (job.isGrouped && job.regions && job.regions.length > 1) {
+    return (
+      <div className="flex flex-wrap items-center gap-1">
+        <MapPin className={`${isMobile ? 'w-3 h-3' : 'w-3 h-3 sm:w-4 sm:h-4'} mr-1 shrink-0`} />
+        <div className="flex flex-wrap gap-1">
+          {job.regions.slice(0, isMobile ? 2 : 4).map((region: string, index: number) => (
+            <React.Fragment key={region}>
+              <Link 
+                href={getLocalitaUrl(region)}
+                onClick={(e) => e.stopPropagation()}
+                className={`hover:text-foreground transition-colors text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md`}
+              >
+                {formatLocalitaDisplay(region)}
+              </Link>
+              {index < Math.min(job.regions.length - 1, isMobile ? 1 : 3) && (
+                <span className="text-xs text-gray-400">•</span>
+              )}
+            </React.Fragment>
+          ))}
+          {job.regions.length > (isMobile ? 2 : 4) && (
+            <span className="text-xs text-gray-500">
+              +{job.regions.length - (isMobile ? 2 : 4)} altre
+            </span>
+          )}
+        </div>
+        <span className="text-xs text-gray-500 ml-1">
+          ({job.regionCount} regioni)
+        </span>
+      </div>
+    );
+  }
+  
+  // Single region display
+  return (
+    <div className="flex items-center">
+      <MapPin className={`${isMobile ? 'w-3 h-3' : 'w-3 h-3 sm:w-4 sm:h-4'} mr-1 shrink-0`} />
+      <Link 
+        href={getLocalitaUrl(job.AreaGeografica || '')}
+        onClick={(e) => e.stopPropagation()}
+        className="hover:text-foreground transition-colors"
+      >
+        <span className="line-clamp-1">{formatLocalitaDisplay(job.AreaGeografica || '')}</span>
+      </Link>
+    </div>
+  );
+};
 
 interface ConcoroListProps {
   jobs: Concorso[];
@@ -104,32 +149,6 @@ const getDeadlineStatus = (deadline: any) => {
   };
 };
 
-// Function to extract domain from URL
-const extractDomain = (url: string | undefined): string => {
-  if (!url) return '';
-  
-  // Check if the URL is just "N/A" or similar placeholder
-  if (url === 'N/A' || url === 'n/a' || url === 'NA') return '';
-  
-  // Basic URL validation before trying to parse
-  if (!url.includes('.') || (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//'))) {
-    // Try to fix common URL issues by adding protocol
-    url = url.startsWith('www.') ? `https://${url}` : url;
-    
-    // If it still doesn't look like a URL, return empty
-    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//')) {
-      return '';
-    }
-  }
-  
-  try {
-    const domain = new URL(url).hostname;
-    return domain;
-  } catch (error) {
-    console.error('Invalid URL:', url);
-    return '';
-  }
-};
 
 // Function to clean Ente names - display as-is without case conversion
 const cleanEnteName = (str: string | undefined): string => {
@@ -160,7 +179,6 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
   const isMobile = useMediaQuery("(max-width: 1024px)");
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi();
   const { user } = useAuth();
-  const [faviconIndices, setFaviconIndices] = useState<Record<string, number>>({});
 
   const totalPages = Math.ceil(jobs.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -406,18 +424,6 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
           const closingDate = formatDate(job.DataChiusura);
           const deadlineStatus = getDeadlineStatus(job.DataChiusura);
           
-          // Get domain for favicon
-          const domain = extractDomain(job.pa_link);
-          const fallbacks = domain ? getFaviconChain(domain) : ['/placeholder_icon.png'];
-          const currentFaviconIndex = faviconIndices[job.id] || 0;
-          
-          const handleFaviconError = () => {
-            const nextIndex = Math.min((faviconIndices[job.id] || 0) + 1, fallbacks.length - 1);
-            setFaviconIndices(prev => ({
-              ...prev,
-              [job.id]: nextIndex
-            }));
-          };
 
           // Get entity name - display as-is without case conversion
           const enteName = cleanEnteName(job.Ente);
@@ -451,28 +457,21 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
                 <div className="flex-grow space-y-2 w-full">
                   {/* Ente name with favicon */}
                   <div className="flex items-center gap-1 min-w-0">
-                    <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
-                      <Image 
-                        src={fallbacks[currentFaviconIndex]}
-                        alt={`Logo of ${job.Ente || 'entity'}`}
-                        width={16} 
-                        height={16}
-                        className="object-contain"
-                        style={{ 
-                          imageRendering: 'crisp-edges'
-                        }}
-                        onError={(e) => {
-                          e.preventDefault();
-                          handleFaviconError();
-                        }}
-                        unoptimized={true}
-                        suppressHydrationWarning={true}
-                      />
-                    </div>
+                    <FaviconImage 
+                      enteName={job.Ente}
+                      paLink={job.pa_link}
+                      size={16}
+                      className="flex-shrink-0"
+                    />
                     <div className="min-w-0 flex-1">
-                      <p className="text-[12px] text-muted-foreground truncate" title={enteName}>
+                      <Link 
+                        href={getEnteUrl(job.Ente)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[12px] text-muted-foreground truncate hover:text-foreground transition-colors"
+                        title={enteName}
+                      >
                         {truncatedEnteName}
-                      </p>
+                      </Link>
                     </div>
                   </div>
                   
@@ -483,10 +482,7 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
                   
                   {/* Metadata in horizontal layout */}
                   <div className="flex flex-wrap items-center gap-3 text-[12px] text-gray-500">
-                    <div className="flex items-center">
-                      <MapPin className="w-3 h-3 mr-1 shrink-0" />
-                      <span>{formatLocalitaDisplay(job.AreaGeografica || '')}</span>
-                    </div>
+                    {renderGroupedRegions(job, true)}
                     {deadlineStatus && (
                       <div className={`flex items-center gap-1 text-xs ${
                         deadlineStatus.isUrgent 
@@ -518,28 +514,21 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
                 <div className="flex items-start">
                   <div className="flex-grow space-y-2 w-full">
                     <div className="flex items-center gap-1 min-w-0">
-                      <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
-                        <Image 
-                          src={fallbacks[currentFaviconIndex]}
-                          alt={`Logo of ${job.Ente || 'entity'}`}
-                          width={16} 
-                          height={16}
-                          className="object-contain"
-                          style={{ 
-                            imageRendering: 'crisp-edges'
-                          }}
-                          onError={(e) => {
-                            e.preventDefault();
-                            handleFaviconError();
-                          }}
-                          unoptimized={true}
-                          suppressHydrationWarning={true}
-                        />
-                      </div>
+                      <FaviconImage 
+                        enteName={job.Ente}
+                        paLink={job.pa_link}
+                        size={16}
+                        className="flex-shrink-0"
+                      />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-muted-foreground truncate" title={enteName}>
+                        <Link 
+                          href={getEnteUrl(job.Ente)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-sm text-muted-foreground truncate hover:text-foreground transition-colors"
+                          title={enteName}
+                        >
                           {truncatedEnteName}
-                        </p>
+                        </Link>
                       </div>
                     </div>
                     
@@ -552,10 +541,7 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 shrink-0" />
-                        <span className="line-clamp-1">{formatLocalitaDisplay(job.AreaGeografica || '')}</span>
-                      </div>
+                      {renderGroupedRegions(job, false)}
                       {deadlineStatus && (
                         <div className={`flex items-center gap-1 text-xs sm:text-sm ${
                           deadlineStatus.isUrgent 

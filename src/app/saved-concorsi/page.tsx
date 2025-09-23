@@ -18,24 +18,7 @@ import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import Image from "next/image"
 import Link from "next/link"
 import { Spinner } from "@/components/ui/spinner"
-
-const getFaviconChain = (domain: string): string[] => [
-  `https://faviconkit.com/${domain}/32`,
-  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
-  `https://logo.clearbit.com/${domain}`,
-  `https://www.google.com/s2/favicons?sz=192&domain=${domain}`,
-  `/placeholder_icon.png`,
-];
-
-const extractDomain = (url: string | undefined): string => {
-  if (!url) return '';
-  try {
-    const match = url.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/);
-    return match ? match[1].toLowerCase() : '';
-  } catch {
-    return '';
-  }
-};
+import { FaviconImage } from "@/components/common/FaviconImage"
 
 const cleanEnteName = (str: string | undefined): string => {
   if (!str) return '';
@@ -89,7 +72,6 @@ export default function SavedConcorsiPage() {
   const [savedConcorsi, setSavedConcorsi] = useState<Concorso[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false)
-  const [faviconIndices, setFaviconIndices] = useState<Record<string, number>>({})
   const [minLoadingTime, setMinLoadingTime] = useState(true)
   const [showExpired, setShowExpired] = useState(false)
   const router = useRouter()
@@ -271,18 +253,6 @@ export default function SavedConcorsiPage() {
       : '';
 
     const deadlineStatus = getDeadlineStatus(concorso.DataChiusura);
-    
-    // Get domain for favicon
-    const domain = extractDomain(concorso.pa_link);
-            const fallbacks = domain ? getFaviconChain(domain) : ['/placeholder_icon.png'];
-    const currentFaviconIndex = faviconIndices[concorso.id] || 0;
-    
-    const handleFaviconError = () => {
-      setFaviconIndices(prev => ({
-        ...prev,
-        [concorso.id]: Math.min((prev[concorso.id] || 0) + 1, fallbacks.length - 1)
-      }));
-    };
 
     // Get entity name - display as-is without case conversion
     const enteName = cleanEnteName(concorso.Ente);
@@ -312,19 +282,12 @@ export default function SavedConcorsiPage() {
           
           {/* Ente name with favicon */}
           <div className="flex items-center gap-1 min-w-0 mb-2 pr-12">
-            <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
-              <Image 
-                src={fallbacks[currentFaviconIndex]}
-                alt={`Logo of ${concorso.Ente || 'entity'}`}
-                width={16} 
-                height={16}
-                className="object-contain"
-                style={{ 
-                  imageRendering: 'crisp-edges'
-                }}
-                onError={handleFaviconError}
-              />
-            </div>
+            <FaviconImage 
+              enteName={concorso.Ente}
+              paLink={concorso.pa_link}
+              size={16}
+              className="flex-shrink-0"
+            />
             <div className="min-w-0 flex-1">
               <p className="text-sm text-muted-foreground truncate" title={concorso.Ente}>
                 {enteName}

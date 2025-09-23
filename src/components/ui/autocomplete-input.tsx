@@ -128,6 +128,8 @@ export function AutocompleteInput({
       {/* Autocomplete input */}
       <div className="relative w-full">
         <Input
+          id="autocomplete-input"
+          name="autocomplete"
           value={inputValue}
           onChange={handleInputChange}
           onFocus={handleInputFocus}

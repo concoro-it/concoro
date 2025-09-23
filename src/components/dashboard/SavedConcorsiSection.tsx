@@ -15,8 +15,9 @@ import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { FaviconImage } from '@/components/common/FaviconImage'
+import { getEnteUrl } from '@/lib/utils/ente-utils'
+import { getLocalitaUrl } from '@/lib/utils/localita-utils'
 
-// Note: Favicon logic moved to /lib/services/faviconCache.ts
 
 const cleanEnteName = (str: string | undefined): string => {
   if (!str) return '';
@@ -259,9 +260,14 @@ export function SavedConcorsiSection() {
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-muted-foreground truncate" title={enteName}>
+                    <Link 
+                      href={getEnteUrl(concorso.Ente || '')}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-sm text-muted-foreground truncate hover:text-foreground transition-colors"
+                      title={enteName}
+                    >
                       {enteName}
-                    </p>
+                    </Link>
                   </div>
                 </div>
                 
@@ -274,7 +280,13 @@ export function SavedConcorsiSection() {
                 <div className="flex flex-wrap gap-3 text-sm text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
-                    <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
+                    <Link 
+                      href={getLocalitaUrl(concorso.AreaGeografica || '')}
+                      onClick={(e) => e.stopPropagation()}
+                      className="hover:text-foreground transition-colors"
+                    >
+                      <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
+                    </Link>
                   </div>
                   {deadlineStatus && (
                     <div className={`flex items-center gap-1 text-sm ${

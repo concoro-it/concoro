@@ -24,6 +24,8 @@ interface FilterPopoverProps {
   className?: string
   buttonClassName?: string
   triggerText?: string
+  alwaysShowDropdown?: boolean
+  singleSelection?: boolean
 }
 
 export function FilterPopover({
@@ -35,13 +37,21 @@ export function FilterPopover({
   className,
   buttonClassName,
   triggerText,
+  alwaysShowDropdown = false,
+  singleSelection = false,
 }: FilterPopoverProps) {
   const handleOptionToggle = (value: string) => {
-    const newValues = selectedValues.includes(value)
-      ? selectedValues.filter((v) => v !== value)
-      : [...selectedValues, value]
-    
-    onChange(newValues)
+    if (singleSelection) {
+      // For single selection, always set the new value (radio button behavior)
+      onChange([value])
+    } else {
+      // For multi-selection, toggle the value (checkbox behavior)
+      const newValues = selectedValues.includes(value)
+        ? selectedValues.filter((v) => v !== value)
+        : [...selectedValues, value]
+      
+      onChange(newValues)
+    }
   }
 
   const handleRemoveValue = (value: string, e: React.MouseEvent) => {
@@ -62,7 +72,7 @@ export function FilterPopover({
     return Math.max(calculatedHeight, minHeight);
   }
 
-  if (selectedValues.length > 0) {
+  if (selectedValues.length > 0 && !alwaysShowDropdown) {
     return (
       <div className="inline-flex items-center gap-1">
         {selectedValues.map(value => {

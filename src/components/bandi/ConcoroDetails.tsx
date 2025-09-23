@@ -39,8 +39,11 @@ import { Spinner } from "@/components/ui/spinner"
 import { ReportModal } from "@/components/ui/report-modal"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { formatMetodoValutazione, getDeadlineCountdown } from '@/lib/utils/date-utils'
+import { getEnteUrl } from '@/lib/utils/ente-utils'
+import { getLocalitaUrl } from '@/lib/utils/localita-utils'
 import { normalizeConcorsoCategory } from "@/lib/utils/category-utils"
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
+import Link from "next/link"
 
 // Configure marked for safe HTML rendering
 marked.setOptions({
@@ -48,40 +51,7 @@ marked.setOptions({
   gfm: true,
 })
 
-// Favicon utility functions
-const getFaviconChain = (domain: string): string[] => [
-  `https://faviconkit.com/${domain}/32`,
-  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
-  `https://logo.clearbit.com/${domain}`,
-  `https://www.google.com/s2/favicons?sz=192&domain=${domain}`,
-  `/placeholder_icon.png`
-];
-
-const extractDomain = (url: string | undefined): string => {
-  if (!url) return '';
-  
-  // Check if the URL is just "N/A" or similar placeholder
-  if (url === 'N/A' || url === 'n/a' || url === 'NA') return '';
-  
-  // Basic URL validation before trying to parse
-  if (!url.includes('.') || (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//'))) {
-    // Try to fix common URL issues by adding protocol
-    url = url.startsWith('www.') ? `https://${url}` : url;
-    
-    // If it still doesn't look like a URL, return empty
-    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//')) {
-      return '';
-    }
-  }
-  
-  try {
-    const domain = new URL(url).hostname;
-    return domain;
-  } catch (error) {
-    console.error('Invalid URL:', url);
-    return '';
-  }
-};
+import { FaviconImage } from "@/components/common/FaviconImage"
 
 export interface Concorso {
   id: string;
@@ -243,7 +213,6 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [isLoadingResponse, setIsLoadingResponse] = useState(false)
-  const [faviconIndex, setFaviconIndex] = useState(0)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
   const scrollToBottom = () => {
@@ -631,42 +600,33 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                 <div>
                   <h1 className="text-2xl font-bold">{toSentenceCase(job.Titolo || job.titolo_originale || '')}</h1>
                   <div className="flex items-center text-gray-600 mt-2">
-                    {(() => {
-                      const domain = extractDomain(job.pa_link);
-                      const faviconUrls = domain ? getFaviconChain(domain) : ['/placeholder_icon.png'];
-                      
-                      const handleFaviconError = () => {
-                        setFaviconIndex(prev => Math.min(prev + 1, faviconUrls.length - 1));
-                      };
-
-                      return (
-                        <>
-                          <div className="relative w-4 h-4 mr-2 flex items-center justify-center">
-                            <Image 
-                              src={faviconUrls[faviconIndex]}
-                              alt={`Logo of ${job.Ente || 'entity'}`}
-                              width={16} 
-                              height={16}
-                              className="object-contain"
-                              style={{ 
-                                imageRendering: 'crisp-edges'
-                              }}
-                              onError={handleFaviconError}
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <span className="truncate" title={job.Ente}>{job.Ente || ''}</span>
-                          </div>
-                        </>
-                      );
-                    })()}
+                    <FaviconImage 
+                      enteName={job.Ente || ''}
+                      paLink={job.pa_link}
+                      size={16}
+                      className="mr-2 flex-shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <Link 
+                        href={getEnteUrl(job.Ente || '')}
+                        className="truncate hover:text-foreground transition-colors"
+                        title={job.Ente}
+                      >
+                        {job.Ente || ''}
+                      </Link>
+                    </div>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                   <div className="flex items-center">
                     <MapPin className="w-4 h-4 mr-1" />
-                    <span>{formatLocalitaDisplay(job.AreaGeografica || '')}</span>
+                    <Link 
+                      href={getLocalitaUrl(job.AreaGeografica || '')}
+                      className="hover:text-foreground transition-colors"
+                    >
+                      <span>{formatLocalitaDisplay(job.AreaGeografica || '')}</span>
+                    </Link>
                   </div>
                   <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />

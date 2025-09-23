@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, Suspense } from "react"
-import { collection, getDocs, Timestamp } from "firebase/firestore"
+import { collection, getDocs, Timestamp, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase/config"
 import { JobSearch } from "@/components/jobs/ConcorsiSearch"
 import { ConcoroList } from "@/components/bandi/ConcoroList"
@@ -52,7 +52,7 @@ function JobsPage() {
   
   // Navigation and UI state
   const [currentPage, setCurrentPage] = useState(1)
-  const [sortBy, setSortBy] = useState<string>("")
+  const [sortBy, setSortBy] = useState<string>("publication-desc")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [showFilterSidebar, setShowFilterSidebar] = useState(false)
   
@@ -93,6 +93,9 @@ function JobsPage() {
       setSortBy('posts-desc')
     } else if (sortParam === 'deadline-asc') {
       setSortBy('deadline-asc')
+    } else {
+      // Default to publication-desc if no sort param is provided
+      setSortBy('publication-desc')
     }
   }, []) // Empty dependency array - only run on mount
 
@@ -140,7 +143,12 @@ function JobsPage() {
         }
         
         const concorsiCollection = collection(db, 'concorsi')
-        const concorsiSnapshot = await getDocs(concorsiCollection)
+        // Only fetch open concorsi to reduce Firebase reads
+        const openConcorsiQuery = query(
+          concorsiCollection,
+          where('Stato', 'in', ['open', 'aperto', 'OPEN', 'APERTO'])
+        )
+        const concorsiSnapshot = await getDocs(openConcorsiQuery)
         
         const jobsData = concorsiSnapshot.docs.map(doc => {
           const data = doc.data()
@@ -401,7 +409,7 @@ function JobsPage() {
     setSelectedSettori([])
     setSelectedRegimi([])
     setSelectedStati([])
-    setSortBy("")
+    setSortBy("publication-desc")
     setSelectedCategory("all")
   }
 

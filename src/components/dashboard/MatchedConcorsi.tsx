@@ -15,42 +15,7 @@ import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization';
 import { Pagination } from "@/components/blog/Pagination";
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
-import Image from "next/image"
-
-const getFaviconChain = (domain: string): string[] => [
-  `https://faviconkit.com/${domain}/32`,
-  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
-  `https://logo.clearbit.com/${domain}`,
-  `https://www.google.com/s2/favicons?sz=192&domain=${domain}`,
-  `/placeholder_icon.png`,
-];
-
-// Function to extract domain from URL
-const extractDomain = (url: string | undefined): string => {
-  if (!url) return '';
-  
-  // Check if the URL is just "N/A" or similar placeholder
-  if (url === 'N/A' || url === 'n/a' || url === 'NA') return '';
-  
-  // Basic URL validation before trying to parse
-  if (!url.includes('.') || (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//'))) {
-    // Try to fix common URL issues by adding protocol
-    url = url.startsWith('www.') ? `https://${url}` : url;
-    
-    // If it still doesn't look like a URL, return empty
-    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//')) {
-      return '';
-    }
-  }
-  
-  try {
-    const domain = new URL(url).hostname;
-    return domain;
-  } catch (error) {
-    console.error('Invalid URL:', url);
-    return '';
-  }
-};
+import { FaviconImage } from "@/components/common/FaviconImage"
 
 // Function to clean Ente names - display as-is without case conversion
 const cleanEnteName = (str: string | undefined): string => {
@@ -122,7 +87,6 @@ const CONCORSI_PER_PAGE = 10;
 export function MatchedConcorsi({ userId, limit, showPagination = false }: MatchedConcorsiProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedExplanation, setExpandedExplanation] = useState<string | null>(null);
-  const [faviconIndices, setFaviconIndices] = useState<Record<string, number>>({});
   
   // Calculate offset for pagination
   const offset = showPagination ? (currentPage - 1) * CONCORSI_PER_PAGE : undefined;
@@ -322,18 +286,6 @@ export function MatchedConcorsi({ userId, limit, showPagination = false }: Match
           : '';
 
         const deadlineStatus = getDeadlineStatus(concorso.DataChiusura);
-        
-        // Get domain for favicon
-        const domain = extractDomain(concorso.pa_link);
-        const fallbacks = domain ? getFaviconChain(domain) : ['/placeholder_icon.png'];
-        const currentFaviconIndex = faviconIndices[concorso.id] || 0;
-        
-        const handleFaviconError = () => {
-          setFaviconIndices(prev => ({
-            ...prev,
-            [concorso.id]: Math.min((prev[concorso.id] || 0) + 1, fallbacks.length - 1)
-          }));
-        };
 
         // Get entity name - display as-is without case conversion
         const enteName = cleanEnteName(concorso.Ente);
@@ -374,19 +326,12 @@ export function MatchedConcorsi({ userId, limit, showPagination = false }: Match
               {/* Ente name with favicon and match percentage */}
               <div className="flex justify-between items-center mb-2 pr-20">
                 <div className="flex items-center gap-1 min-w-0">
-                  <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
-                    <Image 
-                      src={fallbacks[currentFaviconIndex]}
-                      alt={`Logo of ${concorso.Ente || 'entity'}`}
-                      width={16} 
-                      height={16}
-                      className="object-contain"
-                      style={{ 
-                        imageRendering: 'crisp-edges'
-                      }}
-                      onError={handleFaviconError}
-                    />
-                  </div>
+                  <FaviconImage 
+                    enteName={concorso.Ente}
+                    paLink={concorso.pa_link}
+                    size={16}
+                    className="flex-shrink-0"
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground truncate" title={enteName}>
                       {enteName}
