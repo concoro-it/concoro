@@ -84,7 +84,7 @@ export function NotificationsDropdown({ className }: NotificationsDropdownProps)
 
       <DropdownMenuContent
         align="end"
-        className="w-96 max-h-[600px] p-0"
+        className="w-96 p-0"
         sideOffset={8}
       >
         {/* Header */}
@@ -107,7 +107,7 @@ export function NotificationsDropdown({ className }: NotificationsDropdownProps)
         </div>
 
         {/* Content */}
-        <div className="max-h-[400px] overflow-hidden">
+        <div>
           {loading ? (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -143,8 +143,20 @@ export function NotificationsDropdown({ className }: NotificationsDropdownProps)
                 </p>
               </div>
             </div>
+          ) : notifications.length <= 3 ? (
+            // Show notifications directly without scroll for small lists
+            <div className="p-2 space-y-2">
+              {notifications.map((notification) => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  onMarkAsRead={markAsRead}
+                />
+              ))}
+            </div>
           ) : (
-            <ScrollArea className="h-[400px]">
+            // Use scroll area for longer lists
+            <ScrollArea className="max-h-[400px]">
               <div className="p-2 space-y-2">
                 {notifications.map((notification) => (
                   <NotificationItem

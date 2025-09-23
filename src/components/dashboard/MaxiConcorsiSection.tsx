@@ -1,9 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore"
-import { getFirebaseFirestore } from "@/lib/firebase/config"
-import { toast } from "sonner"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Concorso } from "@/types/concorso"
 import { Button } from "@/components/ui/button"
@@ -17,6 +14,7 @@ import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
 import { FaviconImage } from "@/components/common/FaviconImage"
+import { toast } from "sonner"
 
 // Function to clean Ente names - display as-is without case conversion
 const cleanEnteName = (str: string | undefined): string => {
@@ -77,79 +75,14 @@ const getDeadlineStatus = (deadline: any) => {
   };
 };
 
-export function MaxiConcorsiSection() {
-  const [concorsi, setConcorsi] = useState<Concorso[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+interface MaxiConcorsiSectionProps {
+  concorsi?: Concorso[];
+  isLoading?: boolean;
+}
+
+export function MaxiConcorsiSection({ concorsi = [], isLoading = false }: MaxiConcorsiSectionProps) {
   const router = useRouter()
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi()
-
-  // Fetch 5 concorsi with the highest number of posts
-  useEffect(() => {
-    async function fetchMaxiConcorsi() {
-      try {
-        setIsLoading(true)
-        const db = getFirebaseFirestore()
-        const concorsiCollection = collection(db, "concorsi")
-
-        // Query for concorsi sorted by numero_di_posti in descending order
-        const concorsiQuery = query(
-          concorsiCollection,
-          orderBy("numero_di_posti", "desc"),
-          limit(10) // Get more to filter client-side
-        )
-
-        const snapshot = await getDocs(concorsiQuery)
-        
-        if (snapshot.empty) {
-          setConcorsi([])
-          return
-        }
-
-        let concorsiData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Concorso[]
-        
-        // Filter out concorsi with no posts or invalid posts, then sort client-side as backup
-        concorsiData = concorsiData
-          .filter(concorso => concorso.numero_di_posti && concorso.numero_di_posti > 0)
-          .sort((a, b) => (b.numero_di_posti || 0) - (a.numero_di_posti || 0))
-          .slice(0, 5) // Take top 5
-        
-        setConcorsi(concorsiData)
-      } catch (error) {
-        console.error('Error fetching maxi concorsi:', error)
-        // Try alternative query if numero_di_posti field doesn't exist or has issues
-        try {
-          const db = getFirebaseFirestore()
-          const concorsiCollection = collection(db, "concorsi")
-          
-          // Fallback: get all concorsi and sort client-side
-          const snapshot = await getDocs(concorsiCollection)
-          
-          let concorsiData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Concorso[]
-          
-          // Filter and sort client-side
-          concorsiData = concorsiData
-            .filter(concorso => concorso.numero_di_posti && concorso.numero_di_posti > 0)
-            .sort((a, b) => (b.numero_di_posti || 0) - (a.numero_di_posti || 0))
-            .slice(0, 5)
-          
-          setConcorsi(concorsiData)
-        } catch (fallbackError) {
-          console.error('Error with fallback query:', fallbackError)
-          toast.error('Impossibile caricare i maxi concorsi')
-        }
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchMaxiConcorsi()
-  }, [])
 
   const safeText = (text: any): string => {
     if (typeof text === 'string') {
@@ -311,13 +244,16 @@ export function MaxiConcorsiSection() {
                 <div className="flex flex-wrap gap-3 text-sm text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
-                    <Link 
-                      href={getLocalitaUrl(concorso.AreaGeografica || '')}
-                      onClick={(e) => e.stopPropagation()}
-                      className="hover:text-foreground transition-colors"
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        router.push(getLocalitaUrl(concorso.AreaGeografica || ''))
+                      }}
+                      className="hover:text-foreground transition-colors text-left"
                     >
                       <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
-                    </Link>
+                    </button>
                   </div>
                   {deadlineStatus && (
                     <div className={`flex items-center gap-1 text-sm ${

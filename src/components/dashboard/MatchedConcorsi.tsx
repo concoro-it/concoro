@@ -324,16 +324,16 @@ export function MatchedConcorsi({ userId, limit, showPagination = false }: Match
               </div>
               
               {/* Ente name with favicon and match percentage */}
-              <div className="flex justify-between items-center mb-2 pr-20">
-                <div className="flex items-center gap-1 min-w-0">
+              <div className="flex justify-between items-center mb-2 pr-20 min-w-0">
+                <div className="flex items-center gap-1 min-w-0 flex-1">
                   <FaviconImage 
                     enteName={concorso.Ente}
                     paLink={concorso.pa_link}
                     size={16}
                     className="flex-shrink-0"
                   />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-muted-foreground truncate" title={enteName}>
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <p className="text-sm text-muted-foreground truncate block" title={enteName}>
                       {enteName}
                     </p>
                   </div>

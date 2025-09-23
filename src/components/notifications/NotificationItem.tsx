@@ -37,34 +37,79 @@ export function NotificationItem({ notification, onMarkAsRead, fullWidth = false
 
   const formatDate = (timestamp: any) => {
     try {
-      const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+      if (!timestamp) return 'Data non disponibile';
+      
+      let date: Date | null = null;
+      
+      // Handle Firebase Timestamp with toDate method
+      if (timestamp && typeof timestamp.toDate === 'function') {
+        date = timestamp.toDate();
+      }
+      // Handle Firestore timestamp format (seconds, nanoseconds)
+      else if (timestamp && typeof timestamp.seconds === 'number' && typeof timestamp.nanoseconds === 'number') {
+        date = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
+      }
+      // Handle legacy format (_seconds)
+      else if (timestamp && typeof timestamp._seconds === 'number') {
+        date = new Date(timestamp._seconds * 1000);
+      }
+      // Handle Date object
+      else if (timestamp instanceof Date) {
+        date = timestamp;
+      }
+      // Handle string or number
+      else if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+        date = new Date(timestamp);
+      }
+      // Handle object with seconds property
+      else if (timestamp && typeof timestamp.seconds === 'number') {
+        date = new Date(timestamp.seconds * 1000);
+      }
+      
+      // Check if date is valid
+      if (!date || isNaN(date.getTime())) {
+        console.warn('Invalid timestamp format:', timestamp);
+        return 'Data non disponibile';
+      }
+      
       return date.toLocaleDateString('it-IT', {
         day: 'numeric',
         month: 'short',
         year: 'numeric'
       });
     } catch (error) {
+      console.error('Error formatting date:', error, 'for timestamp:', timestamp);
       return 'Data non disponibile';
     }
   };
 
   const getNotificationMessage = (daysLeft: number) => {
-    if (daysLeft === 0) {
+    // Use concorsoDataChiusura if available, otherwise fallback to DataChiusura
+    const expirationDate = formatDate(notification.concorsoDataChiusura || notification.DataChiusura);
+    
+    if (daysLeft < 0) {
+      // Expired notification - show actual expiration date
       return (
         <span>
-          Il tuo concorso salvato scade <span className="font-bold">oggi</span>
+          Il tuo concorso salvato è <span className="font-bold text-red-600">scaduto</span> il {expirationDate}
+        </span>
+      );
+    } else if (daysLeft === 0) {
+      return (
+        <span>
+          Il tuo concorso salvato scade <span className="font-bold">oggi</span> ({expirationDate})
         </span>
       );
     } else if (daysLeft === 1) {
       return (
         <span>
-          Il tuo concorso salvato scade <span className="font-bold">tra 1 giorno</span>
+          Il tuo concorso salvato scade <span className="font-bold">tra 1 giorno</span> ({expirationDate})
         </span>
       );
     } else {
       return (
         <span>
-          Il tuo concorso salvato scade <span className="font-bold">tra {daysLeft} giorni</span>
+          Il tuo concorso salvato scade <span className="font-bold">tra {daysLeft} giorni</span> ({expirationDate})
         </span>
       );
     }
@@ -135,7 +180,7 @@ export function NotificationItem({ notification, onMarkAsRead, fullWidth = false
                 <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                   <div className="flex items-center">
                     <Calendar className="w-3 h-3 mr-1 shrink-0" />
-                    <span>Scade: {formatDate(notification.concorsoDataChiusura)}</span>
+                    <span>Scade: {formatDate(notification.concorsoDataChiusura || notification.DataChiusura)}</span>
                   </div>
                 </div>
               </div>

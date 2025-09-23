@@ -55,7 +55,11 @@ export class NotificationsService {
                 concorsoTitle: concorsoData.Titolo,
                 concorsoTitoloBreve: concorsoData.titolo_breve || concorsoData.Titolo,
                 concorsoEnte: concorsoData.Ente,
-                concorsoLink: concorsoData.Link
+                concorsoLink: concorsoData.Link,
+                concorsoDataChiusura: concorsoData.DataChiusura,
+                concorsoDaysLeft: notification.daysLeft,
+                concorsoNumeroPosti: concorsoData.numero_di_posti,
+                concorsoAreaGeografica: concorsoData.AreaGeografica
               } as NotificationWithConcorso;
             } else {
               // If concorso doesn't exist, return notification with fallback data
@@ -64,7 +68,11 @@ export class NotificationsService {
                 concorsoTitle: 'Concorso non trovato',
                 concorsoTitoloBreve: 'Concorso non trovato',
                 concorsoEnte: '',
-                concorsoLink: ''
+                concorsoLink: '',
+                concorsoDataChiusura: notification.DataChiusura,
+                concorsoDaysLeft: notification.daysLeft,
+                concorsoNumeroPosti: notification.numero_di_posti,
+                concorsoAreaGeografica: notification.AreaGeografica
               } as NotificationWithConcorso;
             }
           } catch (error) {
@@ -74,7 +82,11 @@ export class NotificationsService {
               concorsoTitle: 'Errore nel caricamento',
               concorsoTitoloBreve: 'Errore nel caricamento',
               concorsoEnte: '',
-              concorsoLink: ''
+              concorsoLink: '',
+              concorsoDataChiusura: notification.DataChiusura,
+              concorsoDaysLeft: notification.daysLeft,
+              concorsoNumeroPosti: notification.numero_di_posti,
+              concorsoAreaGeografica: notification.AreaGeografica
             } as NotificationWithConcorso;
           }
         })
@@ -197,7 +209,11 @@ export class NotificationsService {
                   concorsoTitle: concorsoData.Titolo,
                   concorsoTitoloBreve: concorsoData.titolo_breve || concorsoData.Titolo,
                   concorsoEnte: concorsoData.Ente,
-                  concorsoLink: concorsoData.Link
+                  concorsoLink: concorsoData.Link,
+                  concorsoDataChiusura: concorsoData.DataChiusura,
+                  concorsoDaysLeft: notification.daysLeft,
+                  concorsoNumeroPosti: concorsoData.numero_di_posti,
+                  concorsoAreaGeografica: concorsoData.AreaGeografica
                 } as NotificationWithConcorso;
               } else {
                 return {
@@ -205,7 +221,11 @@ export class NotificationsService {
                   concorsoTitle: 'Concorso non trovato',
                   concorsoTitoloBreve: 'Concorso non trovato',
                   concorsoEnte: '',
-                  concorsoLink: ''
+                  concorsoLink: '',
+                  concorsoDataChiusura: notification.DataChiusura,
+                  concorsoDaysLeft: notification.daysLeft,
+                  concorsoNumeroPosti: notification.numero_di_posti,
+                  concorsoAreaGeografica: notification.AreaGeografica
                 } as NotificationWithConcorso;
               }
             } catch (error) {
@@ -215,7 +235,11 @@ export class NotificationsService {
                 concorsoTitle: 'Errore nel caricamento',
                 concorsoTitoloBreve: 'Errore nel caricamento',
                 concorsoEnte: '',
-                concorsoLink: ''
+                concorsoLink: '',
+                concorsoDataChiusura: notification.DataChiusura,
+                concorsoDaysLeft: notification.daysLeft,
+                concorsoNumeroPosti: notification.numero_di_posti,
+                concorsoAreaGeografica: notification.AreaGeografica
               } as NotificationWithConcorso;
             }
           })
@@ -287,7 +311,9 @@ export class NotificationsService {
         concorso_id: concorsoId,
         user_id: userId,
         daysLeft: daysLeft,
-        scadenza: concorsoData.DataChiusura,
+        DataChiusura: concorsoData.DataChiusura,
+        numero_di_posti: concorsoData.numero_di_posti,
+        AreaGeografica: concorsoData.AreaGeografica,
         publication_date: concorsoData.publication_date || '',
         savedAt: Timestamp.now(),
         timestamp: Timestamp.now(),

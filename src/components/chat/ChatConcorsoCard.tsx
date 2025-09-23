@@ -88,15 +88,15 @@ export function ChatConcorsoCard({ concorso, compact = false }: ChatConcorsoCard
     >
       <div className={`${compact ? 'mb-3' : 'mb-4'}`}>
         {/* Ente with favicon */}
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2 min-w-0 w-full">
           <FaviconImage 
             enteName={concorso.Ente || ''}
             paLink={concorso.pa_link}
             size={16}
             className="flex-shrink-0"
           />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground truncate font-medium" title={concorso.Ente}>
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <p className="text-xs text-muted-foreground truncate font-medium block" title={concorso.Ente}>
               {concorso.Ente}
             </p>
           </div>

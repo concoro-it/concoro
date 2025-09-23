@@ -1,9 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { collection, getDocs } from "firebase/firestore"
-import { getFirebaseFirestore } from "@/lib/firebase/config"
-import { toast } from "sonner"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Concorso } from "@/types/concorso"
 import { Button } from "@/components/ui/button"
@@ -17,6 +14,7 @@ import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
 import { FaviconImage } from "@/components/common/FaviconImage"
+import { toast } from "sonner"
 
 // Function to clean Ente names - display as-is without case conversion
 const cleanEnteName = (str: string | undefined): string => {
@@ -77,90 +75,14 @@ const getDeadlineStatus = (deadline: any) => {
   };
 };
 
-export function ClosingTodaySection() {
-  const [concorsi, setConcorsi] = useState<Concorso[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+interface ClosingTodaySectionProps {
+  concorsi?: Concorso[];
+  isLoading?: boolean;
+}
+
+export function ClosingTodaySection({ concorsi = [], isLoading = false }: ClosingTodaySectionProps) {
   const router = useRouter()
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi()
-
-  // Fetch concorsi closing today or with the most imminent deadlines
-  useEffect(() => {
-    async function fetchClosingTodayConcorsi() {
-      try {
-        setIsLoading(true)
-        const db = getFirebaseFirestore()
-        const concorsiCollection = collection(db, "concorsi")
-
-        // Get all concorsi and filter/sort client-side for more precise date handling
-        const snapshot = await getDocs(concorsiCollection)
-        
-        if (snapshot.empty) {
-          setConcorsi([])
-          return
-        }
-
-        const allConcorsiData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Concorso[]
-
-        // Get today's date (start of day for accurate comparison)
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        
-        const tomorrow = new Date(today)
-        tomorrow.setDate(today.getDate() + 1)
-
-        // Helper function to parse dates consistently
-        const parseDate = (dateValue: any): Date | null => {
-          if (!dateValue) return null
-          
-          if (typeof dateValue === 'object' && dateValue.seconds) {
-            return new Date(dateValue.seconds * 1000)
-          }
-          
-          if (typeof dateValue === 'string') {
-            const parsed = new Date(dateValue)
-            return isNaN(parsed.getTime()) ? null : parsed
-          }
-          
-          if (dateValue instanceof Date) {
-            return dateValue
-          }
-          
-          return null
-        }
-
-        // Filter concorsi with valid closing dates and not already closed
-        const validConcorsi = allConcorsiData.filter(concorso => {
-          const closingDate = parseDate(concorso.DataChiusura)
-          if (!closingDate) return false
-          
-          // Only include concorsi that haven't closed yet (closing date >= today)
-          return closingDate >= today
-        })
-
-        // Sort by closing date (ascending - soonest first)
-        const sortedConcorsi = validConcorsi.sort((a, b) => {
-          const dateA = parseDate(a.DataChiusura)!
-          const dateB = parseDate(b.DataChiusura)!
-          return dateA.getTime() - dateB.getTime()
-        })
-
-        // Get first 5 concorsi (prioritizing those closing today, then soonest)
-        const selectedConcorsi = sortedConcorsi.slice(0, 5)
-        
-        setConcorsi(selectedConcorsi)
-      } catch (error) {
-        console.error('Error fetching closing today concorsi:', error)
-        toast.error('Impossibile caricare i concorsi in scadenza')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchClosingTodayConcorsi()
-  }, [])
 
   const formatDate = (date: any) => {
     try {
@@ -388,13 +310,16 @@ export function ClosingTodaySection() {
                 <div className="flex flex-wrap gap-3 text-sm text-black/70 mb-3">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
-                    <Link 
-                      href={getLocalitaUrl(concorso.AreaGeografica || '')}
-                      onClick={(e) => e.stopPropagation()}
-                      className="hover:text-foreground transition-colors"
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        router.push(getLocalitaUrl(concorso.AreaGeografica || ''))
+                      }}
+                      className="hover:text-foreground transition-colors text-left"
                     >
                       <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
-                    </Link>
+                    </button>
                   </div>
                   {deadlineStatus && (
                     <div className={`flex items-center gap-1 text-sm ${

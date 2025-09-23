@@ -451,23 +451,23 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
                 }
               }}
             >
-              <Card className="p-4 cursor-pointer hover:shadow-md transition-all duration-200 w-full pointer-events-none">
+              <Card className="p-4 cursor-pointer hover:shadow-md transition-all duration-200 w-full pointer-events-none overflow-hidden">
               {isMobile ? (
                 // Mobile layout
                 <div className="flex-grow space-y-2 w-full">
                   {/* Ente name with favicon */}
-                  <div className="flex items-center gap-1 min-w-0">
+                  <div className="flex items-center gap-1 min-w-0 w-full">
                     <FaviconImage 
                       enteName={job.Ente}
                       paLink={job.pa_link}
                       size={16}
                       className="flex-shrink-0"
                     />
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 overflow-hidden">
                       <Link 
                         href={getEnteUrl(job.Ente)}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-[12px] text-muted-foreground truncate hover:text-foreground transition-colors"
+                        className="text-[12px] text-muted-foreground hover:text-foreground transition-colors block truncate"
                         title={enteName}
                       >
                         {truncatedEnteName}
@@ -513,18 +513,18 @@ export function ConcoroList({ jobs, isLoading, selectedJobId, onJobSelect, curre
                 // Desktop layout
                 <div className="flex items-start">
                   <div className="flex-grow space-y-2 w-full">
-                    <div className="flex items-center gap-1 min-w-0">
+                    <div className="flex items-center gap-1 min-w-0 w-full">
                       <FaviconImage 
                         enteName={job.Ente}
                         paLink={job.pa_link}
                         size={16}
                         className="flex-shrink-0"
                       />
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 overflow-hidden">
                         <Link 
                           href={getEnteUrl(job.Ente)}
                           onClick={(e) => e.stopPropagation()}
-                          className="text-sm text-muted-foreground truncate hover:text-foreground transition-colors"
+                          className="text-sm text-muted-foreground hover:text-foreground transition-colors block truncate"
                           title={enteName}
                         >
                           {truncatedEnteName}

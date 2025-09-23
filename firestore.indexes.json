@@ -31,6 +31,44 @@
         { "fieldPath": "settore_professionale", "order": "ASCENDING" },
         { "fieldPath": "publication_date", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "numero_di_posti", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "DataChiusura", "order": "ASCENDING" },
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "settore_professionale", "order": "ASCENDING" },
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "savedconcorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "concorso_id", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

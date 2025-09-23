@@ -14,7 +14,9 @@ export async function createTestNotifications(userId: string) {
       concorso_id: 'test-concorso-1',
       user_id: userId,
       daysLeft: 0,
-      scadenza: Timestamp.fromDate(new Date()),
+      DataChiusura: Timestamp.fromDate(new Date()),
+      numero_di_posti: 5,
+      AreaGeografica: 'Roma',
       publication_date: '2024-01-15',
       savedAt: Timestamp.fromDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)), // 7 days ago
       timestamp: Timestamp.fromDate(new Date()),
@@ -24,7 +26,9 @@ export async function createTestNotifications(userId: string) {
       concorso_id: 'test-concorso-2',
       user_id: userId,
       daysLeft: 1,
-      scadenza: Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)), // tomorrow
+      DataChiusura: Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)), // tomorrow
+      numero_di_posti: 3,
+      AreaGeografica: 'Milano',
       publication_date: '2024-01-10',
       savedAt: Timestamp.fromDate(new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)), // 5 days ago
       timestamp: Timestamp.fromDate(new Date(Date.now() - 60 * 60 * 1000)), // 1 hour ago
@@ -34,7 +38,9 @@ export async function createTestNotifications(userId: string) {
       concorso_id: 'test-concorso-3',
       user_id: userId,
       daysLeft: 3,
-      scadenza: Timestamp.fromDate(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)), // 3 days from now
+      DataChiusura: Timestamp.fromDate(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)), // 3 days from now
+      numero_di_posti: 10,
+      AreaGeografica: 'Napoli',
       publication_date: '2024-01-05',
       savedAt: Timestamp.fromDate(new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)), // 10 days ago
       timestamp: Timestamp.fromDate(new Date(Date.now() - 2 * 60 * 60 * 1000)), // 2 hours ago

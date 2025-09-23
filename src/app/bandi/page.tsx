@@ -527,7 +527,7 @@ function JobsPage() {
           {/* Job Details Sidebar - Desktop Only */}
           {!isMobile && selectedJob && (
             <div className="lg:col-span-2">
-              <div className="sticky top-24">
+              <div className="sticky top-24 h-[calc(100vh-6rem)]">
                 <ConcoroDetails
                   job={selectedJob}
                   isLoading={false}

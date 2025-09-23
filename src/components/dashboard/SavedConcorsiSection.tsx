@@ -260,14 +260,17 @@ export function SavedConcorsiSection() {
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <Link 
-                      href={getEnteUrl(concorso.Ente || '')}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-sm text-muted-foreground truncate hover:text-foreground transition-colors"
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        router.push(getEnteUrl(concorso.Ente || ''))
+                      }}
+                      className="text-sm text-muted-foreground truncate hover:text-foreground transition-colors text-left"
                       title={enteName}
                     >
                       {enteName}
-                    </Link>
+                    </button>
                   </div>
                 </div>
                 
@@ -280,13 +283,16 @@ export function SavedConcorsiSection() {
                 <div className="flex flex-wrap gap-3 text-sm text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
-                    <Link 
-                      href={getLocalitaUrl(concorso.AreaGeografica || '')}
-                      onClick={(e) => e.stopPropagation()}
-                      className="hover:text-foreground transition-colors"
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        router.push(getLocalitaUrl(concorso.AreaGeografica || ''))
+                      }}
+                      className="hover:text-foreground transition-colors text-left"
                     >
                       <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
-                    </Link>
+                    </button>
                   </div>
                   {deadlineStatus && (
                     <div className={`flex items-center gap-1 text-sm ${

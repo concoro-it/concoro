@@ -1,9 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore"
-import { getFirebaseFirestore } from "@/lib/firebase/config"
-import { toast } from "sonner"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Concorso } from "@/types/concorso"
 import { Button } from "@/components/ui/button"
@@ -17,6 +14,7 @@ import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
 import { FaviconImage } from "@/components/common/FaviconImage"
+import { toast } from "sonner"
 
 // Function to clean Ente names - display as-is without case conversion
 const cleanEnteName = (str: string | undefined): string => {
@@ -77,74 +75,14 @@ const getDeadlineStatus = (deadline: any) => {
   };
 };
 
-export function NuoviConcorsiSection() {
-  const [concorsi, setConcorsi] = useState<Concorso[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+interface NuoviConcorsiSectionProps {
+  concorsi?: Concorso[];
+  isLoading?: boolean;
+}
+
+export function NuoviConcorsiSection({ concorsi = [], isLoading = false }: NuoviConcorsiSectionProps) {
   const router = useRouter()
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi()
-
-  // Fetch 5 most recently published concorsi
-  useEffect(() => {
-    async function fetchLatestConcorsi() {
-      try {
-        setIsLoading(true)
-        const db = getFirebaseFirestore()
-        const concorsiCollection = collection(db, "concorsi")
-
-        // Query for the 5 most recently published concorsi
-        // Using publication_date if available, falling back to DataApertura, then createdAt
-        const concorsiQuery = query(
-          concorsiCollection,
-          orderBy("publication_date", "desc"),
-          limit(5)
-        )
-
-        const snapshot = await getDocs(concorsiQuery)
-        
-        if (snapshot.empty) {
-          setConcorsi([])
-          return
-        }
-
-        const concorsiData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Concorso[]
-        
-        setConcorsi(concorsiData)
-      } catch (error) {
-        console.error('Error fetching latest concorsi:', error)
-        // Try alternative query if publication_date field doesn't exist or has issues
-        try {
-          const db = getFirebaseFirestore()
-          const concorsiCollection = collection(db, "concorsi")
-          
-          // Fallback query using createdAt
-          const fallbackQuery = query(
-            concorsiCollection,
-            orderBy("createdAt", "desc"),
-            limit(5)
-          )
-
-          const snapshot = await getDocs(fallbackQuery)
-          
-          const concorsiData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Concorso[]
-          
-          setConcorsi(concorsiData)
-        } catch (fallbackError) {
-          console.error('Error with fallback query:', fallbackError)
-          toast.error('Impossibile caricare i nuovi concorsi')
-        }
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchLatestConcorsi()
-  }, [])
 
   const safeText = (text: any): string => {
     if (typeof text === 'string') {
@@ -306,13 +244,16 @@ export function NuoviConcorsiSection() {
                 <div className="flex flex-wrap gap-3 text-sm text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
-                    <Link 
-                      href={getLocalitaUrl(concorso.AreaGeografica || '')}
-                      onClick={(e) => e.stopPropagation()}
-                      className="hover:text-foreground transition-colors"
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        router.push(getLocalitaUrl(concorso.AreaGeografica || ''))
+                      }}
+                      className="hover:text-foreground transition-colors text-left"
                     >
                       <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
-                    </Link>
+                    </button>
                   </div>
                   {deadlineStatus && (
                     <div className={`flex items-center gap-1 text-sm ${

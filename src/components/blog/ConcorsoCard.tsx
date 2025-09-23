@@ -168,7 +168,7 @@ export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
     >
       <div className="mb-6">
         {/* Ente with favicon */}
-        <div className="flex items-center gap-1 mb-2">
+        <div className="flex items-center gap-1 mb-2 min-w-0 w-full">
           <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
             <FaviconImage 
               enteName={concorso.Ente || ''}
@@ -177,8 +177,8 @@ export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
               alt={`Logo of ${concorso.Ente || 'entity'}`}
             />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-muted-foreground truncate" title={concorso.Ente}>
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <p className="text-sm text-muted-foreground truncate block" title={concorso.Ente}>
               {enteFirstPart}
             </p>
           </div>

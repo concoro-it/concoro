@@ -348,91 +348,92 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Sidebar - Enti List - Desktop */}
-          <div className="hidden lg:block lg:col-span-1 order-1 lg:order-2 lg:sticky lg:top-20 lg:self-start">
-            <Card className="">
-              <div className="flex justify-between items-center pt-6 pl-6 pr-3">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Enti ({showAllEnti ? allEnti.length : enti.length})  
-                </h2>
-              </div>
-              <CardContent className="">
-                <ScrollArea className="pr-2">
-                  <div className="space-y-2">
-                    {(showAllEnti ? allEnti : enti).map((ente, index) => {
-                      // Count active concorsi for this ente
-                      const activeCount = displayedConcorsi.filter(c => 
-                        c.Ente?.toLowerCase() === ente.toLowerCase()
-                      ).length;
-                      
-                      // Count total concorsi for this ente
-                      const totalCount = concorsi.filter(c => 
-                        c.Ente?.toLowerCase() === ente.toLowerCase()
-                      ).length;
-                      
-                      const isActive = activeCount > 0;
-                      
-                      return (
-                        <Link 
-                          key={index}
-                          href={`/bandi/ente/${encodeURIComponent(ente)}`}
-                          className="block"
-                        >
-                          <div 
-                            className={`p-2 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer ${
-                              !isActive ? 'opacity-60' : ''
-                            }`}
-                          >
-                            <div className="font-medium text-sm line-clamp-2 truncate" title={ente}>
-                              {ente}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {activeCount > 0 ? (
-                                <span className="text-green-600 font-medium">
-                                  {activeCount} {activeCount === 1 ? 'concorso attivo' : 'concorsi attivi'}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">
-                                  {totalCount} {totalCount === 1 ? 'concorso chiuso' : 'concorsi chiusi'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                  
-                  {/* Show All / Show Less button */}
-                  {allEnti.length > enti.length && (
-                    <div className="mt-4 pt-4 border-t">
-                      <button
-                        onClick={() => setShowAllEnti(!showAllEnti)}
-                        className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                      >
-                        {showAllEnti ? (
-                          `Mostra solo enti attivi (${enti.length})`
-                        ) : (
-                          `Mostra tutti gli enti (${allEnti.length})`
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-
-            {/* Related Provinces List */}
-            {relatedProvinces.length > 0 && (
-              <Card className="mt-6">
-                <div className="flex justify-between items-center pt-6 pl-6 pr-3">
+          <div className="hidden lg:block lg:col-span-2 order-1 lg:order-2">
+            <div className="sticky top-20 space-y-2 h-fit">
+              {/* Enti Card */}
+              <Card className="overflow-hidden">
+                <div className="flex justify-between items-center pt-6 pl-4 pr-2">
                   <h2 className="text-xl font-semibold text-gray-900">
-                    Province Correlate ({relatedProvinces.length})
+                    Enti ({showAllEnti ? allEnti.length : enti.length})  
                   </h2>
                 </div>
-                <CardContent className="">
-                  <ScrollArea className="pr-2">
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[400px] pr-4">
+                    <div className="px-2 pb-6 space-y-2">
+                      {(showAllEnti ? allEnti : enti).map((ente, index) => {
+                        // Count active concorsi for this ente
+                        const activeCount = displayedConcorsi.filter(c => 
+                          c.Ente?.toLowerCase() === ente.toLowerCase()
+                        ).length;
+                        
+                        // Count total concorsi for this ente
+                        const totalCount = concorsi.filter(c => 
+                          c.Ente?.toLowerCase() === ente.toLowerCase()
+                        ).length;
+                        
+                        const isActive = activeCount > 0;
+                        
+                        return (
+                          <Link 
+                            key={index}
+                            href={`/bandi/ente/${encodeURIComponent(ente)}`}
+                            className="block"
+                          >
+                            <div 
+                              className={`p-3 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden ${
+                                !isActive ? 'opacity-60' : ''
+                              }`}
+                            >
+                              <div className="font-medium text-sm line-clamp-2 break-words min-w-0" title={ente}>
+                                {ente}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {activeCount > 0 ? (
+                                  <span className="text-green-600 font-medium">
+                                    {activeCount} {activeCount === 1 ? 'concorso attivo' : 'concorsi attivi'}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">
+                                    {totalCount} {totalCount === 1 ? 'concorso chiuso' : 'concorsi chiusi'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Show All / Show Less button */}
+                    {allEnti.length > enti.length && (
+                      <div className="px-6 pb-4 pt-4 border-t">
+                        <button
+                          onClick={() => setShowAllEnti(!showAllEnti)}
+                          className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                        >
+                          {showAllEnti ? (
+                            `Mostra solo enti attivi (${enti.length})`
+                          ) : (
+                            `Mostra tutti gli enti (${allEnti.length})`
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Related Provinces List */}
+              {relatedProvinces.length > 0 && (
+                <Card className="overflow-hidden">
+                  <div className="flex justify-between items-center pt-6 pl-6 pr-4">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Province Correlate ({relatedProvinces.length})
+                    </h2>
+                  </div>
+                  <CardContent className="px-6 pb-6">
                     <div className="space-y-2">
                       {relatedProvinces.map((province, index) => (
                         <Link 
@@ -441,30 +442,28 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
                           className="block"
                         >
                           <div 
-                            className="p-2 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
+                            className="p-3 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
                           >
-                            <div className="font-medium text-sm line-clamp-2 truncate" title={province}>
+                            <div className="font-medium text-sm line-clamp-2 break-words" title={province}>
                               {province}
                             </div>
                           </div>
                         </Link>
                       ))}
                     </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
 
-            {/* Related Regions List */}
-            {relatedRegions.length > 0 && (
-              <Card className="mt-6">
-                <div className="flex justify-between items-center pt-6 pl-6 pr-3">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Regioni Correlate ({relatedRegions.length})
-                  </h2>
-                </div>
-                <CardContent className="">
-                  <ScrollArea className="pr-2">
+              {/* Related Regions List */}
+              {relatedRegions.length > 0 && (
+                <Card className="overflow-hidden">
+                  <div className="flex justify-between items-center pt-6 pl-6 pr-4">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Regioni Correlate ({relatedRegions.length})
+                    </h2>
+                  </div>
+                  <CardContent className="px-6 pb-6">
                     <div className="space-y-2">
                       {relatedRegions.map((region, index) => (
                         <Link 
@@ -473,19 +472,19 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
                           className="block"
                         >
                           <div 
-                            className="p-2 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
+                            className="p-3 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
                           >
-                            <div className="font-medium text-sm line-clamp-2 truncate" title={region}>
+                            <div className="font-medium text-sm line-clamp-2 break-words" title={region}>
                               {region}
                             </div>
                           </div>
                         </Link>
                       ))}
                     </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
 
           {/* Main Content - Concorsi List */}
@@ -562,11 +561,11 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
                           className="block"
                         >
                           <div 
-                            className={`p-2 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer ${
+                            className={`p-2 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden ${
                               !isActive ? 'opacity-60' : ''
                             }`}
                           >
-                            <div className="font-medium text-sm line-clamp-2 truncate" title={ente}>
+                            <div className="font-medium text-sm line-clamp-2 break-words min-w-0" title={ente}>
                               {ente}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
@@ -608,92 +607,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
 
         </div>
         
-        <div className="lg:col-span-3 order-2 lg:order-1">
-          {/* Opportunità di Lavoro Footer */}
-          <div className="mt-12 bg-white border rounded-lg p-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              {/* Top Enti */}
-              {enti.length > 0 && (
-                <div className="mt-8 mb-8">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Enti con Concorsi Attivi</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {enti.slice(0, 10).map((ente, index) => (
-                      <Link 
-                        key={index}
-                        href={`/bandi/ente/${encodeURIComponent(ente)}`}
-                      >
-                        <Badge 
-                          variant="secondary" 
-                          className="text-sm px-3 py-1 hover:bg-gray-200 cursor-pointer"
-                        >
-                          {ente}
-                        </Badge>
-                      </Link>
-                    ))}
-                    {enti.length > 10 && (
-                      <Badge variant="outline" className="text-sm px-3 py-1">
-                        +{enti.length - 10} altri
-                      </Badge>
-                    )}
-                    {allEnti.length > enti.length && (
-                      <Badge variant="outline" className="text-sm px-3 py-1">
-                        +{allEnti.length - enti.length} con concorsi chiusi
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              )}
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Opportunità di Lavoro Pubblico a {localita}
-              </h2>
-              <div className="prose max-w-none text-gray-600">
-                <p>
-                  Esplora le opportunità di lavoro pubblico nella zona di {localita}. 
-                  Concoro ti aiuta a trovare i migliori concorsi pubblici in questa area geografica, 
-                  con informazioni dettagliate su requisiti, scadenze e procedure di candidatura.
-                </p>
-                <p>
-                  Monitoriamo costantemente nuovi bandi e concorsi a {localita}, 
-                  garantendoti accesso immediato alle ultime opportunità di carriera nel settore pubblico locale.
-                </p>
-              </div>
-              {/* FAQ Section for SEO and UX */}
-              <div className="mt-8">
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Domande frequenti</h3>
-                <div className="space-y-4 text-gray-700">
-                  <div>
-                    <h4 className="font-medium">Come candidarsi ai concorsi a {localita}?</h4>
-                    <p>
-                      Utilizza questa pagina per consultare i concorsi attivi a {localita}. Puoi navigare
-                      per ente e aprire ciascun concorso per i dettagli su requisiti e domanda.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium">Quali sono le scadenze dei bandi a {localita}?</h4>
-                    <p>
-                      Ogni scheda riporta la data di scadenza aggiornata. Ti consigliamo di candidarti il prima possibile
-                      e di verificare spesso eventuali nuovi bandi nella zona di {localita}.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium">Quali enti assumono a {localita}?</h4>
-                    <p>
-                      Diversi enti pubblici pubblicano bandi per posizioni a {localita}.
-                      Puoi esplorare l'elenco degli enti nella barra laterale e accedere ai relativi bandi.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium">Come esplorare altre zone geografiche?</h4>
-                    <p>
-                      Nella barra laterale puoi trovare province e regioni correlate a {localita}.
-                      Clicca su una provincia o regione per vedere tutti i concorsi disponibili in quell'area.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   )
