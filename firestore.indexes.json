@@ -20,9 +20,6 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "settore_professionale", "order": "ASCENDING" },
-<<<<<<< Updated upstream
-        { "fieldPath": "Stato", "order": "ASCENDING" }
-=======
         { "fieldPath": "publication_date", "order": "DESCENDING" }
       ]
     },
@@ -32,7 +29,6 @@
       "fields": [
         { "fieldPath": "DataChiusura", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
->>>>>>> Stashed changes
       ]
     },
     {
@@ -40,12 +36,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "settore_professionale", "order": "ASCENDING" },
-<<<<<<< Updated upstream
-        { "fieldPath": "Stato", "order": "ASCENDING" },
-        { "fieldPath": "publication_date", "order": "DESCENDING" }
-=======
         { "fieldPath": "createdAt", "order": "DESCENDING" }
->>>>>>> Stashed changes
       ]
     },
     {

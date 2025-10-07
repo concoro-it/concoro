@@ -6,7 +6,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useAuthAdapter } from "@/lib/hooks/useAuthAdapter";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -107,22 +107,18 @@ const italianLocations = [
 const Navbar = (props: NavbarProps) => {
   const { logo, menu, mobileExtraLinks, auth: authProps } = { ...defaultProps, ...props };
   // Use centralized auth from useAuth hook instead of managing separate state
-  const { user: currentUser, loading: isAuthLoading, initializeAuth, isAuthLoaded } = useAuthAdapter();
+  const { user: currentUser, loading: isAuthLoading } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const { signOut } = useAuthAdapter();
+  const { signOut } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   
-  // Auto-initialize auth for logged-in users
-  useEffect(() => {
-    initializeAuth()
-  }, [])
 
   // Check for initial search params when component mounts
   useEffect(() => {
@@ -202,15 +198,11 @@ const Navbar = (props: NavbarProps) => {
     const fetchUserProfile = async () => {
       if (currentUser && !isAuthLoading) {
         try {
-          // For lazy auth, we need to ensure Firestore is loaded
+          // Get Firestore instance
           let firestore;
           try {
-            if (isAuthLoaded) {
-              const { getFirebaseFirestore } = await import('@/lib/firebase/config');
-              firestore = getFirebaseFirestore();
-            } else {
-              firestore = db; // Use existing import for full auth
-            }
+            const { getFirebaseFirestore } = await import('@/lib/firebase/config');
+            firestore = getFirebaseFirestore();
           } catch (error) {
             console.error('[Navbar] Failed to get Firestore instance:', error);
             return;
@@ -241,7 +233,7 @@ const Navbar = (props: NavbarProps) => {
     if (!isAuthLoading) {
       fetchUserProfile();
     }
-  }, [currentUser, isAuthLoading, isAuthLoaded]); // Depend on auth loaded state too
+  }, [currentUser, isAuthLoading]);
 
   const handleLogout = async () => {
     if (isLoggingOut) {

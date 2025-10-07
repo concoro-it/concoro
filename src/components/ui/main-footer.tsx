@@ -5,14 +5,8 @@ import Image from "next/image";
 import { Mail, X, Instagram, Facebook, Linkedin, Heart, BriefcaseBusiness } from "lucide-react";
 import Footer from "@/components/ui/footer";
 import { DynamicLogo } from "@/components/ui/dynamic-logo";
-// import { ThemeToggle } from "@/components/ui/theme-toggle"; // Disabled - dark mode not implemented
+// Theme toggle removed - dark mode not implemented
 
-<<<<<<< Updated upstream
-const footerLinks = [
-  [
-    { name: "Chi siamo", href: "/chi-siamo" },
-    { name: "Prezzi", href: "/prezzi" },
-=======
 const navigation = {
   sections: [
     {
@@ -47,21 +41,8 @@ const navigation = {
         { name: "Termini di servizio", href: "/termini-di-servizio" },
       ],
     },
->>>>>>> Stashed changes
   ],
-  [
-    { name: "FAQ", href: "/faq" },
-    { name: "Contatti", href: "/contatti" },
-  ],
-  [
-    { name: "Ricerca concorsi", href: "/bandi" },
-    { name: "Blog", href: "/blog" },
-  ],
-  [
-    { name: "Privacy", href: "/privacy-policy" },
-    { name: "Termini di servizio", href: "/termini-di-servizio" },
-  ],
-];
+};
 
 const SocialButton = `hover:-translate-y-1 rounded-full p-2.5 transition-all hover:bg-white/10/10`;
 
@@ -90,19 +71,6 @@ export function MainFooter() {
       <div className="mx-auto max-w-7xl px-6 py-10">
         <div className="border-b border-dark-border"> </div>
         <div className="py-10">
-<<<<<<< Updated upstream
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 leading-6">
-            {footerLinks.map((column, columnIndex) => (
-              <div key={columnIndex}>
-                <ul role="list" className="flex flex-col space-y-2">
-                  {column.map((link) => (
-                    <li key={link.name} className="flow-root">
-                      <Link
-                        href={link.href}
-                        className="text-sm text-dark-text-secondary hover:text-dark-text-primary md:text-xs"
-                      >
-                        {link.name}
-=======
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 leading-6">
             {navigation.sections.map((section) => (
               <div key={section.name}>
@@ -118,7 +86,6 @@ export function MainFooter() {
                         className="text-sm text-dark-text-secondary hover:text-dark-text-primary transition-colors"
                       >
                         {item.name}
->>>>>>> Stashed changes
                       </Link>
                     </li>
                   ))}
@@ -177,7 +144,6 @@ export function MainFooter() {
           >
             <Linkedin className="h-5 w-5 text-dark-text-primary" />
           </Link>
-          {/* <ThemeToggle /> */}
         </div>
         <Footer />
       </div>

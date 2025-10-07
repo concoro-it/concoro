@@ -82,12 +82,14 @@ export function ExpiredConcorso({ concorso }: ExpiredConcorsoProps) {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {/* View Similar Concorsi from Same Ente */}
-                  <Button asChild variant="default" className="w-full">
-                    <Link href={`/concorsi?ente=${encodeURIComponent(concorso.Ente)}`}>
-                      <Building2 className="w-4 h-4 mr-2" />
-                      Altri Concorsi di {concorso.Ente.split(' ').slice(0, 3).join(' ')}
-                    </Link>
-                  </Button>
+                  {concorso.Ente && (
+                    <Button asChild variant="default" className="w-full">
+                      <Link href={`/concorsi?ente=${encodeURIComponent(concorso.Ente)}`}>
+                        <Building2 className="w-4 h-4 mr-2" />
+                        Altri Concorsi di {concorso.Ente.split(' ').slice(0, 3).join(' ')}
+                      </Link>
+                    </Button>
+                  )}
 
                   {/* View Concorsi in Same Location */}
                   {concorso.AreaGeografica && (

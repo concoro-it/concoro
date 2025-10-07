@@ -2,13 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-<<<<<<< Updated upstream
-import { BellIcon, SearchIcon, BriefcaseIcon, SparklesIcon, UserIcon } from 'lucide-react';
-import { BentoCard, BentoGrid } from '@/components/ui/bento-grid';
-=======
 import { BellIcon, SearchIcon, BookmarkIcon, UserIcon, BriefcaseIcon, SparklesIcon } from 'lucide-react';
 // BentoGrid components are now lazy loaded
->>>>>>> Stashed changes
 import { MainFooter } from '@/components/ui/main-footer';
 import dynamic from 'next/dynamic';
 import { getOrganizationStructuredData, getWebSiteStructuredData } from '@/lib/utils/guest-seo-utils';

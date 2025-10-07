@@ -30,13 +30,8 @@ export default function ResetPasswordPage() {
       await resetPassword(email);
       setSuccess('Controlla la tua casella di posta per il link di reset della password.');
       (e.target as HTMLFormElement).reset();
-<<<<<<< Updated upstream
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'An error occurred');
-=======
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Si è verificato un errore');
->>>>>>> Stashed changes
     } finally {
       setLoading(false);
     }

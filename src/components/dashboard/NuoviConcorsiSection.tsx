@@ -15,49 +15,9 @@ import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
-<<<<<<< Updated upstream
-import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 import Image from "next/image"
-
-const getFaviconChain = (domain: string): string[] => [
-  `https://faviconkit.com/${domain}/32`,
-  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
-  `https://logo.clearbit.com/${domain}`,
-  `https://www.google.com/s2/favicons?sz=192&domain=${domain}`,
-  `/placeholder_icon.png`,
-];
-
-// Function to extract domain from URL
-const extractDomain = (url: string | undefined): string => {
-  if (!url) return '';
-  
-  // Check if the URL is just "N/A" or similar placeholder
-  if (url === 'N/A' || url === 'n/a' || url === 'NA') return '';
-  
-  // Basic URL validation before trying to parse
-  if (!url.includes('.') || (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//'))) {
-    // Try to fix common URL issues by adding protocol
-    url = url.startsWith('www.') ? `https://${url}` : url;
-    
-    // If it still doesn't look like a URL, return empty
-    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//')) {
-      return '';
-    }
-  }
-  
-  try {
-    const domain = new URL(url).hostname;
-    return domain;
-  } catch (error) {
-    console.error('Invalid URL:', url);
-    return '';
-  }
-};
-=======
-import { FaviconImage } from "@/components/common/FaviconImage"
-import { toast } from "sonner"
 import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
->>>>>>> Stashed changes
+import { getLocalitaUrl } from '@/lib/utils/localita-utils'
 
 // Function to clean Ente names - display as-is without case conversion
 const cleanEnteName = (str: string | undefined): string => {
@@ -121,10 +81,8 @@ const getDeadlineStatus = (deadline: any) => {
 export function NuoviConcorsiSection() {
   const [concorsi, setConcorsi] = useState<Concorso[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [faviconIndices, setFaviconIndices] = useState<Record<string, number>>({})
   const router = useRouter()
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi()
-  const { generateUrl } = useBandoUrl()
 
   // Fetch 5 most recently published concorsi
   useEffect(() => {
@@ -134,13 +92,13 @@ export function NuoviConcorsiSection() {
         
         // Try optimized query first
         try {
-          const { getLatestConcorsiClient } = await import('@/lib/services/concorsi-service-client')
+          const { getOpenConcorsi } = await import('@/lib/services/concorsi-service-client')
           
-          const concorsiData = await getLatestConcorsiClient(5)
+          const result = await getOpenConcorsi({ limit: 5, sortBy: 'publication_desc' })
           
-          console.log(`📋 ✅ Optimized latest concorsi query: ${concorsiData.length} concorsi`)
+          console.log(`📋 ✅ Optimized latest concorsi query: ${result.concorsi.length} concorsi`)
           
-          setConcorsi(concorsiData as Concorso[])
+          setConcorsi(result.concorsi)
           return
           
         } catch (optimizedError) {
@@ -319,17 +277,7 @@ export function NuoviConcorsiSection() {
 
           const deadlineStatus = getDeadlineStatus(concorso.DataChiusura);
           
-          // Get domain for favicon
-          const domain = extractDomain(concorso.pa_link);
-          const fallbacks = domain ? getFaviconChain(domain) : ['/placeholder_icon.png'];
-          const currentFaviconIndex = faviconIndices[concorso.id] || 0;
-          
-          const handleFaviconError = () => {
-            setFaviconIndices(prev => ({
-              ...prev,
-              [concorso.id]: Math.min((prev[concorso.id] || 0) + 1, fallbacks.length - 1)
-            }));
-          };
+          // Simple favicon - just use favicon.png
 
           // Get entity name - display as-is without case conversion
           const enteName = cleanEnteName(concorso.Ente);
@@ -337,11 +285,7 @@ export function NuoviConcorsiSection() {
           return (
             <Link 
               key={concorso.id} 
-<<<<<<< Updated upstream
-              href={generateUrl(concorso)}
-=======
               href={generateSEOConcorsoUrl(concorso)}
->>>>>>> Stashed changes
               className="block"
             >
               <div 
@@ -361,15 +305,11 @@ export function NuoviConcorsiSection() {
                 <div className="flex items-center gap-1 min-w-0 mb-2 pr-12">
                   <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
                     <Image 
-                      src={fallbacks[currentFaviconIndex]}
+                      src="/favicon.png"
                       alt={`Logo of ${concorso.Ente || 'entity'}`}
                       width={16} 
                       height={16}
                       className="object-contain"
-                      style={{ 
-                        imageRendering: 'crisp-edges'
-                      }}
-                      onError={handleFaviconError}
                     />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -388,9 +328,6 @@ export function NuoviConcorsiSection() {
                 <div className="flex flex-wrap gap-3 text-sm text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
-<<<<<<< Updated upstream
-                    <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
-=======
                     <button 
                       onClick={(e) => {
                         e.preventDefault()
@@ -401,7 +338,6 @@ export function NuoviConcorsiSection() {
                     >
                       <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
                     </button>
->>>>>>> Stashed changes
                   </div>
                   {deadlineStatus && (
                     <div className={`flex items-center gap-1 text-sm ${

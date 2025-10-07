@@ -60,12 +60,6 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
 
   const location = article?.concorso?.AreaGeografica || article?.AreaGeografica;
   
-  // Set current URL
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setCurrentUrl(window.location.href)
-    }
-  }, [])
   
   useEffect(() => {
     const fetchArticle = async () => {
@@ -403,9 +397,6 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
         }
       }
       
-<<<<<<< Updated upstream
-      // Note: JSON-LD structured data is now handled server-side in layout.tsx
-=======
       // Remove existing structured data
       const existingArticleScript = document.querySelector('script[type="application/ld+json"][data-article]')
       if (existingArticleScript) {
@@ -436,7 +427,6 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
       } else {
         
       }
->>>>>>> Stashed changes
 
       // Track article view for analytics
       if (article.slug || article.id) {

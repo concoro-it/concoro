@@ -93,7 +93,6 @@ export function serializeConcorso(concorso: Concorso | null): Concorso {
     regime: plainObject.regime || undefined,
     regime_impegno: plainObject.regime_impegno || undefined,
     sommario: plainObject.sommario || undefined,
-    riassunto: plainObject.riassunto || undefined,
     Descrizione: plainObject.Descrizione || undefined,
     Link: plainObject.Link || undefined,
     apply_link: plainObject.apply_link || undefined,

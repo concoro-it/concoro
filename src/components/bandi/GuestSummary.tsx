@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Key } from "lucide-react"
-import { useAuthAdapter } from "@/lib/hooks/useAuthAdapter"
+import { useAuth } from "@/lib/hooks/useAuth"
 import { toast } from "sonner"
 
 interface GuestSummaryProps {
@@ -11,7 +11,7 @@ interface GuestSummaryProps {
 }
 
 export function GuestSummary({ jobTitle }: GuestSummaryProps) {
-  const { signInWithGoogle } = useAuthAdapter();
+  const { signInWithGoogle } = useAuth();
 
   const handleGoogleSignIn = async () => {
     try {

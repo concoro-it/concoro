@@ -40,7 +40,7 @@ export async function GET(
 
     // Only return if concorso is open/active for SEO purposes
     const validStates = ['open', 'aperto', 'OPEN', 'APERTO'];
-    if (!validStates.includes(concorso.Stato)) {
+    if (!concorso.Stato || !validStates.includes(concorso.Stato)) {
       return NextResponse.json(
         { error: 'Concorso not available' },
         { status: 404 }

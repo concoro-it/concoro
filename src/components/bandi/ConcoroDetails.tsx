@@ -25,7 +25,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
-import { useAuthAdapter } from "@/lib/hooks/useAuthAdapter"
+import { useAuth } from "@/lib/hooks/useAuth"
 import { GuestSummary } from "@/components/bandi/GuestSummary"
 import { GuestBookmarkButton } from "@/components/ui/guest-bookmark-button"
 import { GuestChatInterface } from "@/components/bandi/GuestChatInterface"
@@ -41,10 +41,11 @@ import { BookmarkIconButton } from "@/components/ui/bookmark-icon-button"
 import { Spinner } from "@/components/ui/spinner"
 import { ReportModal } from "@/components/ui/report-modal"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
-import { getEnteUrl } from '@/lib/utils/ente-slug-utils'
+import { getEnteUrl } from '@/lib/utils/ente-utils'
 import { formatMetodoValutazione, getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { normalizeConcorsoCategory } from "@/lib/utils/category-utils"
 import { formatLocalitaDisplay, normalizeLocationForSlug } from '@/lib/utils/region-utils'
+import { getLocalitaUrl } from '@/lib/utils/localita-utils'
 import { Concorso } from '@/types/concorso'
 
 // Configure marked for safe HTML rendering
@@ -55,31 +56,7 @@ marked.setOptions({
 
 
 
-const extractDomain = (url: string | undefined): string => {
-  if (!url) return '';
-  
-  // Check if the URL is just "N/A" or similar placeholder
-  if (url === 'N/A' || url === 'n/a' || url === 'NA') return '';
-  
-  // Basic URL validation before trying to parse
-  if (!url.includes('.') || (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//'))) {
-    // Try to fix common URL issues by adding protocol
-    url = url.startsWith('www.') ? `https://${url}` : url;
-    
-    // If it still doesn't look like a URL, return empty
-    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//')) {
-      return '';
-    }
-  }
-  
-  try {
-    const domain = new URL(url).hostname;
-    return domain;
-  } catch (error) {
-    console.error('Invalid URL:', url);
-    return '';
-  }
-};
+// Simple favicon - just use favicon.png
 
 interface ConcoroDetailsProps {
   job: Concorso | null;
@@ -196,7 +173,7 @@ const formatTextWithLinks = (text: string) => {
 export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
   const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 1024px)");
-  const { user, initializeAuth } = useAuthAdapter();
+  const { user } = useAuth();
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi();
   const [inputValue, setInputValue] = useState("")
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([])
@@ -212,10 +189,6 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  // Auto-initialize auth for logged-in users
-  useEffect(() => {
-    initializeAuth()
-  }, [])
 
   React.useEffect(() => {
     if (chatMessages.length > 0 && isDrawerOpen) {
@@ -606,49 +579,15 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                 <div>
                   <h1 className="text-2xl font-bold">{toSentenceCase(job.Titolo || job.titolo_originale || '')}</h1>
                   <div className="flex items-center text-gray-600 mt-2">
-<<<<<<< Updated upstream
-                    {(() => {
-                      const domain = extractDomain(job.pa_link);
-                      const faviconUrls =  ['/placeholder_icon.png'];
-                      
-                      const handleFaviconError = () => {
-                        setFaviconIndex(prev => Math.min(prev + 1, faviconUrls.length - 1));
-                      };
-
-                      return (
-                        <>
-                          <div className="relative w-4 h-4 mr-2 flex items-center justify-center">
-                            <Image 
-                              src={faviconUrls[faviconIndex]}
-                              alt={`Logo of ${job.Ente || 'entity'}`}
-                              width={16} 
-                              height={16}
-                              className="object-contain"
-                              style={{ 
-                                imageRendering: 'crisp-edges'
-                              }}
-                              onError={handleFaviconError}
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <Link 
-                              href={getEnteUrl(job.Ente)}
-                              className="hover:text-blue-600 hover:underline transition-colors"
-                              title={`Vedi tutti i concorsi di ${job.Ente}`}
-                            >
-                              <span className="truncate">{job.Ente || ''}</span>
-                            </Link>
-                          </div>
-                        </>
-                      );
-                    })()}
-=======
-                    <FaviconImage 
-                      enteName={job.Ente || ''}
-                      paLink={job.pa_link}
-                      size={16}
-                      className="mr-2 flex-shrink-0"
-                    />
+                    <div className="relative w-[16px] h-[16px] mr-2 flex-shrink-0 flex items-center justify-center">
+                      <Image 
+                        src="/favicon.png"
+                        alt={`Logo of ${job.Ente || 'entity'}`}
+                        width={16} 
+                        height={16}
+                        className="object-contain"
+                      />
+                    </div>
                     <div className="min-w-0 flex-1">
                       <Link 
                         href={getEnteUrl(job.Ente || '', 'bandi')}
@@ -658,40 +597,18 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                         {job.Ente || ''}
                       </Link>
                     </div>
->>>>>>> Stashed changes
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                   <div className="flex items-center">
                     <MapPin className="w-4 h-4 mr-1" />
-<<<<<<< Updated upstream
-                    {(() => {
-                      const locationDisplay = formatLocalitaDisplay(job.AreaGeografica || '');
-                      const locationSlug = normalizeLocationForSlug(job.AreaGeografica || '');
-                      
-                      if (locationSlug && locationDisplay) {
-                        return (
-                          <Link 
-                            href={`/bandi/localita/${locationSlug}`}
-                            className="hover:text-blue-600 hover:underline transition-colors"
-                            title={`Vedi tutti i concorsi in ${locationDisplay}`}
-                          >
-                            {locationDisplay}
-                          </Link>
-                        );
-                      } else {
-                        return <span>{locationDisplay}</span>;
-                      }
-                    })()}
-=======
                     <Link 
                       href={getLocalitaUrl(job.AreaGeografica || '', 'bandi')}
                       className="hover:text-foreground transition-colors"
                     >
                       <span>{formatLocalitaDisplay(job.AreaGeografica || '')}</span>
                     </Link>
->>>>>>> Stashed changes
                   </div>
                   <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
@@ -722,14 +639,14 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
 
                 {/* Summary Section */}
                 {user ? (
-                  job.riassunto && (
+                  job.sommario && (
                     <div className="rounded-lg p-6" style={{ 
                       backgroundImage: 'linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)'
                     }}>
                       <h2 className="text-lg font-semibold mb-2">Sommario</h2>
                       <div 
                         className="prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:p-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_ul]:space-y-1 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_li]:mb-1 [&_strong]:font-semibold"
-                        dangerouslySetInnerHTML={{ __html: marked(job.riassunto) }}
+                        dangerouslySetInnerHTML={{ __html: marked(job.sommario) }}
                       />
                     </div>
                   )
@@ -802,13 +719,13 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                       {(() => {
                         const content = typeof job.Descrizione === 'string' 
                           ? cleanHtmlContent(job.Descrizione) 
-                          : job.riassunto || 'Nessuna descrizione disponibile';
+                          : job.sommario || 'Nessuna descrizione disponibile';
                         return formatTextWithLinks(content);
                       })()}
                     </div>
                   ) : (
                     <div className="break-words">
-                      {job.riassunto ? formatTextWithLinks(job.riassunto) : 'Nessuna descrizione disponibile'}
+                      {job.sommario ? formatTextWithLinks(job.sommario) : 'Nessuna descrizione disponibile'}
                     </div>
                   )}
                 </div>

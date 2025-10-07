@@ -1,8 +1,8 @@
-import { ScadenzaFilter, RegimeFilter } from '@/lib/services/regional-queries'
 import * as admin from 'firebase-admin'
 
 // Re-export the filter types for external use
-export type { ScadenzaFilter, RegimeFilter }
+export type ScadenzaFilter = 'oggi' | 'questa-settimana' | 'questo-mese' | undefined
+export type RegimeFilter = 'part-time' | 'tempo-determinato' | 'tempo-indeterminato' | 'non-specificato' | undefined
 
 export interface ConcorsiQueryOptions {
   // Search and text filters
@@ -88,3 +88,4 @@ export interface FilterOptions {
   deadlineOptions: Array<{ label: string; value: string }>
   sortOptions: Array<{ label: string; value: string }>
 }
+

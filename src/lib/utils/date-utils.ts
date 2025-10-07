@@ -1,4 +1,6 @@
 import { ScadenzaFilter } from '@/types/query-options'
+import { parseISO, isValid, differenceInDays } from 'date-fns'
+import { Timestamp } from 'firebase/firestore'
 
 /**
  * Get date range for scadenza filter
@@ -85,18 +87,11 @@ export function getRelativeTimeString(date: Date): string {
 /**
  * Get countdown string for a deadline
  */
-export function getDeadlineCountdown(deadline: string | { seconds?: number; nanoseconds?: number; _seconds?: number; _nanoseconds?: number } | null | undefined): string | null {
+export function getDeadlineCountdown(deadline: string | Date | { seconds?: number; nanoseconds?: number; _seconds?: number; _nanoseconds?: number } | null | undefined): string | null {
   if (!deadline) return null;
 
   let deadlineDate: Date;
 
-<<<<<<< Updated upstream
-  // Handle Firebase Timestamp (both formats)
-  if (typeof deadline === 'object' && deadline !== null && ('seconds' in deadline || '_seconds' in deadline)) {
-    const seconds = deadline.seconds || deadline._seconds;
-    if (seconds) {
-      deadlineDate = new Date(seconds * 1000);
-=======
   try {
     // Handle Firestore Timestamp (only available server-side or with full Firestore SDK)
     if (deadline instanceof Timestamp) {
@@ -105,19 +100,33 @@ export function getDeadlineCountdown(deadline: string | { seconds?: number; nano
     // Handle Firestore-like object (serialized timestamp from server)
     else if (typeof deadline === 'object' && deadline !== null) {
       // Check for both formats: with and without underscores
-      if ('seconds' in deadline && 'nanoseconds' in deadline) {
+      if ('seconds' in deadline && 'nanoseconds' in deadline && deadline.seconds !== undefined) {
         deadlineDate = new Date(deadline.seconds * 1000);
       } else if ('_seconds' in deadline && '_nanoseconds' in deadline) {
         deadlineDate = new Date((deadline as any)._seconds * 1000);
+      } else {
+        return null;
       }
     }
     // Handle ISO string
     else if (typeof deadline === 'string') {
-      deadlineDate = parseISO(deadline);
+      // Handle Italian date format first
+      if (deadline.includes(' ')) {
+        const parsedDate = parseItalianDate(deadline);
+        if (parsedDate) {
+          deadlineDate = parsedDate;
+        } else {
+          deadlineDate = parseISO(deadline);
+        }
+      } else {
+        deadlineDate = parseISO(deadline);
+      }
     }
     // Handle Date object
-    else if (deadline instanceof Date) {
-      deadlineDate = deadline;
+    else if (deadline && typeof deadline === 'object' && 'getTime' in deadline) {
+      deadlineDate = deadline as Date;
+    } else {
+      return null;
     }
 
     if (!deadlineDate || !isValid(deadlineDate)) {
@@ -127,9 +136,9 @@ export function getDeadlineCountdown(deadline: string | { seconds?: number; nano
     const today = new Date();
     const daysUntilDeadline = differenceInDays(deadlineDate, today);
 
-    // If deadline has passed, don't show countdown
+    // If deadline has passed
     if (daysUntilDeadline < 0) {
-      return null;
+      return "Scaduto";
     }
 
     // Format the countdown message
@@ -137,55 +146,12 @@ export function getDeadlineCountdown(deadline: string | { seconds?: number; nano
       return "Scade oggi";
     } else if (daysUntilDeadline === 1) {
       return "Scade domani";
->>>>>>> Stashed changes
     } else {
-      return null;
+      return `Scade in ${daysUntilDeadline} giorni`;
     }
-  }
-  // Handle string date
-  else if (typeof deadline === 'string') {
-    // Handle Italian date format first
-    if (deadline.includes(' ')) {
-      const parsedDate = parseItalianDate(deadline);
-      if (parsedDate) {
-        deadlineDate = parsedDate;
-      } else {
-        deadlineDate = new Date(deadline);
-      }
-    } else {
-      deadlineDate = new Date(deadline);
-    }
-  }
-  else {
+  } catch (error) {
     return null;
   }
-
-  // Check if the date is valid
-  if (isNaN(deadlineDate.getTime())) {
-    return null;
-  }
-
-  const now = new Date();
-  const diffTime = deadlineDate.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  // If deadline has passed
-  if (diffDays < 0) {
-    return "Scaduto";
-  }
-
-  // If deadline is today
-  if (diffDays === 0) {
-    return "Scade oggi";
-  }
-
-  // If deadline is tomorrow
-  if (diffDays === 1) {
-    return "Scade domani";
-  }
-
-  // For all other cases
-  return `Scade in ${diffDays} giorni`;
 }
 
 /**

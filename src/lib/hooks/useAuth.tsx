@@ -121,19 +121,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      let authInstance;
-      try {
-        authInstance = getFirebaseAuth();
-      } catch (error) {
-        throw new Error("Authentication service not available");
-      }
-      
-      const provider = new GoogleAuthProvider();
-      provider.addScope('https://www.googleapis.com/auth/userinfo.email');
-      provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
-      
-      const result = await signInWithPopup(authInstance, provider);
-      
+      // Import and use the proper signInWithGoogle function from auth-utils
+      const { signInWithGoogle: authUtilsSignInWithGoogle } = await import('@/lib/auth/auth-utils');
+      await authUtilsSignInWithGoogle();
     } catch (error: any) {
       console.error('Error signing in with Google:', error);
       throw error;

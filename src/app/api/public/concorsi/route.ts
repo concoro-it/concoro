@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFirestoreForSEO } from '@/lib/firebase-admin';
 import { Concorso } from '@/types/concorso';
 import { apiCache } from '@/lib/cache';
+import { preserveDateFormat, serializeDate } from '@/lib/utils/concorsi-utils';
+import { getDeadlineCountdown } from '@/lib/utils/date-utils';
 
 // Force this route to be dynamic
 export const dynamic = 'force-dynamic';
@@ -11,6 +13,11 @@ function serializeFirestoreData(data: any): any {
   if (!data) return data;
   
   return JSON.parse(JSON.stringify(data, (key, value) => {
+    // Use the preserveDateFormat utility for consistent date handling
+    if (key === 'DataChiusura' || key === 'publication_date' || key === 'DataApertura') {
+      return preserveDateFormat(value);
+    }
+    
     // Convert Firestore Timestamps to objects with seconds/nanoseconds
     if (value && typeof value === 'object' && '_seconds' in value && '_nanoseconds' in value) {
       return {
@@ -147,10 +154,31 @@ export async function GET(request: NextRequest) {
     // Helper function to convert Firestore Timestamp to Date
     const toDate = (value: any): Date | null => {
       if (!value) return null;
-      if (typeof value === 'string') return new Date(value);
-      if (typeof value === 'object' && value.seconds) return new Date(value.seconds * 1000);
-      if (value instanceof Date) return value;
-      return null;
+      
+      try {
+        if (typeof value === 'string') {
+          return new Date(value);
+        }
+        
+        if (typeof value === 'object') {
+          // Handle Firestore timestamp objects
+          if ('seconds' in value && typeof value.seconds === 'number') {
+            return new Date(value.seconds * 1000);
+          }
+          if ('_seconds' in value && typeof value._seconds === 'number') {
+            return new Date(value._seconds * 1000);
+          }
+        }
+        
+        if (value instanceof Date) {
+          return value;
+        }
+        
+        return null;
+      } catch (error) {
+        console.error('Error converting to date:', error, value);
+        return null;
+      }
     };
 
     // Apply deadline filter (scadenza)
@@ -210,7 +238,8 @@ export async function GET(request: NextRequest) {
           // Sort by publication date (most recent first)
           const getTimestamp = (concorso: Concorso) => {
             if (concorso.publication_date) {
-              return new Date(concorso.publication_date).getTime();
+              const date = toDate(concorso.publication_date);
+              return date ? date.getTime() : 0;
             }
             return 0;
           };

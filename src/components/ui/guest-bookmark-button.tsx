@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Bookmark, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuthAdapter } from "@/lib/hooks/useAuthAdapter";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { toast } from "sonner";
 
 interface GuestBookmarkButtonProps {
@@ -11,7 +11,7 @@ interface GuestBookmarkButtonProps {
 }
 
 export function GuestBookmarkButton({ className }: GuestBookmarkButtonProps) {
-  const { signInWithGoogle } = useAuthAdapter();
+  const { signInWithGoogle } = useAuth();
 
   const handleClick = async () => {
     try {

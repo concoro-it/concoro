@@ -1,65 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { brevoService } from '@/lib/services/brevo';
-<<<<<<< Updated upstream
-import * as admin from 'firebase-admin';
-import * as path from 'path';
-import * as fs from 'fs';
-
-// Initialize Firebase Admin for API routes
-function initializeFirebaseAdminForAPI() {
-  if (!admin.apps.length) {
-    try {
-      // First try service account file (more reliable than env vars)
-      console.log('Trying service account file first...');
-      const serviceAccountPath = path.resolve(process.cwd(), 'concoro-fc095-firebase-adminsdk-fbsvc-a817929655.json');
-      
-      if (fs.existsSync(serviceAccountPath)) {
-        console.log('Service account file found, using it...');
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccountPath),
-        });
-        console.log('Firebase Admin initialized with service account file');
-      } else {
-        // Fallback to environment variables
-        console.log('Service account file not found, trying environment variables...');
-        if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-          console.log('Initializing Firebase Admin with environment variables...');
-          
-          // Parse the private key correctly
-          let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-          
-          // Handle different formats of private key in environment
-          if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-            privateKey = JSON.parse(privateKey);
-          } else {
-            privateKey = privateKey.replace(/\\n/g, '\n');
-          }
-          
-          admin.initializeApp({
-            credential: admin.credential.cert({
-              projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-              clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-              privateKey: privateKey
-            }),
-          });
-          
-          console.log('Firebase Admin initialized successfully with environment variables');
-        } else {
-          throw new Error('No Firebase credentials found (neither service account file nor environment variables)');
-        }
-      }
-    } catch (error: unknown) {
-      console.error('Error initializing Firebase Admin:', error);
-      throw new Error(`Firebase Admin initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-  
-  return admin.firestore();
-}
-=======
 import { NotificationsService } from '@/lib/services/notifications';
 import { initializeFirebaseAdmin } from '@/lib/firebase-admin';
->>>>>>> Stashed changes
+import { NotificationWithConcorso } from '@/types/notification';
 
 export async function POST(request: NextRequest) {
   try {
@@ -132,15 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Enrich notifications with concorso data
-    const notifications: Array<{
-      id: string;
-      concorsoId: string;
-      concorsoTitle: string;
-      ente: string;
-      daysLeft: number;
-      closingDate: string;
-      url: string;
-    }> = [];
+    const notifications: NotificationWithConcorso[] = [];
     for (const notificationDoc of notificationsSnapshot.docs) {
       const notificationData = notificationDoc.data();
       
@@ -157,13 +92,15 @@ export async function POST(request: NextRequest) {
           notifications.push({
             ...notificationData,
             id: notificationDoc.id,
-            concorsoTitoloBreve: concorsoData.titolo_breve || concorsoData.Titolo,
-            concorsoEnte: concorsoData.Ente,
-            // Add the missing fields for email template
-            AreaGeografica: concorsoData.AreaGeografica || concorsoData.area_geografica || concorsoData.localita || concorsoData.Localita || 'Italia',
-            numero_di_posti: concorsoData.numero_di_posti || concorsoData.NumerodiPosti || concorsoData.posti || 1,
-            DataChiusura: concorsoData.DataChiusura || concorsoData.data_chiusura || notificationData.DataChiusura
-          });
+            concorsoTitle: concorsoData.Titolo || concorsoData.titolo_breve || 'Titolo non disponibile',
+            concorsoTitoloBreve: concorsoData.titolo_breve || concorsoData.Titolo || 'Titolo breve non disponibile',
+            concorsoEnte: concorsoData.Ente || 'Ente non disponibile',
+            concorsoLink: concorsoData.Link || concorsoData.apply_link || '',
+            concorsoDaysLeft: notificationData.daysLeft || 0,
+            concorsoNumeroPosti: concorsoData.numero_di_posti || concorsoData.NumerodiPosti || 1,
+            concorsoAreaGeografica: concorsoData.AreaGeografica || concorsoData.area_geografica || concorsoData.localita || concorsoData.Localita || 'Italia',
+            concorsoDataChiusura: concorsoData.DataChiusura || concorsoData.data_chiusura || notificationData.DataChiusura
+          } as NotificationWithConcorso);
         }
       } catch (error) {
         console.warn('Error enriching notification:', error);
@@ -269,13 +206,13 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     console.error('Email notification status API error:', error);
     
-    return NextResponse.json(
-      { 
-        error: 'Failed to get email notification status',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      },
-      { status: 500 }
-    );
+      return NextResponse.json(
+        { 
+          error: 'Failed to get email notification status',
+          details: error instanceof Error ? error.message : 'Unknown error',
+          stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
+        },
+        { status: 500 }
+      );
   }
 } 

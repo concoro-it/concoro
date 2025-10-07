@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { isFirebaseDocumentId } from './lib/utils/concorso-urls';
 
 // Add paths that don't require authentication
 const publicPaths = ['/signin', '/signup', '/reset-password', '/verify-email', '/basic-info'];
@@ -9,33 +10,8 @@ function isDocumentId(value: string): boolean {
   return /^[a-zA-Z0-9]{20,}$/.test(value);
 }
 
-<<<<<<< Updated upstream
-// Function to check if a string is a Firestore document ID (more comprehensive)
-function isFirestoreDocumentId(str: string): boolean {
-  if (!str) return false;
-  
-  // Firestore auto-generated IDs are typically 20 characters, alphanumeric
-  // Or they can be custom IDs which often look like UUIDs (32 chars with hyphens)
-  const autoGenPattern = /^[a-zA-Z0-9]{20}$/;
-  const uuidPattern = /^[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}$/i;
-  const customPattern = /^[a-f0-9]{32}$/i;
-  
-  return autoGenPattern.test(str) || uuidPattern.test(str) || customPattern.test(str);
-}
-
-export function middleware(request: NextRequest) {
-  const { pathname, host, protocol } = request.nextUrl;
-  
-  // Redirect non-www to www domain
-  if (host === 'concoro.it') {
-    const url = request.nextUrl.clone();
-    url.host = 'www.concoro.it';
-    return NextResponse.redirect(url, 301); // 301 is permanent redirect
-  }
-=======
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
->>>>>>> Stashed changes
   
   // SEO: Handle ID-based article URL redirects at server level for proper 301 redirects
   const articleMatch = pathname.match(/^\/articolo\/([^\/]+)$/);
@@ -63,21 +39,14 @@ export async function middleware(request: NextRequest) {
   // Handle old bando URLs with query parameters and redirect to new format
   if (pathname === '/bandi' && request.nextUrl.searchParams.has('id')) {
     const id = request.nextUrl.searchParams.get('id');
-    if (id && isFirestoreDocumentId(id)) {
-      // Redirect old query-based URLs to the new [id] route, which will then redirect to SEO-friendly URL
+    if (id && isFirebaseDocumentId(id)) {
+      // Redirect old query-based URLs to the new [id] route
       return NextResponse.redirect(new URL(`/bandi/${id}`, request.url));
     }
   }
 
-  // Handle direct bando ID URLs and mobile pagination URLs - redirect to [id] route
-  const bandoIdMatch = pathname.match(/^\/bandi\/([a-f0-9]{32})$/);
+  // Handle mobile pagination URLs - redirect to main page with query params
   const mobilePageMatch = pathname.match(/^\/bandi\/page\/(\d+)\/([a-f0-9]{32})$/);
-  
-  if (bandoIdMatch) {
-    const id = bandoIdMatch[1];
-    // Direct ID access - redirect to [id] route which will handle SSR redirect to SEO URL
-    return NextResponse.redirect(new URL(`/bandi/${id}`, request.url));
-  }
   
   if (mobilePageMatch) {
     const id = mobilePageMatch[2];
@@ -92,7 +61,7 @@ export async function middleware(request: NextRequest) {
     const slugPath = bandoSlugMatch[1];
     
     // Skip if it's a single segment that looks like an ID (handled above)
-    if (!slugPath.includes('/') && isFirestoreDocumentId(slugPath)) {
+    if (!slugPath.includes('/') && isFirebaseDocumentId(slugPath)) {
       return NextResponse.next();
     }
     

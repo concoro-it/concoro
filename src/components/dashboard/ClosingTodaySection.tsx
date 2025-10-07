@@ -15,49 +15,9 @@ import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
-<<<<<<< Updated upstream
-import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 import Image from "next/image"
-
-const getFaviconChain = (domain: string): string[] => [
-  `https://faviconkit.com/${domain}/32`,
-  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
-  `https://logo.clearbit.com/${domain}`,
-  `https://www.google.com/s2/favicons?sz=192&domain=${domain}`,
-  `/placeholder_icon.png`,
-];
-
-// Function to extract domain from URL
-const extractDomain = (url: string | undefined): string => {
-  if (!url) return '';
-  
-  // Check if the URL is just "N/A" or similar placeholder
-  if (url === 'N/A' || url === 'n/a' || url === 'NA') return '';
-  
-  // Basic URL validation before trying to parse
-  if (!url.includes('.') || (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//'))) {
-    // Try to fix common URL issues by adding protocol
-    url = url.startsWith('www.') ? `https://${url}` : url;
-    
-    // If it still doesn't look like a URL, return empty
-    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//')) {
-      return '';
-    }
-  }
-  
-  try {
-    const domain = new URL(url).hostname;
-    return domain;
-  } catch (error) {
-    console.error('Invalid URL:', url);
-    return '';
-  }
-};
-=======
-import { FaviconImage } from "@/components/common/FaviconImage"
-import { toast } from "sonner"
 import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
->>>>>>> Stashed changes
+import { getLocalitaUrl } from '@/lib/utils/localita-utils'
 
 // Function to clean Ente names - display as-is without case conversion
 const cleanEnteName = (str: string | undefined): string => {
@@ -121,10 +81,8 @@ const getDeadlineStatus = (deadline: any) => {
 export function ClosingTodaySection() {
   const [concorsi, setConcorsi] = useState<Concorso[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [faviconIndices, setFaviconIndices] = useState<Record<string, number>>({})
   const router = useRouter()
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi()
-  const { generateUrl } = useBandoUrl()
 
   // Fetch concorsi closing today or with the most imminent deadlines
   useEffect(() => {
@@ -134,14 +92,45 @@ export function ClosingTodaySection() {
         
         // Try optimized query first
         try {
-          const { getClosingSoonConcorsiClient } = await import('@/lib/services/concorsi-service-client')
+          const { getOpenConcorsi } = await import('@/lib/services/concorsi-service-client')
           
-          const concorsiData = await getClosingSoonConcorsiClient(5)
+          const result = await getOpenConcorsi({
+            limit: 100, // Get more concorsi to filter for closing soon
+            sortBy: 'deadline-asc' // Sort by deadline ascending to get soonest first
+          })
           
-          console.log(`📋 ✅ Optimized closing today query: ${concorsiData.length} concorsi`)
-          
-          setConcorsi(concorsiData as Concorso[])
-          return
+          if (result && result.concorsi) {
+            // Filter for concorsi closing soon (within next 7 days)
+            const today = new Date()
+            const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+            
+            const closingSoonConcorsi = result.concorsi.filter(concorso => {
+              if (!concorso.DataChiusura) return false
+              
+              let closingDate: Date | null = null
+              
+              // Handle different date formats
+              if (typeof concorso.DataChiusura === 'object' && concorso.DataChiusura !== null) {
+                if ('seconds' in concorso.DataChiusura) {
+                  closingDate = new Date(concorso.DataChiusura.seconds * 1000)
+                } else if ('_seconds' in concorso.DataChiusura) {
+                  closingDate = new Date((concorso.DataChiusura as any)._seconds * 1000)
+                }
+              } else if (typeof concorso.DataChiusura === 'string') {
+                closingDate = new Date(concorso.DataChiusura)
+              }
+              
+              if (!closingDate || isNaN(closingDate.getTime())) return false
+              
+              // Only include concorsi closing within the next week and not already closed
+              return closingDate >= today && closingDate <= nextWeek
+            }).slice(0, 5) // Take first 5
+            
+            console.log(`📋 ✅ Optimized closing today query: ${closingSoonConcorsi.length} concorsi`)
+            
+            setConcorsi(closingSoonConcorsi)
+            return
+          }
           
         } catch (optimizedError) {
           console.log('📋 ⚠️ Optimized closing today query failed, falling back to legacy:', optimizedError)
@@ -405,17 +394,7 @@ export function ClosingTodaySection() {
           const deadlineStatus = getDeadlineStatus(concorso.DataChiusura);
           const urgency = getDeadlineUrgency(concorso.DataChiusura)
           
-          // Get domain for favicon
-          const domain = extractDomain(concorso.pa_link);
-          const fallbacks = domain ? getFaviconChain(domain) : ['/placeholder_icon.png'];
-          const currentFaviconIndex = faviconIndices[concorso.id] || 0;
-          
-          const handleFaviconError = () => {
-            setFaviconIndices(prev => ({
-              ...prev,
-              [concorso.id]: Math.min((prev[concorso.id] || 0) + 1, fallbacks.length - 1)
-            }));
-          };
+          // Simple favicon - just use favicon.png
 
           // Get entity name - display as-is without case conversion
           const enteName = cleanEnteName(concorso.Ente);
@@ -423,11 +402,7 @@ export function ClosingTodaySection() {
           return (
             <Link 
               key={concorso.id} 
-<<<<<<< Updated upstream
-              href={generateUrl(concorso)}
-=======
               href={generateSEOConcorsoUrl(concorso)}
->>>>>>> Stashed changes
               className="block"
             >
               <div 
@@ -448,15 +423,11 @@ export function ClosingTodaySection() {
                   <div className="flex items-center gap-1 min-w-0">
                     <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
                       <Image 
-                        src={fallbacks[currentFaviconIndex]}
+                        src="/favicon.png"
                         alt={`Logo of ${concorso.Ente || 'entity'}`}
                         width={16} 
                         height={16}
                         className="object-contain"
-                        style={{ 
-                          imageRendering: 'crisp-edges'
-                        }}
-                        onError={handleFaviconError}
                       />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -476,9 +447,6 @@ export function ClosingTodaySection() {
                 <div className="flex flex-wrap gap-3 text-sm text-black/70 mb-3">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
-<<<<<<< Updated upstream
-                    <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
-=======
                     <button 
                       onClick={(e) => {
                         e.preventDefault()
@@ -489,7 +457,6 @@ export function ClosingTodaySection() {
                     >
                       <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
                     </button>
->>>>>>> Stashed changes
                   </div>
                   {deadlineStatus && (
                     <div className={`flex items-center gap-1 text-sm ${

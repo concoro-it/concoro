@@ -41,7 +41,7 @@ const concoroTiers = [
       },
       {
         name: "Newsletter settimanale",
-        description: "Ricevi un riassunto dei nuovi bandi ogni settimana",
+        description: "Ricevi un sommario dei nuovi bandi ogni settimana",
         included: true,
       },
       {

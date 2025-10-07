@@ -135,7 +135,7 @@ export function processAndSerializeConcorsi(docs: any[], options?: any): any[] {
       regime: String(data.regime || ''),
       regime_impegno: String(data.regime_impegno || ''),
       DataChiusura: preserveDateFormat(data.DataChiusura),
-      riassunto: String(data.riassunto || ''),
+      sommario: String(data.sommario || ''),
       publication_date: preserveDateFormat(data.publication_date),
       stato: String(data.Stato || 'OPEN'),
       regione: Array.isArray(data.regione) ? data.regione : [],

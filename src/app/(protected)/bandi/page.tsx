@@ -23,7 +23,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { AutocompleteInput } from "@/components/ui/autocomplete-input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
-import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
 
 function JobsPage() {
   // State for filters and search
@@ -182,7 +181,7 @@ function JobsPage() {
         
         const allRegions = extractAllRegions(localitaStrings)
         const uniqueEnti = Array.from(new Set(
-          jobsData.map(job => job.Ente).filter(Boolean)
+          jobsData.map(job => job.Ente).filter((ente): ente is string => Boolean(ente))
         )).sort()
         
         const settoriSet = new Set<string>()
@@ -259,7 +258,7 @@ function JobsPage() {
     // Apply location filters
     if (selectedLocations.length > 0) {
       filtered = filtered.filter(job => 
-        localitaContainsRegions(job.AreaGeografica, selectedLocations)
+        job.AreaGeografica && localitaContainsRegions(job.AreaGeografica, selectedLocations)
       )
     }
 
@@ -363,8 +362,8 @@ function JobsPage() {
   // Handle concorso selection
   const handleConcorsoSelect = (concorso: Concorso) => {
     if (isMobile) {
-      // On mobile, navigate to individual page
-      router.push(generateSEOConcorsoUrl(concorso))
+      // On mobile, navigate to individual page using simple ID-based URL
+      router.push(`/bandi/${concorso.id}`)
     } else {
       // On desktop, show in sidebar
       setSelectedJob(concorso)
@@ -800,7 +799,6 @@ export default function JobsPageWithSuspense() {
     </Suspense>
   )
 }
-
 
 
 

@@ -141,14 +141,14 @@ export function getJobPageMetadata(job: {
   AreaGeografica?: string
   DataChiusura?: string | any
   Descrizione?: string
-  riassunto?: string
+  sommario?: string
   id: string
 }): Metadata {
   // Extract job details
   const title = job.Titolo || job.Title || 'Concorso Pubblico'
   const ente = job.Ente || 'Pubblica Amministrazione'
   const location = job.AreaGeografica || ''
-  const description = job.Descrizione || job.riassunto || ''
+  const description = job.Descrizione || job.sommario || ''
   
   // Generate SEO-friendly title
   let seoTitle = title
@@ -369,14 +369,14 @@ export function getJobPostingStructuredData(job: {
   DataChiusura?: string | any
   DataApertura?: string | any
   Descrizione?: string
-  riassunto?: string
+  sommario?: string
   numero_di_posti?: number
   id: string
 }) {
   const title = job.Titolo || job.Title || 'Concorso Pubblico'
   const ente = job.Ente || 'Pubblica Amministrazione'
   const location = job.AreaGeografica || 'Italia'
-  const description = job.Descrizione || job.riassunto || title
+  const description = job.Descrizione || job.sommario || title
   
   // Parse dates safely
   let validThrough: string | undefined

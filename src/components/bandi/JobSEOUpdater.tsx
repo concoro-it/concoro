@@ -11,7 +11,7 @@ interface Job {
   AreaGeografica?: string
   DataChiusura?: string | any
   Descrizione?: string
-  riassunto?: string
+  sommario?: string
 }
 
 interface JobSEOUpdaterProps {

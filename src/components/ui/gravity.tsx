@@ -292,7 +292,8 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       const height = canvas.current.offsetHeight
       const width = canvas.current.offsetWidth
 
-      import("poly-decomp").then((polyDecomp) => {
+      // @ts-expect-error - poly-decomp doesn't have TypeScript declarations
+      import("poly-decomp").then((polyDecomp: any) => {
         Common.setDecomp(polyDecomp.default || polyDecomp)
       })
 

@@ -8,15 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "setup-brevo": "ts-node src/scripts/setup-brevo-attributes.ts",
-    "delete-concorsi-dry-run": "ts-node src/scripts/deleteConcorsiByDateRange.ts --dry-run",
-    "delete-concorsi": "ts-node src/scripts/deleteConcorsiByDateRange.ts",
     "generate-slugs": "ts-node src/scripts/generateSlugsForExistingArticles.ts",
     "optimize-images": "node scripts/optimizeImages.js",
     "generate-sitemap": "ts-node scripts/generate-sitemap.ts",
     "generate-sitemap-simple": "node scripts/generate-sitemap-simple.js",
     "analyze-bundle": "node scripts/optimizeMainThread.js --full",
     "check-bundle": "node scripts/optimizeMainThread.js",
-    "seo-validate": "ts-node src/scripts/validateSEOCompliance.ts",
     "firestore:deploy-indexes": "firebase deploy --only firestore:indexes",
     "firestore:add-region-fields": "npx tsx scripts/add-region-field.ts",
     "functions:deploy": "firebase deploy --only functions",
@@ -52,11 +49,8 @@
     "@tsparticles/slim": "^3.8.1",
     "@types/lodash": "^4.17.17",
     "@types/nodemailer": "^6.4.17",
-<<<<<<< Updated upstream
     "@types/react-helmet": "^6.1.11",
     "@vercel/kv": "^3.0.0",
-=======
->>>>>>> Stashed changes
     "axios": "^1.6.7",
     "cheerio": "^1.0.0-rc.12",
     "class-variance-authority": "^0.7.1",
@@ -76,14 +70,8 @@
     "marked": "^15.0.12",
     "matter-js": "^0.20.0",
     "motion": "^12.16.0",
-<<<<<<< Updated upstream
-    "next": "14.1.0",
-    "next-sitemap": "^4.2.3",
-    "next-themes": "^0.4.5",
-=======
     "next": "^14.1.0",
     "next-themes": "^0.4.6",
->>>>>>> Stashed changes
     "nodemailer": "^7.0.3",
     "poly-decomp": "^0.3.0",
     "react": "^18.2.0",

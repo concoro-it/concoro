@@ -18,30 +18,8 @@ import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import Image from "next/image"
 import Link from "next/link"
 import { Spinner } from "@/components/ui/spinner"
-<<<<<<< Updated upstream:src/app/saved-concorsi/page.tsx
-// Removed getBandoUrl import to avoid redirect loops
+import { generateSEOConcorsoUrl } from "@/lib/utils/concorso-urls"
 
-const getFaviconChain = (domain: string): string[] => [
-  `https://www.google.com/s2/favicons?sz=32&domain=${domain}`,
-  `https://logo.clearbit.com/${domain}`,
-  `https://${domain}/favicon.ico`,
-  `https://besticon-demo.herokuapp.com/icon?url=${domain}&size=32`,
-  `/placeholder_icon.png`,
-];
-
-const extractDomain = (url: string | undefined): string => {
-  if (!url) return '';
-  try {
-    const match = url.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/);
-    return match ? match[1].toLowerCase() : '';
-  } catch {
-    return '';
-  }
-};
-=======
-import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
-import { FaviconImage } from "@/components/common/FaviconImage"
->>>>>>> Stashed changes:src/app/(protected)/saved-concorsi/page.tsx
 
 const cleanEnteName = (str: string | undefined): string => {
   if (!str) return '';
@@ -286,17 +264,7 @@ export default function SavedConcorsiPage() {
 
     const deadlineStatus = getDeadlineStatus(concorso.DataChiusura);
     
-    // Get domain for favicon
-    const domain = extractDomain(concorso.pa_link);
-            const fallbacks = domain ? getFaviconChain(domain) : ['/placeholder_icon.png'];
-    const currentFaviconIndex = faviconIndices[concorso.id] || 0;
-    
-    const handleFaviconError = () => {
-      setFaviconIndices(prev => ({
-        ...prev,
-        [concorso.id]: Math.min((prev[concorso.id] || 0) + 1, fallbacks.length - 1)
-      }));
-    };
+  
 
     // Get entity name - display as-is without case conversion
     const enteName = cleanEnteName(concorso.Ente);
@@ -308,11 +276,7 @@ export default function SavedConcorsiPage() {
     return (
       <Link 
         key={concorso.id} 
-<<<<<<< Updated upstream:src/app/saved-concorsi/page.tsx
-        href={bandoUrl}
-=======
-        href={generateSEOConcorsoUrl(concorso)}
->>>>>>> Stashed changes:src/app/(protected)/saved-concorsi/page.tsx
+          href={generateSEOConcorsoUrl(concorso)}
         className="block"
       >
         <div 
@@ -336,7 +300,7 @@ export default function SavedConcorsiPage() {
           <div className="flex items-center gap-1 min-w-0 mb-2 pr-12">
             <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
               <Image 
-                src={fallbacks[currentFaviconIndex]}
+                src={'/placeholder_icon.png'}
                 alt={`Logo of ${concorso.Ente || 'entity'}`}
                 width={16} 
                 height={16}
@@ -344,7 +308,6 @@ export default function SavedConcorsiPage() {
                 style={{ 
                   imageRendering: 'crisp-edges'
                 }}
-                onError={handleFaviconError}
               />
             </div>
             <div className="min-w-0 flex-1">

@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Sparkles, Check } from "lucide-react"
-import { useAuthAdapter } from "@/lib/hooks/useAuthAdapter"
+import { useAuth } from "@/lib/hooks/useAuth"
 import { toast } from "sonner"
 
 interface GuestGenioProps {
@@ -11,7 +11,7 @@ interface GuestGenioProps {
 }
 
 export function GuestGenio({ className }: GuestGenioProps) {
-  const { signInWithGoogle } = useAuthAdapter();
+  const { signInWithGoogle } = useAuth();
 
   const handleGoogleSignIn = async () => {
     try {

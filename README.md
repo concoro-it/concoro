@@ -32,16 +32,10 @@ Concoro serves as a comprehensive platform for:
 - **Docker** - Containerization for consistent deployments
 
 ### AI & Machine Learning
-<<<<<<< Updated upstream
-- **Pinecone** - Vector database for embeddings
-- **Gemini** - AI chat interface and job matching
-- **Custom Embeddings** - Semantic search and matching algorithms
-=======
 - **Pinecone** - Vector database for semantic job matching
 - **Google Generative AI (Gemini)** - AI chat interface and job recommendations
 - **Custom Embeddings** - Semantic search algorithms for job matching
 - **Brevo** - Email service for transactional emails and notifications
->>>>>>> Stashed changes
 
 ### Development & Quality
 - **ESLint** - Code linting with Next.js configuration

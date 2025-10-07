@@ -18,16 +18,12 @@ import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
 import { useAuth } from "@/lib/hooks/useAuth"
 import React, { useState, memo, useCallback } from "react"
 import { Concorso } from "@/types/concorso"
-import Image from "next/image"
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
-<<<<<<< Updated upstream
-import { getBandoUrl } from '@/lib/utils/bando-slug-utils'
-import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
-=======
-import { FaviconImage } from "@/components/common/FaviconImage"
+import Image from "next/image"
 import { getEnteUrl } from '@/lib/utils/ente-utils'
 import { getLocalitaUrl } from '@/lib/utils/localita-utils'
+import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import Link from "next/link"
 
 // Helper function to render grouped regions
@@ -78,19 +74,22 @@ const renderGroupedRegions = (job: any, isMobile: boolean = false) => {
     </div>
   );
 };
->>>>>>> Stashed changes
 
 interface ConcoroListProps {
   jobs: Concorso[];
   isLoading: boolean;
   selectedJobId: string | null;
   onJobSelect: (job: Concorso) => void;
-  // Pagination props
-  currentPage: number;
-  totalPages: number;
-  totalCount: number;
-  itemsPerPage: number;
-  onPageChange: (page: number) => void;
+  // Pagination props (optional - for paginated views)
+  currentPage?: number;
+  totalPages?: number;
+  totalCount?: number;
+  itemsPerPage?: number;
+  onPageChange?: (page: number) => void;
+  // Infinite scroll props (optional - for infinite scroll views)
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 
@@ -154,32 +153,7 @@ const getDeadlineStatus = (deadline: any) => {
   };
 };
 
-// Function to extract domain from URL
-const extractDomain = (url: string | undefined): string => {
-  if (!url) return '';
-  
-  // Check if the URL is just "N/A" or similar placeholder
-  if (url === 'N/A' || url === 'n/a' || url === 'NA') return '';
-  
-  // Basic URL validation before trying to parse
-  if (!url.includes('.') || (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//'))) {
-    // Try to fix common URL issues by adding protocol
-    url = url.startsWith('www.') ? `https://${url}` : url;
-    
-    // If it still doesn't look like a URL, return empty
-    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//')) {
-      return '';
-    }
-  }
-  
-  try {
-    const domain = new URL(url).hostname;
-    return domain;
-  } catch (error) {
-    console.error('Invalid URL:', url);
-    return '';
-  }
-};
+// Simple favicon - just use favicon.png
 
 // Function to clean Ente names - display as-is without case conversion
 const cleanEnteName = (str: string | undefined): string => {
@@ -214,13 +188,15 @@ function ConcoroListComponent({
   totalPages,
   totalCount,
   itemsPerPage,
-  onPageChange
+  onPageChange,
+  isLoadingMore,
+  hasMore,
+  onLoadMore
 }: ConcoroListProps) {
   const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 1024px)");
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi();
   const { user } = useAuth();
-  const [faviconIndices, setFaviconIndices] = useState<Record<string, number>>({});
 
   // Scroll to selected card when selection changes
   React.useEffect(() => {
@@ -248,13 +224,8 @@ function ConcoroListComponent({
     }
     
     if (isMobile) {
-      try {
-        const seoUrl = getBandoUrl(job)
-        router.push(seoUrl);
-      } catch (error) {
-        console.error('Error generating SEO URL:', error)
-        router.push(`/bandi/${job.id}`);
-      }
+      // For protected pages, use simple ID-based URLs
+      router.push(`/bandi/${job.id}`);
     } else {
       onJobSelect(job);
     }
@@ -467,18 +438,7 @@ function ConcoroListComponent({
           const closingDate = formatDate(job.DataChiusura);
           const deadlineStatus = getDeadlineStatus(job.DataChiusura);
           
-          // Get domain for favicon
-          const domain = extractDomain(job.pa_link);
-          const fallbacks =  ['/placeholder_icon.png'];
-          const currentFaviconIndex = faviconIndices[job.id] || 0;
-          
-          const handleFaviconError = () => {
-            const nextIndex = Math.min((faviconIndices[job.id] || 0) + 1, fallbacks.length - 1);
-            setFaviconIndices(prev => ({
-              ...prev,
-              [job.id]: nextIndex
-            }));
-          };
+          // Simple favicon - just use favicon.png
 
           // Get entity name - display as-is without case conversion
           const enteName = cleanEnteName(job.Ente);
@@ -523,46 +483,25 @@ function ConcoroListComponent({
                 // Mobile layout
                 <div className="flex-grow space-y-2 w-full">
                   {/* Ente name with favicon */}
-<<<<<<< Updated upstream
-                  <div className="flex items-center gap-1 min-w-0">
+                  <div className="flex items-center gap-1 min-w-0 w-full">
                     <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
                       <Image 
-                        src={fallbacks[currentFaviconIndex]}
-                        alt={`Logo of ${job.Ente || 'entity'}`}
+                        src="/favicon.png"
+                        alt={`Logo of ${enteName || 'entity'}`}
                         width={16} 
                         height={16}
                         className="object-contain"
-                        style={{ 
-                          imageRendering: 'crisp-edges'
-                        }}
-                        onError={(e) => {
-                          e.preventDefault();
-                          handleFaviconError();
-                        }}
-                        unoptimized={true}
-                        suppressHydrationWarning={true}
                       />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[12px] text-muted-foreground truncate" title={enteName}>
-=======
-                  <div className="flex items-center gap-1 min-w-0 w-full">
-                    <FaviconImage 
-                      enteName={job.Ente}
-                      paLink={job.pa_link}
-                      size={16}
-                      className="flex-shrink-0"
-                    />
                     <div className="min-w-0 flex-1 overflow-hidden">
                       <Link 
-                        href={getEnteUrl(job.Ente, 'bandi')}
+                        href={getEnteUrl(job.Ente || '', 'bandi')}
                         onClick={(e) => e.stopPropagation()}
                         className="text-[12px] text-muted-foreground hover:text-foreground transition-colors block truncate"
                         title={enteName}
                       >
->>>>>>> Stashed changes
                         {truncatedEnteName}
-                      </p>
+                      </Link>
                     </div>
                   </div>
                   
@@ -607,46 +546,25 @@ function ConcoroListComponent({
                 // Desktop layout
                 <div className="flex items-start">
                   <div className="flex-grow space-y-2 w-full">
-<<<<<<< Updated upstream
-                    <div className="flex items-center gap-1 min-w-0">
+                    <div className="flex items-center gap-1 min-w-0 w-full">
                       <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
                         <Image 
-                          src={fallbacks[currentFaviconIndex]}
-                          alt={`Logo of ${job.Ente || 'entity'}`}
+                          src="/favicon.png"
+                          alt={`Logo of ${enteName || 'entity'}`}
                           width={16} 
                           height={16}
                           className="object-contain"
-                          style={{ 
-                            imageRendering: 'crisp-edges'
-                          }}
-                          onError={(e) => {
-                            e.preventDefault();
-                            handleFaviconError();
-                          }}
-                          unoptimized={true}
-                          suppressHydrationWarning={true}
                         />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-muted-foreground truncate" title={enteName}>
-=======
-                    <div className="flex items-center gap-1 min-w-0 w-full">
-                      <FaviconImage 
-                        enteName={job.Ente}
-                        paLink={job.pa_link}
-                        size={16}
-                        className="flex-shrink-0"
-                      />
                       <div className="min-w-0 flex-1 overflow-hidden">
                         <Link 
-                          href={getEnteUrl(job.Ente, 'bandi')}
+                          href={getEnteUrl(job.Ente || '', 'bandi')}
                           onClick={(e) => e.stopPropagation()}
                           className="text-sm text-muted-foreground hover:text-foreground transition-colors block truncate"
                           title={enteName}
                         >
->>>>>>> Stashed changes
                           {truncatedEnteName}
-                        </p>
+                        </Link>
                       </div>
                     </div>
                     
@@ -705,8 +623,8 @@ function ConcoroListComponent({
         })}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Pagination or Infinite Scroll */}
+      {totalPages !== undefined && totalPages > 1 && currentPage !== undefined && totalCount !== undefined && itemsPerPage !== undefined && onPageChange && (
         <div className="mt-8 space-y-4 border-t pt-6">
           <PaginationInfo
             currentPage={currentPage}
@@ -727,6 +645,20 @@ function ConcoroListComponent({
           />
         </div>
       )}
+      
+      {/* Infinite Scroll Load More Button */}
+      {hasMore && onLoadMore && (
+        <div className="mt-6 flex justify-center">
+          <Button
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            variant="outline"
+            className="w-full sm:w-auto"
+          >
+            {isLoadingMore ? 'Caricamento...' : 'Carica altri'}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -736,6 +668,8 @@ export const ConcoroList = memo(ConcoroListComponent, (prevProps, nextProps) => 
   // Only re-render if essential props change
   return (
     prevProps.isLoading === nextProps.isLoading &&
+    prevProps.isLoadingMore === nextProps.isLoadingMore &&
+    prevProps.hasMore === nextProps.hasMore &&
     prevProps.selectedJobId === nextProps.selectedJobId &&
     prevProps.currentPage === nextProps.currentPage &&
     prevProps.totalPages === nextProps.totalPages &&

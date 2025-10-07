@@ -8,7 +8,7 @@ import {
   Sparkles,
   Check
 } from "lucide-react"
-import { useAuthAdapter } from "@/lib/hooks/useAuthAdapter"
+import { useAuth } from "@/lib/hooks/useAuth"
 import { toast } from "sonner"
 import React, { useState } from "react"
 
@@ -17,7 +17,7 @@ interface GuestChatInterfaceProps {
 }
 
 export function GuestChatInterface({ className }: GuestChatInterfaceProps) {
-  const { signInWithGoogle } = useAuthAdapter();
+  const { signInWithGoogle } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const handleGoogleSignIn = async () => {

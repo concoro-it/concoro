@@ -5,17 +5,16 @@ import { Timestamp } from "firebase/firestore"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { useMemo } from "react"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
-import { FaviconImage } from '@/components/common/FaviconImage'
-<<<<<<< Updated upstream
-import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
-=======
+import Image from 'next/image'
 import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
->>>>>>> Stashed changes
+import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
+import { Concorso } from "@/types/concorso"
+
 
 interface ConcorsoCardProps {
   concorso: {
     id: string
-    Titolo: string
+    Titolo?: string
     Ente?: string
     AreaGeografica?: string
     DataChiusura?: Timestamp | any
@@ -38,9 +37,7 @@ const getFirstPartOfEnte = (ente: string): string => {
   return dashIndex > 0 ? ente.substring(0, dashIndex).trim() : ente;
 };
 
-// Note: Domain extraction logic moved to /lib/services/faviconCache.ts
-
-// Note: Favicon logic moved to /lib/services/faviconCache.ts
+// Simple favicon - just use favicon.png
 
 // Parse Italian date format
 const parseItalianDate = (dateStr: string) => {
@@ -111,7 +108,6 @@ const parseItalianDate = (dateStr: string) => {
 
 export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
   const { user } = useAuth();
-  const { generateUrlWithAuth } = useBandoUrl();
   
   // Format date to display
   const formatDate = (timestamp: any): string => {
@@ -164,10 +160,10 @@ export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
   }, [concorso.DataChiusura]);
   
   // Process the title and ente name
-  const titleInSentenceCase = useMemo(() => toSentenceCase(concorso.Titolo), [concorso.Titolo]);
+  const titleInSentenceCase = useMemo(() => toSentenceCase(concorso.Titolo || ''), [concorso.Titolo]);
   const enteFirstPart = useMemo(() => getFirstPartOfEnte(toSentenceCase(concorso.Ente || '')), [concorso.Ente]);
   
-  // Note: Favicon logic is now handled by useFaviconURL hook
+  // Simple favicon - just use favicon.png
   
   return (
     <div 
@@ -180,11 +176,12 @@ export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
         {/* Ente with favicon */}
         <div className="flex items-center gap-1 mb-2">
           <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
-            <FaviconImage 
-              enteName={concorso.Ente || ''}
-              paLink={concorso.pa_link}
-              size={16}
+            <Image 
+              src="/favicon.png"
               alt={`Logo of ${concorso.Ente || 'entity'}`}
+              width={16} 
+              height={16}
+              className="object-contain"
             />
           </div>
           <div className="min-w-0 flex-1">
@@ -195,7 +192,7 @@ export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
         </div>
         
         {/* Title */}
-        <div className="font-semibold mb-3">{titleInSentenceCase}</div>
+        <div className="font-semibold mb-3">{titleInSentenceCase || 'Titolo non disponibile'}</div>
         
         {/* Details */}
         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
@@ -221,11 +218,7 @@ export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
       </div>
       
       <div className="flex flex-col sm:flex-row gap-2">
-<<<<<<< Updated upstream
-        <Link href={generateUrlWithAuth(concorso as any, user)}>
-=======
         <Link href={user ? generateSEOConcorsoUrl(concorso as any) : `/signin?redirect=${encodeURIComponent(generateSEOConcorsoUrl(concorso as any))}`}>
->>>>>>> Stashed changes
           <Button className="gap-2 w-full sm:w-auto">
             {user ? (
               <>

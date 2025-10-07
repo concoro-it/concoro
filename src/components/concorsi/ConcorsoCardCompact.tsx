@@ -15,7 +15,7 @@ import { Concorso } from "@/types/concorso"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
-import { FaviconImage } from "@/components/common/FaviconImage"
+import Image from "next/image"
 import { getEnteUrl } from '@/lib/utils/ente-utils'
 import { getLocalitaUrl } from '@/lib/utils/localita-utils'
 import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
@@ -196,15 +196,18 @@ export function ConcorsoCardCompact({ concorso, showSaveButton = false }: Concor
           <div className="flex-grow space-y-2 w-full">
             {/* Ente name with favicon */}
             <div className="flex items-center gap-1 min-w-0 w-full">
-              <FaviconImage 
-                enteName={concorso.Ente}
-                paLink={concorso.pa_link}
-                size={16}
-                className="flex-shrink-0"
-              />
+              <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
+                <Image 
+                  src="/favicon.png"
+                  alt={`Logo of ${concorso.Ente || 'entity'}`}
+                  width={16} 
+                  height={16}
+                  className="object-contain"
+                />
+              </div>
               <div className="min-w-0 flex-1 overflow-hidden">
                 <Link 
-                  href={getEnteUrl(concorso.Ente)}
+                  href={getEnteUrl(concorso.Ente || '')}
                   onClick={(e) => e.stopPropagation()}
                   className="text-[12px] text-muted-foreground hover:text-foreground transition-colors block truncate"
                   title={enteName}
@@ -248,15 +251,18 @@ export function ConcorsoCardCompact({ concorso, showSaveButton = false }: Concor
           <div className="flex items-start">
             <div className="flex-grow space-y-2 w-full">
               <div className="flex items-center gap-1 min-w-0 w-full">
-                <FaviconImage 
-                  enteName={concorso.Ente}
-                  paLink={concorso.pa_link}
-                  size={16}
-                  className="flex-shrink-0"
-                />
+                <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
+                  <Image 
+                    src="/favicon.png"
+                    alt={`Logo of ${concorso.Ente || 'entity'}`}
+                    width={16} 
+                    height={16}
+                    className="object-contain"
+                  />
+                </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <Link 
-                    href={getEnteUrl(concorso.Ente)}
+                    href={getEnteUrl(concorso.Ente || '')}
                     onClick={(e) => e.stopPropagation()}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors block truncate"
                     title={enteName}

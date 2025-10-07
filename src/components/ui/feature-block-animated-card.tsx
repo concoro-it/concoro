@@ -51,20 +51,6 @@ export function AnimatedCard({ className, title, description, icon, iconClassNam
   )
 }
 
-<<<<<<< Updated upstream
-// Icon animation effect
-function setupIconAnimation() {
-  const sequence = [
-    ".circle-1",
-    { scale: [1, 1.1, 1], y: [0, -4, 0] },
-    { duration: 2, repeat: Infinity, repeatDelay: 1 },
-  ]
-
-  return animate(sequence[0] as string, sequence[1] as Record<string, unknown>, sequence[2] as Record<string, unknown>)
-}
-
-=======
->>>>>>> Stashed changes
 const Container = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>

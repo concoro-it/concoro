@@ -1,11 +1,8 @@
 "use client";
 
 import Image from "next/image";
-<<<<<<< Updated upstream
-=======
 // import { useTheme } from "next-themes"; // Disabled - dark mode not implemented
 // import { useEffect, useState } from "react"; // Not needed without theme switching
->>>>>>> Stashed changes
 
 interface DynamicLogoProps {
   lightSrc: string;

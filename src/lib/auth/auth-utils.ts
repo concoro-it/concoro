@@ -14,7 +14,31 @@ import { auth, db } from '../firebase/config';
 import { SignUpFormData, SignInFormData, BasicInfoFormData } from '@/types/auth';
 import { UserProfile, Education, Experience } from '@/types';
 import { brevoClient } from '@/lib/services/brevoClient';
-import { getItalianError, getItalianErrorMessage } from '@/lib/utils/error-messages';
+// Error message utilities - inline implementation since error-messages.ts was removed
+const getItalianError = (error: any): string => {
+  // Basic error mapping for common Firebase errors
+  const errorMessages: { [key: string]: string } = {
+    'auth/user-not-found': 'Utente non trovato',
+    'auth/wrong-password': 'Password errata',
+    'auth/email-already-in-use': 'Email già in uso',
+    'auth/weak-password': 'Password troppo debole',
+    'auth/invalid-email': 'Email non valida',
+    'auth/too-many-requests': 'Troppi tentativi. Riprova più tardi',
+    'auth/network-request-failed': 'Errore di rete. Controlla la connessione',
+  };
+  
+  return errorMessages[error.code] || 'Si è verificato un errore. Riprova.';
+};
+
+const getItalianErrorMessage = (key: string): string => {
+  const messages: { [key: string]: string } = {
+    'generic/authentication-service-unavailable': 'Servizio di autenticazione non disponibile',
+    'generic/verification-email-failed': 'Impossibile inviare email di verifica',
+    'auth/email-not-verified': 'Email non verificata. Controlla la tua casella di posta',
+  };
+  
+  return messages[key] || 'Si è verificato un errore. Riprova.';
+};
 
 export const signUp = async (data: SignUpFormData) => {
   try {

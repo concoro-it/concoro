@@ -86,13 +86,8 @@ export default function VerifyEmailPage() {
       await resendVerificationEmail(user);
       setSuccess('Email di verifica inviata! Controlla la tua casella di posta.');
       setCountdown(60); // Start 60-second countdown
-<<<<<<< Updated upstream
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'An error occurred');
-=======
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Si è verificato un errore');
->>>>>>> Stashed changes
     } finally {
       setLoading(false);
     }

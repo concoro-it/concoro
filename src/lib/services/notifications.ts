@@ -337,8 +337,21 @@ export class NotificationsService {
 
         const concorsoData = concorsoSnap.data() as Concorso;
         
+        // Skip if no deadline date
+        if (!concorsoData.DataChiusura) {
+          continue;
+        }
+        
         // Calculate days left
-        const deadlineDate = concorsoData.DataChiusura.toDate();
+        let deadlineDate: Date;
+        if (concorsoData.DataChiusura instanceof Timestamp) {
+          deadlineDate = concorsoData.DataChiusura.toDate();
+        } else if (typeof concorsoData.DataChiusura === 'string') {
+          deadlineDate = new Date(concorsoData.DataChiusura);
+        } else {
+          // Handle object with seconds and nanoseconds
+          deadlineDate = new Date(concorsoData.DataChiusura.seconds * 1000);
+        }
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         deadlineDate.setHours(0, 0, 0, 0);

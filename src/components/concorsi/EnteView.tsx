@@ -188,8 +188,9 @@ export function EnteView({
                     {locations.map((location, index) => {
                       // Count concorsi for this location
                       const locationCount = concorsi.filter(c => {
-                        if (c.isGrouped && c.regions) {
-                          return c.regions.some(region => 
+                        // Check if this is a grouped concorso (has isGrouped and regions properties)
+                        if ((c as any).isGrouped && (c as any).regions && Array.isArray((c as any).regions)) {
+                          return (c as any).regions.some((region: string) => 
                             region.trim().toLowerCase() === location.trim().toLowerCase()
                           );
                         } else {
@@ -392,8 +393,9 @@ export function EnteView({
                   <div className="space-y-2">
                     {locations.map((location, index) => {
                       const locationCount = concorsi.filter(c => {
-                        if (c.isGrouped && c.regions) {
-                          return c.regions.some(region => 
+                        // Check if this is a grouped concorso (has isGrouped and regions properties)
+                        if ((c as any).isGrouped && (c as any).regions && Array.isArray((c as any).regions)) {
+                          return (c as any).regions.some((region: string) => 
                             region.trim().toLowerCase() === location.trim().toLowerCase()
                           );
                         } else {

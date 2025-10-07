@@ -1,63 +1,8 @@
 import { NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
-<<<<<<< Updated upstream
+import { initializeFirebaseAdmin } from '@/lib/firebase-admin';
 import * as path from 'path';
 import * as fs from 'fs';
-
-// Initialize Firebase Admin for API routes
-function initializeFirebaseAdminForAPI() {
-  if (!admin.apps.length) {
-    try {
-      // First try service account file (more reliable than env vars)
-      console.log('Trying service account file first...');
-      const serviceAccountPath = path.resolve(process.cwd(), 'concoro-fc095-firebase-adminsdk-fbsvc-a817929655.json');
-      
-      if (fs.existsSync(serviceAccountPath)) {
-        console.log('Service account file found, using it...');
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccountPath),
-        });
-        console.log('Firebase Admin initialized with service account file');
-      } else {
-        // Fallback to environment variables
-        console.log('Service account file not found, trying environment variables...');
-        if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-          console.log('Initializing Firebase Admin with environment variables...');
-          
-          // Parse the private key correctly
-          let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-          
-          // Handle different formats of private key in environment
-          if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-            privateKey = JSON.parse(privateKey);
-          } else {
-            privateKey = privateKey.replace(/\\n/g, '\n');
-          }
-          
-          admin.initializeApp({
-            credential: admin.credential.cert({
-              projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-              clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-              privateKey: privateKey
-            }),
-          });
-          
-          console.log('Firebase Admin initialized successfully with environment variables');
-        } else {
-          throw new Error('No Firebase credentials found (neither service account file nor environment variables)');
-        }
-      }
-    } catch (error: unknown) {
-      console.error('Error initializing Firebase Admin:', error);
-      throw new Error(`Firebase Admin initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-  
-  return admin.firestore();
-}
-=======
-import { initializeFirebaseAdmin } from '@/lib/firebase-admin';
->>>>>>> Stashed changes
 
 export async function GET() {
   try {
@@ -131,7 +76,7 @@ export async function GET() {
       { 
         error: 'Debug API failed',
         details: error instanceof Error ? error.message : 'Unknown error',
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
       },
       { status: 500 }
     );

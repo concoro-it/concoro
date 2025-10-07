@@ -19,7 +19,6 @@ import {
   Users, 
   Building2
 } from "lucide-react"
-import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
 import Link from "next/link"
 import { 
   decodeLocalitaSlug, 
@@ -201,7 +200,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
 
   const handleJobSelect = (job: Concorso) => {
     setSelectedJobId(job.id)
-    router.push(generateSEOConcorsoUrl(job))
+    router.push(`/bandi/${job.id}`)
   }
 
   const totalCount = displayedConcorsi.length

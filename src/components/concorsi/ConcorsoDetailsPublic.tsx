@@ -33,7 +33,7 @@ import { getLocalitaUrl } from '@/lib/utils/localita-utils'
 import { normalizeConcorsoCategory } from "@/lib/utils/category-utils"
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import Link from "next/link"
-import { FaviconImage } from "@/components/common/FaviconImage"
+import Image from "next/image"
 import { Concorso } from "@/types/concorso"
 
 // Configure marked for safe HTML rendering
@@ -364,12 +364,15 @@ export function ConcorsoDetailsPublic({ job, isLoading }: ConcorsoDetailsPublicP
                 <div>
                   <h1 className="text-2xl font-bold">{toSentenceCase(job.Titolo || job.titolo_originale || '')}</h1>
                   <div className="flex items-center text-gray-600 mt-2">
-                    <FaviconImage 
-                      enteName={job.Ente || ''}
-                      paLink={job.pa_link}
-                      size={16}
-                      className="mr-2 flex-shrink-0"
-                    />
+                    <div className="relative w-[16px] h-[16px] mr-2 flex-shrink-0 flex items-center justify-center">
+                      <Image 
+                        src="/favicon.png"
+                        alt={`Logo of ${job.Ente || 'entity'}`}
+                        width={16} 
+                        height={16}
+                        className="object-contain"
+                      />
+                    </div>
                     <div className="min-w-0 flex-1">
                       <Link 
                         href={getEnteUrl(job.Ente || '')}
@@ -439,7 +442,7 @@ export function ConcorsoDetailsPublic({ job, isLoading }: ConcorsoDetailsPublicP
                           <LogIn className="w-12 h-12 mx-auto text-blue-600" />
                           <h3 className="font-semibold text-lg">Accedi per vedere il sommario completo</h3>
                           <p className="text-sm text-gray-600">
-                            Registrati gratuitamente per leggere il riassunto dettagliato e chattare con Genio AI.
+                            Registrati gratuitamente per leggere il sommario dettagliato e chattare con Genio AI.
                           </p>
                           <div className="space-y-2">
                             <Button 

@@ -81,7 +81,15 @@ export const useMatchedConcorsi = (userId: string, limit?: number, offset?: numb
 
             // Skip if the closing date has passed
             if (dataChiusura) {
-              const closingDate = dataChiusura instanceof Timestamp ? dataChiusura.toDate() : new Date(dataChiusura);
+              let closingDate: Date;
+              if (dataChiusura instanceof Timestamp) {
+                closingDate = dataChiusura.toDate();
+              } else if (typeof dataChiusura === 'string') {
+                closingDate = new Date(dataChiusura);
+              } else {
+                // Handle object with seconds and nanoseconds
+                closingDate = new Date(dataChiusura.seconds * 1000);
+              }
               if (closingDate < new Date()) {
                 
                 continue;

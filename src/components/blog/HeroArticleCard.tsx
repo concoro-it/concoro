@@ -8,10 +8,8 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { GlowingEffect } from "@/components/ui/glowing-effect"
-import { BackgroundBeams } from "@/components/ui/background-beams"
 import Link from "next/link"
-import Image from "next/image"
-import { CalendarIcon, BookOpen, FileText, Briefcase, GraduationCap, MapPin, Heart, ArrowRight } from "lucide-react"
+import { CalendarIcon, FileText, GraduationCap, MapPin, Heart, ArrowRight } from "lucide-react"
 import { format } from "date-fns"
 import { Articolo } from "@/types"
 import { it } from "date-fns/locale"
@@ -19,7 +17,6 @@ import { useState } from "react"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { getArticleCoverImage, getFallbackCoverImage } from '@/lib/utils/image-utils'
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import { getCanonicalUrlParam } from '@/lib/utils/articolo-canonical-utils'
 
 interface HeroArticleCardProps {

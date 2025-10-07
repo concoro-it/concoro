@@ -192,7 +192,7 @@ export const generateJobPostingStructuredData = (
     datePosted: toISOString(article.publication_date).split('T')[0], // Date only
     hiringOrganization: {
       "@type": "Organization",
-      name: concorso.Ente,
+      name: concorso.Ente || "Organizzazione non specificata",
       sameAs: concorso.Link || undefined,
       logo: `${baseUrl}/concoro-logo-light.svg`
     },
@@ -207,7 +207,7 @@ export const generateJobPostingStructuredData = (
     },
     identifier: {
       "@type": "PropertyValue", 
-      name: concorso.Ente,
+      name: concorso.Ente || "Organizzazione non specificata",
       value: concorso.id || article.concorso_id
     },
     // Use the job posting page URL; signal direct apply if available

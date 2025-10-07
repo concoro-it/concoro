@@ -7,6 +7,7 @@
 
 import { Concorso } from '@/types/concorso'
 import { cachedOperation, CacheKeys, CACHE_TTL } from '@/lib/cache/unified-cache'
+import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 
 export interface SimpleConcorsiResult {
   concorsi: Concorso[]
@@ -20,6 +21,8 @@ export interface ConcorsiQueryParams {
   limit?: number
   page?: number
   sortBy?: string
+  settore_professionale?: string
+  Stato?: string
 }
 
 /**
@@ -79,8 +82,7 @@ function transformApiResponseToConcorsi(apiResponse: any): Concorso[] {
     regime: item.regime || item.regimeImpegno || '',
     regime_impegno: item.regime_impegno || item.regimeImpegno || '',
     publication_date: item.publication_date || item.publicationDate,
-    riassunto: item.riassunto || item.sommario || '',
-    sommario: item.sommario || item.riassunto || '',
+    sommario: item.sommario || item.sommario || '',
     settore: item.settore || '',
     tipologia: item.tipologia || '',
     categoria: item.categoria || '',
@@ -188,3 +190,377 @@ export const concorsiServiceClient = new ConcorsiServiceClient()
 // Export simple function for OPEN concorsi
 export const getOpenConcorsi = (params: ConcorsiQueryParams) =>
   concorsiServiceClient.getOpenConcorsi(params)
+
+/**
+ * Get concorsi by regime
+ */
+export const getConcorsiByRegime = async (regime: string, params: ConcorsiQueryParams): Promise<SimpleConcorsiResult> => {
+  const cacheKey = `concorsi-regime-${regime}-${params.limit || 20}-${params.page || 1}-${params.sortBy || 'publication_desc'}`
+  
+  return cachedOperation(
+    cacheKey,
+    async () => {
+      const startTime = performance.now()
+      console.log(`🔍 Fetching concorsi for regime: ${regime}`)
+      
+      try {
+        const urlParams = new URLSearchParams()
+        urlParams.set('Stato', 'OPEN')
+        urlParams.set('regime', regime)
+        urlParams.set('sort', params.sortBy || 'publication_desc')
+        
+        if (params.page && params.page > 1) {
+          urlParams.set('page', params.page.toString())
+        }
+        
+        if (params.limit) {
+          urlParams.set('per_page', params.limit.toString())
+        } else {
+          urlParams.set('per_page', '20')
+        }
+        
+        urlParams.set('_t', Date.now().toString())
+        
+        const url = `/api/bandi?${urlParams.toString()}`
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          },
+          cache: 'no-store'
+        })
+        
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`)
+        }
+        
+        const apiResponse = await response.json()
+        
+        if (apiResponse.error) {
+          throw new Error(apiResponse.error)
+        }
+        
+        const concorsi = transformApiResponseToConcorsi(apiResponse)
+        
+        const result: SimpleConcorsiResult = {
+          concorsi,
+          hasMore: apiResponse.pagination?.has_next || false,
+          totalCount: apiResponse.pagination?.total || concorsi.length,
+          currentPage: apiResponse.pagination?.page || params.page || 1,
+          totalPages: apiResponse.pagination?.total_pages || 1
+        }
+        
+        const endTime = performance.now()
+        console.log(`✅ Query completed: ${concorsi.length} concorsi for regime ${regime} in ${(endTime - startTime).toFixed(0)}ms`)
+        
+        return result
+        
+      } catch (error) {
+        console.error('❌ Error in getConcorsiByRegime:', error)
+        throw error
+      }
+    },
+    {
+      ttl: CACHE_TTL.CONCORSI_LIST,
+      skipCache: false
+    }
+  )
+}
+
+/**
+ * Get concorsi by location
+ */
+export const getConcorsiByLocation = async (location: string, params: ConcorsiQueryParams): Promise<SimpleConcorsiResult> => {
+  const cacheKey = `concorsi-location-${location}-${params.limit || 20}-${params.page || 1}-${params.sortBy || 'publication_desc'}`
+  
+  return cachedOperation(
+    cacheKey,
+    async () => {
+      const startTime = performance.now()
+      console.log(`🔍 Fetching concorsi for location: ${location}`)
+      
+      try {
+        const urlParams = new URLSearchParams()
+        urlParams.set('Stato', 'OPEN')
+        urlParams.set('location', location)
+        urlParams.set('sort', params.sortBy || 'publication_desc')
+        
+        if (params.page && params.page > 1) {
+          urlParams.set('page', params.page.toString())
+        }
+        
+        if (params.limit) {
+          urlParams.set('per_page', params.limit.toString())
+        } else {
+          urlParams.set('per_page', '20')
+        }
+        
+        urlParams.set('_t', Date.now().toString())
+        
+        const url = `/api/bandi?${urlParams.toString()}`
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          },
+          cache: 'no-store'
+        })
+        
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`)
+        }
+        
+        const apiResponse = await response.json()
+        
+        if (apiResponse.error) {
+          throw new Error(apiResponse.error)
+        }
+        
+        const concorsi = transformApiResponseToConcorsi(apiResponse)
+        
+        const result: SimpleConcorsiResult = {
+          concorsi,
+          hasMore: apiResponse.pagination?.has_next || false,
+          totalCount: apiResponse.pagination?.total || concorsi.length,
+          currentPage: apiResponse.pagination?.page || params.page || 1,
+          totalPages: apiResponse.pagination?.total_pages || 1
+        }
+        
+        const endTime = performance.now()
+        console.log(`✅ Query completed: ${concorsi.length} concorsi for location ${location} in ${(endTime - startTime).toFixed(0)}ms`)
+        
+        return result
+        
+      } catch (error) {
+        console.error('❌ Error in getConcorsiByLocation:', error)
+        throw error
+      }
+    },
+    {
+      ttl: CACHE_TTL.CONCORSI_LIST,
+      skipCache: false
+    }
+  )
+}
+
+/**
+ * Get concorsi by settore (professional sector)
+ */
+export const getConcorsiBySettore = async (params: ConcorsiQueryParams): Promise<SimpleConcorsiResult> => {
+  const cacheKey = `concorsi-settore-${params.settore_professionale}-${params.limit || 20}-${params.page || 1}-${params.sortBy || 'publication_desc'}`
+  
+  return cachedOperation(
+    cacheKey,
+    async () => {
+      const startTime = performance.now()
+      console.log(`🔍 Fetching concorsi for settore: ${params.settore_professionale}`)
+      
+      try {
+        const urlParams = new URLSearchParams()
+        urlParams.set('Stato', 'OPEN')
+        urlParams.set('settore_professionale', params.settore_professionale || '')
+        urlParams.set('sort', params.sortBy || 'publication_desc')
+        
+        if (params.page && params.page > 1) {
+          urlParams.set('page', params.page.toString())
+        }
+        
+        if (params.limit) {
+          urlParams.set('per_page', params.limit.toString())
+        } else {
+          urlParams.set('per_page', '20')
+        }
+        
+        urlParams.set('_t', Date.now().toString())
+        
+        const url = `/api/bandi?${urlParams.toString()}`
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          },
+          cache: 'no-store'
+        })
+        
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`)
+        }
+        
+        const apiResponse = await response.json()
+        
+        if (apiResponse.error) {
+          throw new Error(apiResponse.error)
+        }
+        
+        const concorsi = transformApiResponseToConcorsi(apiResponse)
+        
+        const result: SimpleConcorsiResult = {
+          concorsi,
+          hasMore: apiResponse.pagination?.has_next || false,
+          totalCount: apiResponse.pagination?.total || concorsi.length,
+          currentPage: apiResponse.pagination?.page || params.page || 1,
+          totalPages: apiResponse.pagination?.total_pages || 1
+        }
+        
+        const endTime = performance.now()
+        console.log(`✅ Query completed: ${concorsi.length} concorsi for settore ${params.settore_professionale} in ${(endTime - startTime).toFixed(0)}ms`)
+        
+        return result
+        
+      } catch (error) {
+        console.error('❌ Error in getConcorsiBySettore:', error)
+        throw error
+      }
+    },
+    {
+      ttl: CACHE_TTL.CONCORSI_LIST,
+      skipCache: false
+    }
+  )
+}
+
+/**
+ * Get concorsi by ente
+ */
+export const getConcorsiByEnte = async (ente: string, params: ConcorsiQueryParams): Promise<SimpleConcorsiResult> => {
+  const cacheKey = `concorsi-ente-${ente}-${params.limit || 20}-${params.page || 1}-${params.sortBy || 'publication_desc'}`
+  
+  return cachedOperation(
+    cacheKey,
+    async () => {
+      const startTime = performance.now()
+      console.log(`🔍 Fetching concorsi for ente: ${ente}`)
+      
+      try {
+        const urlParams = new URLSearchParams()
+        urlParams.set('Stato', 'OPEN')
+        urlParams.set('ente', ente)
+        urlParams.set('sort', params.sortBy || 'publication_desc')
+        
+        if (params.page && params.page > 1) {
+          urlParams.set('page', params.page.toString())
+        }
+        
+        if (params.limit) {
+          urlParams.set('per_page', params.limit.toString())
+        } else {
+          urlParams.set('per_page', '20')
+        }
+        
+        urlParams.set('_t', Date.now().toString())
+        
+        const url = `/api/bandi?${urlParams.toString()}`
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          },
+          cache: 'no-store'
+        })
+        
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`)
+        }
+        
+        const apiResponse = await response.json()
+        
+        if (apiResponse.error) {
+          throw new Error(apiResponse.error)
+        }
+        
+        const concorsi = transformApiResponseToConcorsi(apiResponse)
+        
+        const result: SimpleConcorsiResult = {
+          concorsi,
+          hasMore: apiResponse.pagination?.has_next || false,
+          totalCount: apiResponse.pagination?.total || concorsi.length,
+          currentPage: apiResponse.pagination?.page || params.page || 1,
+          totalPages: apiResponse.pagination?.total_pages || 1
+        }
+        
+        const endTime = performance.now()
+        console.log(`✅ Query completed: ${concorsi.length} concorsi for ente ${ente} in ${(endTime - startTime).toFixed(0)}ms`)
+        
+        return result
+        
+      } catch (error) {
+        console.error('❌ Error in getConcorsiByEnte:', error)
+        throw error
+      }
+    },
+    {
+      ttl: CACHE_TTL.CONCORSI_LIST,
+      skipCache: false
+    }
+  )
+}
+
+/**
+ * Get concorso by ID
+ */
+export const getConcorsoById = async (id: string): Promise<Concorso | null> => {
+  const cacheKey = `concorso-${id}`
+  
+  return cachedOperation(
+    cacheKey,
+    async () => {
+      const startTime = performance.now()
+      console.log(`🔍 Fetching concorso by ID: ${id}`)
+      
+      try {
+        const urlParams = new URLSearchParams()
+        urlParams.set('id', id)
+        urlParams.set('_t', Date.now().toString())
+        
+        const url = `/api/bandi?${urlParams.toString()}`
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          },
+          cache: 'no-store'
+        })
+        
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`)
+        }
+        
+        const apiResponse = await response.json()
+        
+        if (apiResponse.error) {
+          throw new Error(apiResponse.error)
+        }
+        
+        if (apiResponse.data && Array.isArray(apiResponse.data) && apiResponse.data.length > 0) {
+          const concorsi = transformApiResponseToConcorsi(apiResponse)
+          const concorso = concorsi[0]
+          
+          const endTime = performance.now()
+          console.log(`✅ Query completed: concorso ${id} fetched in ${(endTime - startTime).toFixed(0)}ms`)
+          
+          return concorso
+        }
+        
+        return null
+        
+      } catch (error) {
+        console.error('❌ Error in getConcorsoById:', error)
+        throw error
+      }
+    },
+    {
+      ttl: CACHE_TTL.CONCORSO_DETAIL,
+      skipCache: false
+    }
+  )
+}

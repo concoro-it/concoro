@@ -17,7 +17,6 @@ import { BrandColumn } from '@/components/auth/BrandColumn';
 import type { SignUpFormData } from '@/types/auth';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Spinner } from '@/components/ui/spinner';
-import Image from 'next/image';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -50,15 +49,9 @@ export default function SignUpPage() {
       setTimeout(() => {
         router.push('/verify-email');
       }, 3000);
-<<<<<<< Updated upstream
-    } catch (error: unknown) {
-      console.error('Sign up error:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred');
-=======
     } catch (error) {
       console.error('Sign up error:', error);
       setError(error instanceof Error ? error.message : 'Si è verificato un errore');
->>>>>>> Stashed changes
     } finally {
       setLoading(false);
     }
@@ -69,15 +62,9 @@ export default function SignUpPage() {
       setLoading(true);
       await signInWithGoogle();
       // Redirection will be handled by the useEffect
-<<<<<<< Updated upstream
-    } catch (error: unknown) {
-      console.error('Google sign up error:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred');
-=======
     } catch (error) {
       console.error('Google sign up error:', error);
       setError(error instanceof Error ? error.message : 'Si è verificato un errore');
->>>>>>> Stashed changes
     } finally {
       setLoading(false);
     }

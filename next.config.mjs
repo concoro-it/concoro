@@ -17,13 +17,9 @@ const nextConfig = {
   // Remove console.log in production, keep error and warn
   ...(process.env.NODE_ENV === 'production' && {
     compiler: {
-<<<<<<< Updated upstream
-      removeConsole: false, // Keep console logs in development but filter them
-=======
       removeConsole: {
         exclude: ['error', 'warn'], // Keep error and warn for debugging
       },
->>>>>>> Stashed changes
     },
   }),
   experimental: {
@@ -66,17 +62,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'faviconkit.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
         hostname: 'firebasestorage.googleapis.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'besticon-demo.herokuapp.com',
         pathname: '/**',
       },
       {

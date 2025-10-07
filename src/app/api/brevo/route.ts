@@ -30,13 +30,8 @@ export async function POST(request: NextRequest) {
           profile.email,
           profile.firstName
         );
-<<<<<<< Updated upstream
-        console.log('Welcome email sent successfully');
-      } catch (emailError: unknown) {
-=======
         
       } catch (emailError: any) {
->>>>>>> Stashed changes
         console.error('Failed to send welcome email:', emailError);
         // Don't fail the entire operation if welcome email fails
         welcomeEmailResult = { error: emailError instanceof Error ? emailError.message : 'Unknown error' };

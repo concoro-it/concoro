@@ -1,20 +1,6 @@
 {
   "extends": ["next/core-web-vitals", "next/typescript"],
   "rules": {
-<<<<<<< Updated upstream
-    "@next/next/no-img-element": "warn",
-    "@typescript-eslint/no-unused-vars": "warn",
-    "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-empty-object-type": "warn",
-    "@typescript-eslint/no-require-imports": "warn",
-    "react/no-unescaped-entities": "warn",
-    "react-hooks/exhaustive-deps": "warn",
-    "react-hooks/rules-of-hooks": "error",
-    "react/display-name": "warn",
-    "prefer-const": "warn"
-  }
-}
-=======
     "@typescript-eslint/no-unused-vars": "warn",
     "@typescript-eslint/no-explicit-any": "warn",
     "react/no-unescaped-entities": "warn",
@@ -30,4 +16,3 @@
 }
 
 
->>>>>>> Stashed changes
