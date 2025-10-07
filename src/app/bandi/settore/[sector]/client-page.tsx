@@ -1,6 +1,5 @@
 'use client'
 
-<<<<<<< Updated upstream:src/app/bandi/settore/[sector]/client-page.tsx
 import React, { useState, useEffect, useMemo, Suspense } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { parseISO } from 'date-fns'
@@ -8,34 +7,6 @@ import { it } from 'date-fns/locale'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getBandoUrl } from '@/lib/utils/bando-slug-utils'
-=======
-import { useState, useEffect, Suspense } from "react"
-import { collection, getDocs, query, where } from "firebase/firestore"
-import { db } from "@/lib/firebase/config"
-import { ConcoroList } from "@/components/bandi/ConcoroList"
-import { useAuth } from "@/lib/hooks/useAuth"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import { Concorso } from "@/types/concorso"
-import { Spinner } from '@/components/ui/spinner'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { GlowingEffect } from "@/components/ui/glowing-effect"
-import { Breadcrumb } from "@/components/ui/breadcrumb"
-import { 
-  Calendar, 
-  Users, 
-  Building2,
-  Briefcase
-} from "lucide-react"
-import Link from "next/link"
-import { 
-  groupConcorsiByConcorsoId, 
-  createGroupedConcorso 
-} from "@/lib/utils/ente-utils"
-import { splitLocationString } from "@/lib/utils/localita-utils"
-import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
->>>>>>> Stashed changes:src/app/(protected)/bandi/settore/[settoreSlug]/page.tsx
 
 // Use any type for now since we're dealing with flexible data structure
 interface ConcorsoData {
@@ -56,7 +27,6 @@ interface ConcorsoData {
   [key: string]: any
 }
 
-<<<<<<< Updated upstream:src/app/bandi/settore/[sector]/client-page.tsx
 import { BreadcrumbSEO } from '@/components/ui/breadcrumb-seo'
 import { ConcoroList } from '@/components/bandi/ConcoroList'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -84,19 +54,6 @@ export default function SettoreClient({
   regimes = [],
   settoreSlug
 }: SettoreClientProps) {
-=======
-export default function SettorePage({ params }: SettorePageProps) {
-  const [loading, setLoading] = useState(true)
-  const [displayedConcorsi, setDisplayedConcorsi] = useState<Concorso[]>([])
-  const [settore, setSettore] = useState<string>("")
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
-  
-  // Filter options
-  const [locations, setLocations] = useState<string[]>([])
-  const [enti, setEnti] = useState<string[]>([])
-  
-  const { user, loading: authLoading } = useAuth()
->>>>>>> Stashed changes:src/app/(protected)/bandi/settore/[settoreSlug]/page.tsx
   const router = useRouter()
   
   // Ensure we always have valid data
@@ -112,7 +69,6 @@ export default function SettorePage({ params }: SettorePageProps) {
     }
   }, [concorsi])
 
-<<<<<<< Updated upstream:src/app/bandi/settore/[sector]/client-page.tsx
   // Memoize deadline status function to avoid recreation on every render
   const getDeadlineStatus = useMemo(() => (closingDate: any) => {
     if (!closingDate) return null
@@ -125,82 +81,6 @@ export default function SettorePage({ params }: SettorePageProps) {
         date = new Date(closingDate.seconds * 1000)
       } else {
         return null
-=======
-  // Fetch concorsi for the specific settore
-  useEffect(() => {
-    async function fetchConcorsiBySettore() {
-      if (!user) return
-      
-      try {
-        setLoading(true)
-        
-        if (!db) {
-          console.error('Firestore database is not initialized')
-          toast.error('Failed to connect to database. Please try again later.')
-          setLoading(false)
-          return
-        }
-        
-        // Decode the settore slug to get the actual settore name
-        const settoreName = decodeURIComponent(params.settoreSlug)
-        setSettore(settoreName)
-        
-        const concorsiCollection = collection(db, 'concorsi')
-        // Only fetch open concorsi for this settore (server-side filtering)
-        const settoreQuery = query(
-          concorsiCollection,
-          where('settore_professionale', '==', settoreName),
-          where('Stato', 'in', ['open', 'aperto', 'OPEN', 'APERTO'])
-        )
-        const concorsiSnapshot = await getDocs(settoreQuery)
-        
-        const concorsiData = concorsiSnapshot.docs.map(doc => {
-          const data = doc.data()
-          return {
-            id: doc.id,
-            ...data
-          }
-        }) as Concorso[]
-
-        // Group concorsi by concorso_id to handle multiple regions
-        const groupedConcorsi = groupConcorsiByConcorsoId(concorsiData)
-        const groupedDisplayedConcorsi = Object.values(groupedConcorsi).map(group => 
-          createGroupedConcorso(group)
-        ).filter(Boolean)
-
-        setDisplayedConcorsi(groupedDisplayedConcorsi)
-
-        // Extract unique locations from grouped concorsi (individual regions)
-        const uniqueLocations = Array.from(new Set(
-          groupedDisplayedConcorsi.flatMap(c => {
-            if (c.isGrouped && c.regions) {
-              return c.regions;
-            } else {
-              // Handle single concorsi that might have combined regions
-              const areaGeografica = c.AreaGeografica;
-              if (!areaGeografica) return [];
-              
-              // Use the utility function to split location strings
-              return splitLocationString(areaGeografica);
-            }
-          }).filter(Boolean)
-        )).sort()
-
-        const uniqueEnti = Array.from(new Set(
-          groupedDisplayedConcorsi
-            .map(c => c.Ente)
-            .filter(Boolean)
-        )).sort()
-
-        setLocations(uniqueLocations)
-        setEnti(uniqueEnti)
-
-      } catch (error) {
-        console.error('Error fetching concorsi:', error)
-        toast.error('Errore nel caricamento dei concorsi. Riprova più tardi.')
-      } finally {
-        setLoading(false)
->>>>>>> Stashed changes:src/app/(protected)/bandi/settore/[settoreSlug]/page.tsx
       }
       
       const now = new Date()
@@ -218,7 +98,6 @@ export default function SettorePage({ params }: SettorePageProps) {
     }
   }, [])
 
-<<<<<<< Updated upstream:src/app/bandi/settore/[sector]/client-page.tsx
   // Handle job selection for navigation
   const handleJobSelect = (job: ConcorsoData) => {
     try {
@@ -230,14 +109,6 @@ export default function SettorePage({ params }: SettorePageProps) {
       // Fallback to ID-based URL if SEO URL generation fails
       router.push(`/bandi/${job.id}`);
     }
-=======
-    fetchConcorsiBySettore()
-  }, [user, params.settoreSlug])
-
-  const handleJobSelect = (job: Concorso) => {
-    setSelectedJobId(job.id)
-    router.push(generateSEOConcorsoUrl(job))
->>>>>>> Stashed changes:src/app/(protected)/bandi/settore/[settoreSlug]/page.tsx
   }
 
   // Early return if no data

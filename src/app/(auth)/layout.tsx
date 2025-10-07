@@ -1,10 +1,7 @@
 import { Providers } from '@/app/providers';
 import { MinimalAuthNavbar } from '@/components/auth/MinimalAuthNavbar';
 
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
 export default function AuthLayout({
   children,
 }: {

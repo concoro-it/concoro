@@ -31,9 +31,6 @@ const config = {
       fontSize: {
         '2xs': '0.625rem', // 10px
       },
-      letterSpacing: {
-        'title': '-0.96px',
-      },
       maxWidth: {
         'container': '80rem',
       },

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { signIn, signInWithGoogle, isProfileComplete } from '@/lib/auth/auth-utils';
 import {
   AuthForm,
@@ -11,6 +10,7 @@ import {
   AuthButton,
   AuthDivider,
   AuthError,
+  AuthSuccess,
 } from '@/components/auth/AuthFormComponents';
 import { BrandColumn } from '@/components/auth/BrandColumn';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -79,15 +79,9 @@ export default function SignInPage() {
     try {
       await signIn(data);
       // Redirection will be handled by the useEffect
-<<<<<<< Updated upstream
     } catch (error: unknown) {
       console.error('Sign in error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
-=======
-    } catch (error) {
-      console.error('Sign in error:', error);
-      setError(error instanceof Error ? error.message : 'Si è verificato un errore');
->>>>>>> Stashed changes
     } finally {
       setLoading(false);
     }
@@ -98,15 +92,9 @@ export default function SignInPage() {
       setLoading(true);
       await signInWithGoogle();
       // Redirection will be handled by the useEffect
-<<<<<<< Updated upstream
     } catch (error: unknown) {
       console.error('Google sign in error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
-=======
-    } catch (error) {
-      console.error('Google sign in error:', error);
-      setError(error instanceof Error ? error.message : 'Si è verificato un errore');
->>>>>>> Stashed changes
     } finally {
       setLoading(false);
     }

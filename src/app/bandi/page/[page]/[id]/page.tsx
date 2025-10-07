@@ -1,6 +1,6 @@
 "use client"
 
-import { redirect } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 
 interface PageProps {
   params: {

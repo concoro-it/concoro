@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { brevoService } from '@/lib/services/brevo';
-<<<<<<< Updated upstream
 import * as admin from 'firebase-admin';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -56,10 +55,6 @@ function initializeFirebaseAdminForAPI() {
   
   return admin.firestore();
 }
-=======
-import { NotificationsService } from '@/lib/services/notifications';
-import { initializeFirebaseAdmin } from '@/lib/firebase-admin';
->>>>>>> Stashed changes
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,7 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    
+    console.log('Sending email:', { type: type || 'notification', userId, userEmail, userName });
 
     // Handle welcome email type
     if (type === 'welcome') {
@@ -80,7 +75,7 @@ export async function POST(request: NextRequest) {
         const result = await brevoService.sendWelcomeEmail(userEmail, userName);
 
         // Log the welcome email send
-        const db = initializeFirebaseAdmin();
+        const db = initializeFirebaseAdminForAPI();
         await db
           .collection('userProfiles')
           .doc(userId)
@@ -111,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize Firebase Admin and get Firestore instance
-    const db = initializeFirebaseAdmin();
+    const db = initializeFirebaseAdminForAPI();
     
     const notificationsSnapshot = await db
       .collection('userProfiles')
@@ -150,9 +145,18 @@ export async function POST(request: NextRequest) {
           const concorsoData = concorsoDoc.data()!;
           
           // Debug logging to understand the data structure
-          
-          
-          
+          console.log('Concorso data fields:', Object.keys(concorsoData));
+          console.log('Looking for AreaGeografica:', {
+            AreaGeografica: concorsoData.AreaGeografica,
+            area_geografica: concorsoData.area_geografica,
+            localita: concorsoData.localita,
+            Localita: concorsoData.Localita
+          });
+          console.log('Looking for numero_di_posti:', {
+            numero_di_posti: concorsoData.numero_di_posti,
+            NumerodiPosti: concorsoData.NumerodiPosti,
+            posti: concorsoData.posti
+          });
           
           notifications.push({
             ...notificationData,
@@ -233,7 +237,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Initialize Firebase Admin and get Firestore instance
-    const db = initializeFirebaseAdmin();
+    const db = initializeFirebaseAdminForAPI();
     
     // Get user's email logs
     const emailLogsSnapshot = await db
