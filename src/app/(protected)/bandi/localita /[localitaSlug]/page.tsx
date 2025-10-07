@@ -46,6 +46,10 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
   const [localita, setLocalita] = useState<string>("")
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 25
+  
   // Filter options
   const [enti, setEnti] = useState<string[]>([])
   const [allEnti, setAllEnti] = useState<string[]>([])
@@ -55,6 +59,13 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
   
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
+
+  // Pagination handlers
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage)
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   // Handle authentication
   useEffect(() => {
@@ -84,15 +95,11 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
         
         const concorsiCollection = collection(db, 'concorsi')
         
-        // Only fetch open concorsi from the database (server-side filtering)
-        const openConcorsiQuery = query(
-          concorsiCollection,
-          where('Stato', 'in', ['open', 'aperto', 'OPEN', 'APERTO'])
-        )
-        const openConcorsiSnapshot = await getDocs(openConcorsiQuery)
+        // Fetch ALL concorsi for client-side filtering
+        const concorsiSnapshot = await getDocs(concorsiCollection)
         
         // Filter concorsi that contain the location name in their AreaGeografica
-        const concorsiData = openConcorsiSnapshot.docs
+        const concorsiData = concorsiSnapshot.docs
           .map(doc => {
             const data = doc.data()
             return {
@@ -100,9 +107,15 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
               ...data
             } as Concorso
           })
-          .filter(concorso => 
-            locationMatchesSearch(concorso.AreaGeografica || '', locationName)
-          )
+          .filter(concorso => {
+            // First filter by location
+            const locationMatch = locationMatchesSearch(concorso.AreaGeografica || '', locationName)
+            if (!locationMatch) return false
+            
+            // Then filter out closed concorsi by default
+            const status = concorso.Stato?.toLowerCase()
+            return status === 'open' || status === 'aperto' || !status
+          })
 
         // Group concorsi by concorso_id to handle multiple regions
         const groupedConcorsi = groupConcorsiByConcorsoId(concorsiData)
@@ -130,9 +143,9 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
 
         // Debug: Log some sample locations to understand the data structure
         if (processedConcorsiData.length === 0) {
-          const sampleLocations = openConcorsiSnapshot.docs
+          const sampleLocations = concorsiSnapshot.docs
             .slice(0, 10)
-            .map(doc => (doc.data() as { AreaGeografica?: string }).AreaGeografica)
+            .map((doc: any) => (doc.data() as { AreaGeografica?: string }).AreaGeografica)
             .filter(Boolean);
           
           
@@ -152,9 +165,9 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
         // Since we only fetched open concorsi, all enti are active
         const allUniqueEnti = activeEnti
 
-        // Extract related provinces from open concorsi locations
-        const allLocations = openConcorsiSnapshot.docs
-          .map(doc => (doc.data() as { AreaGeografica?: string }).AreaGeografica)
+        // Extract related provinces from all concorsi locations
+        const allLocations = concorsiSnapshot.docs
+          .map((doc: any) => (doc.data() as { AreaGeografica?: string }).AreaGeografica)
           .filter((loc): loc is string => Boolean(loc))
         
         const currentProvince = extractProvince(locationName)
@@ -490,13 +503,15 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
                 
                 <Suspense fallback={<div>Caricamento concorsi...</div>}>
                   <ConcoroList 
-                    jobs={displayedConcorsi} 
+                    jobs={displayedConcorsi.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)} 
                     isLoading={loading}
                     selectedJobId={selectedJobId}
                     onJobSelect={handleJobSelect}
-                    currentPage={1}
-                    onPageChange={() => {}}
-                    itemsPerPage={25}
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(displayedConcorsi.length / ITEMS_PER_PAGE)}
+                    totalCount={displayedConcorsi.length}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={handlePageChange}
                   />
                 </Suspense>
               </div>

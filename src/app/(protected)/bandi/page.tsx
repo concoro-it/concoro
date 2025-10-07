@@ -160,12 +160,8 @@ function JobsPage() {
         }
         
         const concorsiCollection = collection(db, 'concorsi')
-        // Only fetch open concorsi to reduce Firebase reads
-        const openConcorsiQuery = query(
-          concorsiCollection,
-          where('Stato', 'in', ['open', 'aperto', 'OPEN', 'APERTO'])
-        )
-        const concorsiSnapshot = await getDocs(openConcorsiQuery)
+        // Fetch ALL concorsi for client-side filtering
+        const concorsiSnapshot = await getDocs(concorsiCollection)
         
         const jobsData = concorsiSnapshot.docs.map(doc => {
           const data = doc.data()
@@ -235,6 +231,16 @@ function JobsPage() {
         const status = job.Stato?.toLowerCase()
         return status === 'open' || status === 'aperto' || !status
       })
+    } else {
+      // Apply explicit status filters
+      filtered = filtered.filter(job => {
+        const status = job.Stato?.toLowerCase()
+        return selectedStati.some(selectedStatus => {
+          if (selectedStatus === 'aperto') return status === 'open' || status === 'aperto'
+          if (selectedStatus === 'chiuso') return status === 'closed' || status === 'chiuso'
+          return false
+        })
+      })
     }
 
     // Apply search filters
@@ -278,17 +284,6 @@ function JobsPage() {
 
     if (selectedRegimi.length > 0) {
       filtered = filterByRegime(filtered, selectedRegimi)
-    }
-
-    if (selectedStati.length > 0) {
-      filtered = filtered.filter(job => {
-        const status = job.Stato?.toLowerCase()
-        return selectedStati.some(selectedStatus => {
-          if (selectedStatus === 'aperto') return status === 'open' || status === 'aperto'
-          if (selectedStatus === 'chiuso') return status === 'closed' || status === 'chiuso'
-          return false
-        })
-      })
     }
 
     // Apply deadline filters
@@ -344,7 +339,7 @@ function JobsPage() {
       // URL will be updated by the separate useEffect
     }
   }, [jobs, searchQuery, locationQuery, selectedLocations, selectedDeadlines, selectedEnti, 
-      selectedSettori, selectedRegimi, selectedStati, sortBy, currentPage])
+      selectedSettori, selectedRegimi, selectedStati, sortBy])
 
   // Auto-select first job on desktop when filtered jobs change (not on page change)
   useEffect(() => {
@@ -503,13 +498,15 @@ function JobsPage() {
           {/* Jobs List */}
           <div className={cn("lg:col-span-2", !isMobile && selectedJob && "lg:col-span-1")}>
             <ConcoroList
-              jobs={filteredJobs}
+              jobs={filteredJobs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)}
               isLoading={isLoading}
               selectedJobId={selectedJob?.id || null}
               onJobSelect={handleConcorsoSelect}
               currentPage={currentPage}
-              onPageChange={handlePageChange}
+              totalPages={Math.ceil(filteredJobs.length / ITEMS_PER_PAGE)}
+              totalCount={filteredJobs.length}
               itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={handlePageChange}
             />
           </div>
 
