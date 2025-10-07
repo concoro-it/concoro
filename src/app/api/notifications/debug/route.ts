@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
+<<<<<<< Updated upstream
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -54,10 +55,13 @@ function initializeFirebaseAdminForAPI() {
   
   return admin.firestore();
 }
+=======
+import { initializeFirebaseAdmin } from '@/lib/firebase-admin';
+>>>>>>> Stashed changes
 
 export async function GET() {
   try {
-    console.log('=== Firebase Debug Route ===');
+    
     
     // Check environment variables
     const envVars = {
@@ -70,13 +74,13 @@ export async function GET() {
     const serviceAccountPath = path.resolve(process.cwd(), 'concoro-fc095-firebase-adminsdk-fbsvc-a817929655.json');
     const serviceAccountExists = fs.existsSync(serviceAccountPath);
     
-    console.log('Environment variables:', envVars);
-    console.log('Service account file exists:', serviceAccountExists);
+    
+    
 
     // Try to initialize Firebase Admin
     let initializationResult: Record<string, unknown>;
     try {
-      const db = initializeFirebaseAdminForAPI();
+      const db = initializeFirebaseAdmin();
       initializationResult = {
         success: true,
         message: 'Firebase Admin initialized successfully',

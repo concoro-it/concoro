@@ -12,7 +12,7 @@ export const initializeFirebaseAdmin = () => {
         admin.initializeApp({
           credential: admin.credential.cert(serviceAccountPath),
         });
-        console.log('Firebase admin initialized with service account file');
+        
       } catch (fileError: any) {
         console.warn('Failed to initialize with service account file, trying environment variables:', fileError.message);
         
@@ -46,7 +46,7 @@ export const initializeFirebaseAdmin = () => {
             privateKey: privateKey
           }),
         });
-        console.log('Firebase admin initialized with environment variables');
+        
       }
     } catch (error) {
       console.error('Error initializing Firebase Admin:', error);
@@ -58,4 +58,9 @@ export const initializeFirebaseAdmin = () => {
 
 export const getFirebaseAdmin = () => {
   return admin;
+};
+
+// Utility function for SEO-optimized queries
+export const getFirestoreForSEO = () => {
+  return initializeFirebaseAdmin();
 }; 

@@ -606,6 +606,7 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                 <div>
                   <h1 className="text-2xl font-bold">{toSentenceCase(job.Titolo || job.titolo_originale || '')}</h1>
                   <div className="flex items-center text-gray-600 mt-2">
+<<<<<<< Updated upstream
                     {(() => {
                       const domain = extractDomain(job.pa_link);
                       const faviconUrls =  ['/placeholder_icon.png'];
@@ -641,12 +642,30 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                         </>
                       );
                     })()}
+=======
+                    <FaviconImage 
+                      enteName={job.Ente || ''}
+                      paLink={job.pa_link}
+                      size={16}
+                      className="mr-2 flex-shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <Link 
+                        href={getEnteUrl(job.Ente || '', 'bandi')}
+                        className="truncate hover:text-foreground transition-colors"
+                        title={job.Ente}
+                      >
+                        {job.Ente || ''}
+                      </Link>
+                    </div>
+>>>>>>> Stashed changes
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                   <div className="flex items-center">
                     <MapPin className="w-4 h-4 mr-1" />
+<<<<<<< Updated upstream
                     {(() => {
                       const locationDisplay = formatLocalitaDisplay(job.AreaGeografica || '');
                       const locationSlug = normalizeLocationForSlug(job.AreaGeografica || '');
@@ -665,6 +684,14 @@ export function ConcoroDetails({ job, isLoading }: ConcoroDetailsProps) {
                         return <span>{locationDisplay}</span>;
                       }
                     })()}
+=======
+                    <Link 
+                      href={getLocalitaUrl(job.AreaGeografica || '', 'bandi')}
+                      className="hover:text-foreground transition-colors"
+                    >
+                      <span>{formatLocalitaDisplay(job.AreaGeografica || '')}</span>
+                    </Link>
+>>>>>>> Stashed changes
                   </div>
                   <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />

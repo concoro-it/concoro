@@ -36,8 +36,8 @@ export function AutocompleteInput({
   }, [options, inputValue])
 
   const handleSelect = (value: string) => {
-    console.log('handleSelect called with:', value) // Debug log
-    console.log('Current selectedValues:', selectedValues) // Debug log
+    // Debug log
+    // Debug log
     
     if (selectedValues.includes(value)) {
       // Remove if already selected
@@ -149,7 +149,7 @@ export function AutocompleteInput({
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
-                      console.log('Clicked on option:', option) // Debug log
+                      // Debug log
                       handleSelect(option)
                     }}
                   >

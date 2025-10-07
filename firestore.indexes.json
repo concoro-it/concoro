@@ -20,7 +20,19 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "settore_professionale", "order": "ASCENDING" },
+<<<<<<< Updated upstream
         { "fieldPath": "Stato", "order": "ASCENDING" }
+=======
+        { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "DataChiusura", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+>>>>>>> Stashed changes
       ]
     },
     {
@@ -28,8 +40,12 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "settore_professionale", "order": "ASCENDING" },
+<<<<<<< Updated upstream
         { "fieldPath": "Stato", "order": "ASCENDING" },
         { "fieldPath": "publication_date", "order": "DESCENDING" }
+=======
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+>>>>>>> Stashed changes
       ]
     },
     {
@@ -92,6 +108,24 @@
         { "fieldPath": "Stato", "order": "ASCENDING" },
         { "fieldPath": "AreaGeografica", "order": "ASCENDING" },
         { "fieldPath": "publication_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "Ente", "order": "ASCENDING" },
+        { "fieldPath": "Stato", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "concorsi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "settore_professionale", "order": "ASCENDING" },
+        { "fieldPath": "Stato", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
   ],

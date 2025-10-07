@@ -17,7 +17,7 @@ export default function ProfilePage() {
 
   
   if (profile) {
-    console.log('Profile loaded successfully:', profile.uid);
+    
   }
 
   useEffect(() => {
@@ -49,25 +49,22 @@ export default function ProfilePage() {
   }
 
   const handleUpdate = async (updates: Partial<UserProfile>) => {
-    console.log('ProfilePage - Attempting to update profile with:', updates);
+    
     
     // Debug city, postalCode and volunteering updates specifically
     if ('city' in updates || 'postalCode' in updates) {
-      console.log('ProfilePage - Updating location fields:', { 
-        city: updates.city, 
-        postalCode: updates.postalCode 
-      });
+      
     }
     
     if ('volunteering' in updates) {
-      console.log('ProfilePage - Updating volunteering:', updates.volunteering);
+      
     }
     
     try {
       const result = await updateProfile(updates);
       
       if (result) {
-        console.log('ProfilePage - Update successful');
+        
         toast.success('Profile updated successfully');
       } else {
         console.error('ProfilePage - Update failed');

@@ -14,10 +14,16 @@ const nextConfig = {
       fullUrl: false,
     },
   },
-  // Suppress favicon image loading errors in development
-  ...(process.env.NODE_ENV === 'development' && {
+  // Remove console.log in production, keep error and warn
+  ...(process.env.NODE_ENV === 'production' && {
     compiler: {
+<<<<<<< Updated upstream
       removeConsole: false, // Keep console logs in development but filter them
+=======
+      removeConsole: {
+        exclude: ['error', 'warn'], // Keep error and warn for debugging
+      },
+>>>>>>> Stashed changes
     },
   }),
   experimental: {
@@ -117,6 +123,8 @@ const nextConfig = {
       // Optimize chunk splitting for better main thread performance
       config.optimization.splitChunks = {
         chunks: 'all',
+        minSize: 20000,
+        maxSize: 244000,
         cacheGroups: {
           default: false,
           vendors: false,
@@ -125,28 +133,39 @@ const nextConfig = {
             name: 'firebase',
             chunks: 'all',
             test: /[\\/]node_modules[\\/](firebase|@firebase)[\\/]/,
-            priority: 40,
+            priority: 50,
+            enforce: true,
           },
           // Animation libraries in separate chunks (load on demand)
           animations: {
             name: 'animations',
             chunks: 'async', // Only load when needed
             test: /[\\/]node_modules[\\/](framer-motion|gsap|matter-js|@tsparticles)[\\/]/,
-            priority: 35,
+            priority: 45,
           },
           // Radix UI components
           radix: {
             name: 'radix-ui',
             chunks: 'all',
             test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
-            priority: 30,
+            priority: 40,
+            enforce: true,
           },
-          // Common vendor chunk
+          // Large UI libraries
+          ui: {
+            name: 'ui-libs',
+            chunks: 'all',
+            test: /[\\/]node_modules[\\/](lucide-react|@headlessui|@heroicons)[\\/]/,
+            priority: 35,
+          },
+          // Common vendor chunk (smaller)
           vendor: {
             name: 'vendor',
             chunks: 'all',
             test: /[\\/]node_modules[\\/]/,
             priority: 20,
+            minChunks: 2,
+            maxSize: 200000,
           },
         },
       };

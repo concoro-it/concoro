@@ -157,11 +157,11 @@ export const signInWithGoogle = async () => {
           }
         };
 
-        console.log('Syncing Google sign-in profile with Brevo...');
+        
         const brevoResult = await brevoClient.syncProfileWithRetry(userProfile);
         
         if (brevoResult.success) {
-          console.log('Google profile synced with Brevo successfully');
+          
         } else {
           console.warn('Failed to sync Google profile with Brevo:', brevoResult.error);
         }
@@ -340,7 +340,7 @@ export const createUserProfile = async (userId: string, data: BasicInfoFormData)
 
       // Sync completed profile with Brevo
       try {
-        console.log('Syncing completed profile with Brevo...');
+        
         
         // Get the final profile with all updates (education/experience)
         const finalProfile = data.isStudent && data.education 
@@ -357,7 +357,7 @@ export const createUserProfile = async (userId: string, data: BasicInfoFormData)
         const brevoResult = await brevoClient.syncProfileWithRetry(finalProfile);
         
         if (brevoResult.success) {
-          console.log('Completed profile synced with Brevo successfully');
+          
         } else {
           console.warn('Failed to sync completed profile with Brevo:', brevoResult.error);
         }

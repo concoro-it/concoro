@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { signUp, signInWithGoogle } from '@/lib/auth/auth-utils';
 import {
   AuthForm,
@@ -49,9 +50,15 @@ export default function SignUpPage() {
       setTimeout(() => {
         router.push('/verify-email');
       }, 3000);
+<<<<<<< Updated upstream
     } catch (error: unknown) {
       console.error('Sign up error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
+=======
+    } catch (error) {
+      console.error('Sign up error:', error);
+      setError(error instanceof Error ? error.message : 'Si è verificato un errore');
+>>>>>>> Stashed changes
     } finally {
       setLoading(false);
     }
@@ -62,9 +69,15 @@ export default function SignUpPage() {
       setLoading(true);
       await signInWithGoogle();
       // Redirection will be handled by the useEffect
+<<<<<<< Updated upstream
     } catch (error: unknown) {
       console.error('Google sign up error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
+=======
+    } catch (error) {
+      console.error('Google sign up error:', error);
+      setError(error instanceof Error ? error.message : 'Si è verificato un errore');
+>>>>>>> Stashed changes
     } finally {
       setLoading(false);
     }

@@ -37,7 +37,7 @@ function CookieNoticeContent() {
       // Load Google Analytics with your measurement ID
       await loadGoogleAnalytics('G-NVD6N18QWW');
       
-      console.log("Analytics consent granted - Google Analytics loaded with consent mode");
+      
     } catch (error) {
       console.error('Failed to load analytics:', error);
     }

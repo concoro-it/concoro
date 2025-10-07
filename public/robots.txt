@@ -3,13 +3,27 @@ Allow: /
 Allow: /blog
 Allow: /articolo
 Allow: /bandi
+Allow: /concorsi
 
+<<<<<<< Updated upstream
 # Block internal search pages and toxic filter combinations
+=======
+# Allow pagination and useful filter parameters for SEO
+Allow: /*?page=*
+Allow: /*?ente=*
+Allow: /*?localita=*
+Allow: /*?settore=*
+Allow: /*?scadenza=*
+Allow: /*?sort=*
+
+# Block internal search pages (to prevent duplicate content)
+>>>>>>> Stashed changes
 Disallow: /search
 Disallow: /*?search=*
 Disallow: /*?q=*
 Disallow: /*?query=*
 Disallow: /*?tag=*
+<<<<<<< Updated upstream
 Disallow: /*?filter=*
 Disallow: /*&filter=*
 Disallow: /*?page=*
@@ -22,6 +36,17 @@ Disallow: /*?settore=*
 Disallow: /*&settore=*
 Disallow: /*?sort=*
 Disallow: /*&sort=*
+=======
+
+# Block admin and user-specific paths
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /settings
+
+# Allow sitemap API endpoints (must come before the general /api/ block)
+Allow: /api/sitemap
+Allow: /api/sitemap/concorsi
+>>>>>>> Stashed changes
 
 # Block legacy URL patterns (redirected to canonical)
 Disallow: /bandi?id=*

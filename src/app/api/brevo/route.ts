@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Syncing profile to Brevo:', profile.email);
+    
 
     // Create or update contact in Brevo
     const result = await brevoService.createOrUpdateContact(profile);
@@ -25,13 +25,18 @@ export async function POST(request: NextRequest) {
     let welcomeEmailResult = null;
     if (sendWelcomeEmail && profile.firstName) {
       try {
-        console.log('Sending welcome email to:', profile.email);
+        
         welcomeEmailResult = await brevoService.sendWelcomeEmail(
           profile.email,
           profile.firstName
         );
+<<<<<<< Updated upstream
         console.log('Welcome email sent successfully');
       } catch (emailError: unknown) {
+=======
+        
+      } catch (emailError: any) {
+>>>>>>> Stashed changes
         console.error('Failed to send welcome email:', emailError);
         // Don't fail the entire operation if welcome email fails
         welcomeEmailResult = { error: emailError instanceof Error ? emailError.message : 'Unknown error' };
@@ -71,7 +76,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    console.log('Updating profile in Brevo:', profile.email);
+    
 
     // Update existing contact in Brevo
     const result = await brevoService.updateContact(profile);
@@ -107,7 +112,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    console.log('Deleting contact from Brevo:', email);
+    
 
     // Delete contact from Brevo
     const result = await brevoService.deleteContact(email);

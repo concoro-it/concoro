@@ -15,7 +15,13 @@ import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { FaviconImage } from '@/components/common/FaviconImage'
+<<<<<<< Updated upstream
 import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
+=======
+import { getEnteUrl } from '@/lib/utils/ente-utils'
+import { getLocalitaUrl } from '@/lib/utils/localita-utils'
+import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
+>>>>>>> Stashed changes
 
 // Note: Favicon logic moved to /lib/services/faviconCache.ts
 
@@ -234,7 +240,11 @@ export function SavedConcorsiSection() {
           return (
             <Link 
               key={concorso.id} 
+<<<<<<< Updated upstream
               href={generateUrl(concorso)}
+=======
+              href={generateSEOConcorsoUrl(concorso)}
+>>>>>>> Stashed changes
               className="block"
             >
               <div 
@@ -261,7 +271,19 @@ export function SavedConcorsiSection() {
                     />
                   </div>
                   <div className="min-w-0 flex-1">
+<<<<<<< Updated upstream
                     <p className="text-sm text-muted-foreground truncate" title={enteName}>
+=======
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        router.push(getEnteUrl(concorso.Ente || '', 'bandi'))
+                      }}
+                      className="text-sm text-muted-foreground truncate hover:text-foreground transition-colors text-left"
+                      title={enteName}
+                    >
+>>>>>>> Stashed changes
                       {enteName}
                     </p>
                   </div>
@@ -276,7 +298,20 @@ export function SavedConcorsiSection() {
                 <div className="flex flex-wrap gap-3 text-sm text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
+<<<<<<< Updated upstream
                     <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
+=======
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        router.push(getLocalitaUrl(concorso.AreaGeografica || '', 'bandi'))
+                      }}
+                      className="hover:text-foreground transition-colors text-left"
+                    >
+                      <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
+                    </button>
+>>>>>>> Stashed changes
                   </div>
                   {deadlineStatus && (
                     <div className={`flex items-center gap-1 text-sm ${

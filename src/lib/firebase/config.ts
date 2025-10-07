@@ -174,7 +174,7 @@ export async function getFirebaseAnalytics(): Promise<any | null> {
       
       if (supported && document.readyState === 'complete') {
         firebaseAnalytics = getAnalytics(app);
-        console.log('[Firebase] Analytics initialized with dynamic import');
+        
       }
     } catch (error) {
       console.error('Error initializing Firebase Analytics:', error);
@@ -196,7 +196,7 @@ export async function getFirebaseMessaging(): Promise<any | null> {
       
       const app = getFirebaseApp();
       firebaseMessaging = getMessaging(app);
-      console.log('[Firebase] Messaging initialized with dynamic import');
+      
     } catch (error) {
       console.error('Error initializing Firebase Messaging:', error);
     }

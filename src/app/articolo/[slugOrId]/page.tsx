@@ -163,13 +163,7 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
     
     try {
       // Debug logging (optional - remove in production)
-      // console.log('🔍 Concorso Status Debug:', {
-      //   concorsoId: concorso.id,
-      //   title: concorso.Titolo,
-      //   DataApertura: concorso.DataApertura,
-      //   DataChiusura: concorso.DataChiusura,
-      //   StatoField: concorso.Stato
-      // });
+      // 
       
       // Use existing date utility to check if the deadline is still valid
       const deadlineCountdown = getDeadlineCountdown(concorso.DataChiusura);
@@ -409,7 +403,40 @@ export default function ArticolePage({ params }: { params: { slugOrId: string } 
         }
       }
       
+<<<<<<< Updated upstream
       // Note: JSON-LD structured data is now handled server-side in layout.tsx
+=======
+      // Remove existing structured data
+      const existingArticleScript = document.querySelector('script[type="application/ld+json"][data-article]')
+      if (existingArticleScript) {
+        existingArticleScript.remove()
+      }
+      
+      const existingJobScript = document.querySelector('script[type="application/ld+json"][data-jobposting]')
+      if (existingJobScript) {
+        existingJobScript.remove()
+      }
+      
+      // Add Article structured data
+      const articleScript = document.createElement('script')
+      articleScript.type = 'application/ld+json'
+      articleScript.setAttribute('data-article', 'true')
+      articleScript.textContent = JSON.stringify(articleStructuredData)
+      document.head.appendChild(articleScript)
+      
+      // Add JobPosting structured data if available
+      if (jobPostingStructuredData) {
+        const jobScript = document.createElement('script')
+        jobScript.type = 'application/ld+json'
+        jobScript.setAttribute('data-jobposting', 'true')
+        jobScript.textContent = JSON.stringify(jobPostingStructuredData)
+        document.head.appendChild(jobScript)
+        
+        
+      } else {
+        
+      }
+>>>>>>> Stashed changes
 
       // Track article view for analytics
       if (article.slug || article.id) {

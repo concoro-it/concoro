@@ -51,6 +51,7 @@ export function AnimatedCard({ className, title, description, icon, iconClassNam
   )
 }
 
+<<<<<<< Updated upstream
 // Icon animation effect
 function setupIconAnimation() {
   const sequence = [
@@ -62,6 +63,8 @@ function setupIconAnimation() {
   return animate(sequence[0] as string, sequence[1] as Record<string, unknown>, sequence[2] as Record<string, unknown>)
 }
 
+=======
+>>>>>>> Stashed changes
 const Container = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>

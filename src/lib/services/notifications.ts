@@ -278,7 +278,7 @@ export class NotificationsService {
       
       const existingDocs = await getDocs(existingQuery);
       if (!existingDocs.empty) {
-        console.log('Notification already exists for this threshold');
+        
         return;
       }
 
@@ -295,7 +295,7 @@ export class NotificationsService {
       };
 
       await addDoc(notificationsRef, notification);
-      console.log(`Notification created for user ${userId}, concorso ${concorsoId}, ${daysLeft} days left`);
+      
     } catch (error) {
       console.error('Error creating notification:', error);
       throw new Error('Failed to create notification');

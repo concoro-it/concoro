@@ -4,6 +4,7 @@ import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/lib/hooks/useAuth';
 import { LazyAuthProvider } from '@/lib/hooks/useLazyAuth';
 import { TooltipProvider } from '@/components/ui/tooltip';
+<<<<<<< Updated upstream
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
@@ -44,6 +45,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const AuthWrapper = requiresImmediateAuth ? AuthProvider : LazyAuthProvider;
 
+=======
+
+export function Providers({ children }: { children: React.ReactNode }) {
+>>>>>>> Stashed changes
   return (
     <ThemeProvider
       attribute="class"

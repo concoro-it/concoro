@@ -260,4 +260,134 @@ export const validateJobPostingData = (data: JobPostingStructuredData): boolean 
   }
   
   return true;
+};
+
+/**
+ * Generates JobPosting structured data directly from Concorso data
+ * For use on individual concorso detail pages
+ */
+export const generateConcorsoJobPostingStructuredData = (
+  concorso: any,
+  concorsoUrl: string,
+  baseUrl: string = 'https://concoro.it'
+): JobPostingStructuredData | null => {
+  
+  if (!concorso) {
+    console.warn('Cannot generate JobPosting structured data: no concorso data available');
+    return null;
+  }
+
+  const location = parseLocation(concorso.AreaGeografica);
+  
+  // Create comprehensive description
+  const descriptionParts = [];
+  if (concorso.Descrizione) {
+    // Strip HTML tags and clean up description
+    const cleanDescription = concorso.Descrizione.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    descriptionParts.push(`<p>${cleanDescription.substring(0, 5000)}</p>`);
+  }
+  if (concorso.sommario) {
+    const cleanSommario = concorso.sommario.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    descriptionParts.push(`<p>${cleanSommario}</p>`);
+  }
+  descriptionParts.push(`<p><strong>Ente:</strong> ${concorso.Ente}</p>`);
+  if (concorso.numero_di_posti) {
+    descriptionParts.push(`<p><strong>Posti disponibili:</strong> ${concorso.numero_di_posti}</p>`);
+  }
+  if (concorso.settore_professionale) {
+    descriptionParts.push(`<p><strong>Settore:</strong> ${concorso.settore_professionale}</p>`);
+  }
+  if (concorso.Valutazione) {
+    descriptionParts.push(`<p><strong>Metodo di valutazione:</strong> ${concorso.Valutazione}</p>`);
+  }
+  
+  const description = descriptionParts.join('\n');
+
+  // Parse publication date
+  let publicationDate = new Date().toISOString().split('T')[0];
+  if (concorso.publication_date) {
+    try {
+      publicationDate = toISOString(concorso.publication_date).split('T')[0];
+    } catch (e) {
+      console.warn('Error parsing publication_date:', e);
+    }
+  } else if (concorso.DataApertura) {
+    try {
+      publicationDate = toISOString(concorso.DataApertura).split('T')[0];
+    } catch (e) {
+      console.warn('Error parsing DataApertura:', e);
+    }
+  } else if (concorso.createdAt) {
+    try {
+      publicationDate = toISOString(concorso.createdAt).split('T')[0];
+    } catch (e) {
+      console.warn('Error parsing createdAt:', e);
+    }
+  }
+
+  const structuredData: JobPostingStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "JobPosting",
+    title: concorso.Titolo,
+    description: description,
+    datePosted: publicationDate,
+    hiringOrganization: {
+      "@type": "Organization",
+      name: concorso.Ente,
+      sameAs: concorso.Link || undefined,
+      logo: `${baseUrl}/concoro-logo-light.svg`
+    },
+    jobLocation: {
+      "@type": "Place",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: location.addressLocality,
+        addressRegion: location.addressRegion,
+        addressCountry: location.addressCountry
+      }
+    },
+    identifier: {
+      "@type": "PropertyValue", 
+      name: concorso.Ente,
+      value: concorso.id
+    },
+    url: concorsoUrl,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": concorsoUrl
+    }
+  };
+
+  // Add optional fields if available
+  if (concorso.DataChiusura) {
+    try {
+      structuredData.validThrough = toISOString(concorso.DataChiusura);
+    } catch (e) {
+      console.warn('Error parsing DataChiusura:', e);
+    }
+  }
+
+  if (concorso.regime || concorso.regime_impegno) {
+    structuredData.employmentType = mapEmploymentType(concorso.regime || concorso.regime_impegno);
+  } else {
+    // Default to FULL_TIME for Italian public sector jobs
+    structuredData.employmentType = ["FULL_TIME"];
+  }
+
+  if (concorso.numero_di_posti && concorso.numero_di_posti > 0) {
+    structuredData.totalJobOpenings = concorso.numero_di_posti;
+  }
+
+  // Add remote work support if applicable
+  if (concorso.Descrizione?.toLowerCase().includes('telelavoro') || 
+      concorso.Descrizione?.toLowerCase().includes('smart working') ||
+      concorso.Descrizione?.toLowerCase().includes('remoto')) {
+    structuredData.jobLocationType = "TELECOMMUTE";
+    structuredData.applicantLocationRequirements = {
+      "@type": "Country",
+      name: "Italia"
+    };
+  }
+
+  return structuredData;
 }; 

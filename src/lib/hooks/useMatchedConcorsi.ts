@@ -12,7 +12,7 @@ export const useMatchedConcorsi = (userId: string, limit?: number, offset?: numb
   useEffect(() => {
     const fetchMatchedConcorsi = async () => {
       try {
-        console.log('Fetching matched concorsi for user:', userId, 'limit:', limit, 'offset:', offset);
+        
         setIsLoading(true);
         setError(null);
 
@@ -35,17 +35,17 @@ export const useMatchedConcorsi = (userId: string, limit?: number, offset?: numb
           return;
         }
         
-        console.log('User profile found:', userId);
+        
 
         // Get all matches for the user
         const matchesRef = collection(db, `userProfiles/${userId}/matches`);
-        console.log('Fetching matches from path:', `userProfiles/${userId}/matches`);
+        
         
         const matchesSnapshot = await getDocs(matchesRef);
-        console.log('Matches found:', matchesSnapshot.size);
+        
         
         if (matchesSnapshot.empty) {
-          console.log('No matches found for user:', userId);
+          
           setConcorsi([]);
           setTotalCount(0);
           setIsLoading(false);
@@ -57,7 +57,7 @@ export const useMatchedConcorsi = (userId: string, limit?: number, offset?: numb
         // For each match, fetch the corresponding concorso
         for (const matchDoc of matchesSnapshot.docs) {
           const matchData = matchDoc.data() as Match;
-          console.log('Processing match:', matchDoc.id, 'for concorso:', matchData.concorso_id);
+          
           
           if (!matchData.concorso_id) {
             console.warn('Match missing concorso_id:', matchDoc.id);
@@ -70,7 +70,7 @@ export const useMatchedConcorsi = (userId: string, limit?: number, offset?: numb
           const concorsoSnap = await getDoc(concorsoRef);
           
           if (concorsoSnap.exists()) {
-            console.log('Found concorso:', concorsoSnap.id);
+            
             const concorsoData = concorsoSnap.data() as Omit<Concorso, 'id'>;
             
             // Convert DataChiusura to Timestamp if it's not already
@@ -83,7 +83,7 @@ export const useMatchedConcorsi = (userId: string, limit?: number, offset?: numb
             if (dataChiusura) {
               const closingDate = dataChiusura instanceof Timestamp ? dataChiusura.toDate() : new Date(dataChiusura);
               if (closingDate < new Date()) {
-                console.log('Skipping passed concorso:', concorsoSnap.id);
+                
                 continue;
               }
             }
@@ -112,10 +112,10 @@ export const useMatchedConcorsi = (userId: string, limit?: number, offset?: numb
           const startIndex = offset || 0;
           const endIndex = startIndex + limit;
           paginatedConcorsi = allMatchedConcorsi.slice(startIndex, endIndex);
-          console.log(`Paginated results: ${startIndex}-${endIndex} of ${allMatchedConcorsi.length}`);
+          
         }
         
-        console.log('Final matched concorsi count:', paginatedConcorsi.length);
+        
         setConcorsi(paginatedConcorsi);
       } catch (err) {
         console.error('Error fetching matched concorsi:', err);
@@ -128,7 +128,7 @@ export const useMatchedConcorsi = (userId: string, limit?: number, offset?: numb
     if (userId) {
       fetchMatchedConcorsi();
     } else {
-      console.log('No userId provided, skipping fetch');
+      
     }
   }, [userId, limit, offset]);
 

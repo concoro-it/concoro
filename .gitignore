@@ -170,4 +170,8 @@ ui-debug.log
 *.bak
 
 # Cloud build - Note: cloudbuild.yaml is OK to include if it doesn't contain secrets
-# cloudbuild.yaml 
+# cloudbuild.yaml # cloudbuild.yaml 
+src/lib/services/BREVO_INTEGRATION.md
+src/scripts/setup-brevo-attributes.ts
+brevo-setup-guide.md
+brevo-setup-guide.md

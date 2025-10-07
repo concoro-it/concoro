@@ -477,13 +477,7 @@ export const getRelatedArticoli = async (
     const sanitizedSettore = settore_professionale === 'undefined' || !settore_professionale ? undefined : settore_professionale;
     const sanitizedArea = AreaGeografica === 'undefined' || !AreaGeografica ? undefined : AreaGeografica;
     
-    console.log('🔍 getRelatedArticoli called with:', {
-      currentArticleId,
-      categoria: sanitizedCategoria,
-      settore_professionale: sanitizedSettore,
-      AreaGeografica: sanitizedArea,
-      limitCount
-    });
+    
     
     const firestore = db || getFirebaseFirestore();
     const articoliRef = collection(firestore, 'articoli');
@@ -501,10 +495,10 @@ export const getRelatedArticoli = async (
       conditions.push(where('AreaGeografica', '==', sanitizedArea));
     }
     
-    console.log('📋 Query conditions:', conditions.length);
+    
     
     if (conditions.length === 0) {
-      console.log('❌ No conditions available for related articles query');
+      
       return [];
     }
     
@@ -529,7 +523,7 @@ export const getRelatedArticoli = async (
             ...doc.data(),
           } as Articolo));
         
-        console.log(`📊 Query for ${condition.toString()} returned ${articles.length} articles`);
+        
         relatedArticles = [...relatedArticles, ...articles];
       } catch (error) {
         console.warn('Error in related articles query condition:', error);
@@ -542,7 +536,7 @@ export const getRelatedArticoli = async (
       index === self.findIndex(a => a.id === article.id) && article.id !== currentArticleId
     );
     
-    console.log(`✅ getRelatedArticoli returning ${uniqueArticles.length} unique articles`);
+    
     
     // Sort by publication date and limit
     const result = uniqueArticles
@@ -553,7 +547,7 @@ export const getRelatedArticoli = async (
       })
       .slice(0, limitCount);
       
-    console.log(`🎯 Final result: ${result.length} articles after sorting and limiting`);
+    
     return result;
   } catch (error) {
     console.error('❌ Error fetching related articoli:', error);

@@ -34,8 +34,13 @@ export interface Concorso {
   regime_impegno?: string;
   settore?: string;
   settore_professionale?: string;
+<<<<<<< Updated upstream
   sommario?: string;
   riassunto?: string;
+=======
+  sommario: string;
+  requisiti_generali?: string[];
+>>>>>>> Stashed changes
   tipologia?: string;
   titolo_originale?: string;
   createdAt?: { seconds: number; nanoseconds: number };

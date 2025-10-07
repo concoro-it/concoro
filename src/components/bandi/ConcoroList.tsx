@@ -21,8 +21,64 @@ import { Concorso } from "@/types/concorso"
 import Image from "next/image"
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
+<<<<<<< Updated upstream
 import { getBandoUrl } from '@/lib/utils/bando-slug-utils'
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
+=======
+import { FaviconImage } from "@/components/common/FaviconImage"
+import { getEnteUrl } from '@/lib/utils/ente-utils'
+import { getLocalitaUrl } from '@/lib/utils/localita-utils'
+import Link from "next/link"
+
+// Helper function to render grouped regions
+const renderGroupedRegions = (job: any, isMobile: boolean = false) => {
+  if (job.isGrouped && job.regions && job.regions.length > 1) {
+    return (
+      <div className="flex flex-wrap items-center gap-1">
+        <MapPin className={`${isMobile ? 'w-3 h-3' : 'w-3 h-3 sm:w-4 sm:h-4'} mr-1 shrink-0`} />
+        <div className="flex flex-wrap gap-1">
+          {job.regions.slice(0, isMobile ? 2 : 4).map((region: string, index: number) => (
+            <React.Fragment key={region}>
+              <Link 
+                href={getLocalitaUrl(region, 'bandi')}
+                onClick={(e) => e.stopPropagation()}
+                className={`hover:text-foreground transition-colors text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md`}
+              >
+                {formatLocalitaDisplay(region)}
+              </Link>
+              {index < Math.min(job.regions.length - 1, isMobile ? 1 : 3) && (
+                <span className="text-xs text-gray-400">•</span>
+              )}
+            </React.Fragment>
+          ))}
+          {job.regions.length > (isMobile ? 2 : 4) && (
+            <span className="text-xs text-gray-500">
+              +{job.regions.length - (isMobile ? 2 : 4)} altre
+            </span>
+          )}
+        </div>
+        <span className="text-xs text-gray-500 ml-1">
+          ({job.regionCount} regioni)
+        </span>
+      </div>
+    );
+  }
+  
+  // Single region display
+  return (
+    <div className="flex items-center">
+      <MapPin className={`${isMobile ? 'w-3 h-3' : 'w-3 h-3 sm:w-4 sm:h-4'} mr-1 shrink-0`} />
+      <Link 
+        href={getLocalitaUrl(job.AreaGeografica || '', 'bandi')}
+        onClick={(e) => e.stopPropagation()}
+        className="hover:text-foreground transition-colors"
+      >
+        <span className="line-clamp-1">{formatLocalitaDisplay(job.AreaGeografica || '')}</span>
+      </Link>
+    </div>
+  );
+};
+>>>>>>> Stashed changes
 
 interface ConcoroListProps {
   jobs: Concorso[];
@@ -467,6 +523,7 @@ function ConcoroListComponent({
                 // Mobile layout
                 <div className="flex-grow space-y-2 w-full">
                   {/* Ente name with favicon */}
+<<<<<<< Updated upstream
                   <div className="flex items-center gap-1 min-w-0">
                     <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
                       <Image 
@@ -488,6 +545,22 @@ function ConcoroListComponent({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[12px] text-muted-foreground truncate" title={enteName}>
+=======
+                  <div className="flex items-center gap-1 min-w-0 w-full">
+                    <FaviconImage 
+                      enteName={job.Ente}
+                      paLink={job.pa_link}
+                      size={16}
+                      className="flex-shrink-0"
+                    />
+                    <div className="min-w-0 flex-1 overflow-hidden">
+                      <Link 
+                        href={getEnteUrl(job.Ente, 'bandi')}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[12px] text-muted-foreground hover:text-foreground transition-colors block truncate"
+                        title={enteName}
+                      >
+>>>>>>> Stashed changes
                         {truncatedEnteName}
                       </p>
                     </div>
@@ -534,6 +607,7 @@ function ConcoroListComponent({
                 // Desktop layout
                 <div className="flex items-start">
                   <div className="flex-grow space-y-2 w-full">
+<<<<<<< Updated upstream
                     <div className="flex items-center gap-1 min-w-0">
                       <div className="relative w-[16px] h-[16px] flex-shrink-0 flex items-center justify-center">
                         <Image 
@@ -555,6 +629,22 @@ function ConcoroListComponent({
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-muted-foreground truncate" title={enteName}>
+=======
+                    <div className="flex items-center gap-1 min-w-0 w-full">
+                      <FaviconImage 
+                        enteName={job.Ente}
+                        paLink={job.pa_link}
+                        size={16}
+                        className="flex-shrink-0"
+                      />
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <Link 
+                          href={getEnteUrl(job.Ente, 'bandi')}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-sm text-muted-foreground hover:text-foreground transition-colors block truncate"
+                          title={enteName}
+                        >
+>>>>>>> Stashed changes
                           {truncatedEnteName}
                         </p>
                       </div>

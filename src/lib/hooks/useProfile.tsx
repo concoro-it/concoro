@@ -18,39 +18,35 @@ export const useProfile = () => {
     let timeoutId: NodeJS.Timeout;
 
     const fetchProfile = async () => {
-      console.log('Fetching profile for user:', user?.uid);
+      
       
       // Set a timeout to prevent infinite loading - reduced for better performance
       timeoutId = setTimeout(() => {
         if (mounted && loading) {
-          console.log('Profile fetch timeout reached');
+          
           setLoading(false);
         }
       }, 3000); // Reduced to 3 second timeout
       
       if (!user) {
-        console.log('No authenticated user');
+        
         setProfile(null);
         setLoading(false);
         return;
       }
 
       try {
-        console.log('Attempting to fetch profile from Firebase');
+        
         const fetchedProfile = await profileServices.getUserProfile(user.uid);
 
         if (!mounted) {
-          console.log('Component unmounted during fetch');
+          
           return;
         }
 
         if (fetchedProfile) {
-          console.log('Profile found in Firebase:', fetchedProfile.uid);
-          console.log('Profile data:', JSON.stringify({
-            firstName: fetchedProfile.firstName,
-            lastName: fetchedProfile.lastName,
-            email: fetchedProfile.email
-          }));
+          
+          
           
           // Convert the firebase profile to UserProfile format
           const userProfileData: UserProfile = {
@@ -107,7 +103,7 @@ export const useProfile = () => {
           };
           setProfile(userProfileData);
         } else {
-          console.log('No profile found, creating new profile');
+          
           // Create a new profile if it doesn't exist
           const now = new Date();
           const nowTimestamp = Timestamp.fromDate(now);
@@ -196,9 +192,9 @@ export const useProfile = () => {
             })),
           };
           
-          console.log('Creating new profile in Firebase');
+          
           await profileServices.createProfile(user.uid, profileToCreate);
-          console.log('New profile created successfully');
+          
           
           setProfile(newProfile);
         }
@@ -214,17 +210,17 @@ export const useProfile = () => {
       }
     };
 
-    console.log('useProfile effect running, initialized:', initialized, 'canFetchData:', canFetchData);
+    
     
     // Only fetch profile if auth is initialized AND we can fetch data (deferred)
     if (initialized && canFetchData) {
       fetchProfile();
     } else {
-      console.log('Auth not initialized or data fetch deferred, waiting...');
+      
     }
 
     return () => {
-      console.log('useProfile cleanup');
+      
       mounted = false;
       clearTimeout(timeoutId);
     };
@@ -237,11 +233,11 @@ export const useProfile = () => {
     }
 
     try {
-      console.log('updateUserProfile called with updates:', JSON.stringify(updates));
+      
       
       // Process volunteering data to ensure no undefined values
       if (updates.volunteering) {
-        console.log('Processing volunteering updates');
+        
         updates = {
           ...updates,
           volunteering: updates.volunteering.filter(vol => vol !== undefined && vol !== null).map(vol => ({
@@ -253,12 +249,12 @@ export const useProfile = () => {
             endDate: vol.endDate,
           }))
         };
-        console.log('Processed volunteering data:', updates.volunteering);
+        
       }
       
       // Process certifications data to ensure no undefined values
       if (updates.certifications) {
-        console.log('Processing certifications updates');
+        
         updates = {
           ...updates,
           certifications: updates.certifications.filter(cert => cert !== undefined && cert !== null).map(cert => ({
@@ -271,12 +267,12 @@ export const useProfile = () => {
             certificateURL: cert.certificateURL
           }))
         };
-        console.log('Processed certifications data:', updates.certifications);
+        
       }
       
       // Process education data to ensure no undefined values
       if (updates.education) {
-        console.log('Processing education updates');
+        
         updates = {
           ...updates,
           education: updates.education.filter(edu => edu !== undefined && edu !== null).map(edu => ({
@@ -290,12 +286,12 @@ export const useProfile = () => {
             isCurrent: Boolean(edu.isCurrent),
           }))
         };
-        console.log('Processed education data:', updates.education);
+        
       }
       
       // Process skills data to ensure no undefined values
       if (updates.skills) {
-        console.log('Processing skills updates');
+        
         updates = {
           ...updates,
           skills: updates.skills.filter(skill => skill !== undefined && skill !== null).map(skill => ({
@@ -305,13 +301,13 @@ export const useProfile = () => {
             proficiency: skill.proficiency || 'intermediate'
           }))
         };
-        console.log('Processed skills data:', updates.skills);
+        
       }
       
-      console.log('Sending updates to Firebase');
+      
       // Update Firestore
       await profileServices.updateProfile(user.uid, updates);
-      console.log('Firebase update successful');
+      
       
       // Update local state immediately with the new values
       const updatedProfile = {
@@ -331,9 +327,9 @@ export const useProfile = () => {
         updatedAt: Timestamp.fromDate(new Date())
       };
       
-      console.log('Updating local profile state');
+      
       setProfile(updatedProfile);
-      console.log('Local profile state updated');
+      
       return true;
     } catch (err) {
       console.error('useProfile - Error updating profile:', err);

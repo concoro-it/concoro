@@ -15,6 +15,7 @@ import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization';
 import { Pagination } from "@/components/blog/Pagination";
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
+<<<<<<< Updated upstream
 import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 import Image from "next/image"
 
@@ -52,6 +53,10 @@ const extractDomain = (url: string | undefined): string => {
     return '';
   }
 };
+=======
+import { FaviconImage } from "@/components/common/FaviconImage"
+import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
+>>>>>>> Stashed changes
 
 // Function to clean Ente names - display as-is without case conversion
 const cleanEnteName = (str: string | undefined): string => {
@@ -140,11 +145,11 @@ export function MatchedConcorsi({ userId, limit, showPagination = false }: Match
   }, [totalCount, showPagination]);
 
   useEffect(() => {
-    console.log("MatchedConcorsi component - userId:", userId);
-    console.log("MatchedConcorsi component - concorsi:", concorsi);
-    console.log("MatchedConcorsi component - totalCount:", totalCount);
-    console.log("MatchedConcorsi component - isLoading:", isLoading);
-    console.log("MatchedConcorsi component - error:", error);
+    
+    
+    
+    
+    
   }, [userId, concorsi, totalCount, isLoading, error]);
 
   const handlePageChange = (page: number) => {
@@ -343,7 +348,11 @@ export function MatchedConcorsi({ userId, limit, showPagination = false }: Match
         return (
           <Link 
             key={concorso.id} 
+<<<<<<< Updated upstream
             href={generateUrl(concorso)}
+=======
+            href={generateSEOConcorsoUrl(concorso)}
+>>>>>>> Stashed changes
             className="block"
           >
             <div 

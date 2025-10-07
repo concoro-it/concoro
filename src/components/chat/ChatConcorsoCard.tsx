@@ -6,7 +6,11 @@ import { useAuth } from "@/lib/hooks/useAuth"
 import { useMemo, useState } from "react"
 import Image from "next/image"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
+<<<<<<< Updated upstream
 import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
+=======
+import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
+>>>>>>> Stashed changes
 
 interface ChatConcorsoCardProps {
   concorso: {
@@ -169,7 +173,11 @@ export function ChatConcorsoCard({ concorso, compact = false }: ChatConcorsoCard
         </div>
       </div>
       
+<<<<<<< Updated upstream
       <Link href={generateUrlWithAuth(concorso as any, user)}>
+=======
+      <Link href={user ? generateSEOConcorsoUrl(concorso as any) : `/signin?redirect=${encodeURIComponent(generateSEOConcorsoUrl(concorso as any))}`}>
+>>>>>>> Stashed changes
         <Button 
           className="gap-2 w-full" 
           size={compact ? "sm" : "default"}

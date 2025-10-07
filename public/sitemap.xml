@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 
+<<<<<<< Updated upstream
   DYNAMIC SITEMAP: This file redirects to the API-generated sitemap
   For current sitemap, visit: https://www.concoro.it/api/sitemap
   This ensures daily updates with all published article and concorso URLs
@@ -8,5 +9,20 @@
   <sitemap>
     <loc>https://www.concoro.it/api/sitemap</loc>
     <lastmod>2024-12-19T12:00:00.000Z</lastmod>
+=======
+  DYNAMIC SITEMAP INDEX: This file includes all sitemaps
+  Static pages & Blog articles: https://concoro.it/api/sitemap
+  Concorsi: https://concoro.it/api/sitemap/concorsi
+  
+  Note: lastmod tags removed because child sitemaps are dynamically generated.
+  Google will fetch the child sitemaps on every crawl to check for updates.
+-->
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://concoro.it/api/sitemap</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://concoro.it/api/sitemap/concorsi</loc>
+>>>>>>> Stashed changes
   </sitemap>
 </sitemapindex> 

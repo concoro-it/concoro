@@ -1,5 +1,6 @@
 'use client'
 
+<<<<<<< Updated upstream:src/app/bandi/ente/[ente]/client-page.tsx
 import React, { useState, useEffect, useMemo, Suspense } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { parseISO } from 'date-fns'
@@ -7,6 +8,35 @@ import { it } from 'date-fns/locale'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getBandoUrl } from '@/lib/utils/bando-slug-utils'
+=======
+import { useState, useEffect, Suspense } from "react"
+import { collection, getDocs, query, where } from "firebase/firestore"
+import { db } from "@/lib/firebase/config"
+import { ConcoroList } from "@/components/bandi/ConcoroList"
+import { useAuth } from "@/lib/hooks/useAuth"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { Concorso } from "@/types/concorso"
+import { Spinner } from '@/components/ui/spinner'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { GlowingEffect } from "@/components/ui/glowing-effect"
+import { Breadcrumb } from "@/components/ui/breadcrumb"
+import { 
+  Calendar, 
+  MapPin, 
+  Users, 
+  Building2
+} from "lucide-react"
+import Link from "next/link"
+import { 
+  groupConcorsiByConcorsoId, 
+  createGroupedConcorso 
+} from "@/lib/utils/ente-utils"
+import { splitLocationString } from "@/lib/utils/localita-utils"
+import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
+>>>>>>> Stashed changes:src/app/(protected)/bandi/ente/[enteSlug]/page.tsx
 
 // Use any type for now since we're dealing with flexible data structure
 interface ConcorsoData {
@@ -67,6 +97,7 @@ export default function EnteClient({
     }
   }, [concorsi])
 
+<<<<<<< Updated upstream:src/app/bandi/ente/[ente]/client-page.tsx
   // Memoize deadline status function to avoid recreation on every render
   const getDeadlineStatus = useMemo(() => (closingDate: any) => {
     if (!closingDate) return null
@@ -79,6 +110,83 @@ export default function EnteClient({
         date = new Date(closingDate.seconds * 1000)
       } else {
         return null
+=======
+  // Fetch concorsi for the specific ente
+  useEffect(() => {
+    async function fetchConcorsiByEnte() {
+      if (!user) return
+      
+      try {
+        setLoading(true)
+        
+        if (!db) {
+          console.error('Firestore database is not initialized')
+          toast.error('Failed to connect to database. Please try again later.')
+          setLoading(false)
+          return
+        }
+        
+        // Decode the ente slug to get the actual ente name
+        const enteName = decodeURIComponent(params.enteSlug)
+        setEnte(enteName)
+        
+        const concorsiCollection = collection(db, 'concorsi')
+        // Only fetch open concorsi for this ente (server-side filtering)
+        const enteQuery = query(
+          concorsiCollection,
+          where('Ente', '==', enteName),
+          where('Stato', 'in', ['open', 'aperto', 'OPEN', 'APERTO'])
+        )
+        const concorsiSnapshot = await getDocs(enteQuery)
+        
+        const concorsiData = concorsiSnapshot.docs.map(doc => {
+          const data = doc.data()
+          return {
+            id: doc.id,
+            ...data
+          }
+        }) as Concorso[]
+
+        // Group concorsi by concorso_id to handle multiple regions
+        const groupedConcorsi = groupConcorsiByConcorsoId(concorsiData)
+        const groupedDisplayedConcorsi = Object.values(groupedConcorsi).map(group => 
+          createGroupedConcorso(group)
+        ).filter(Boolean)
+
+        setConcorsi(groupedDisplayedConcorsi)
+        setDisplayedConcorsi(groupedDisplayedConcorsi)
+
+        // Extract unique locations from grouped concorsi (individual regions)
+        const uniqueLocations = Array.from(new Set(
+          groupedDisplayedConcorsi.flatMap(c => {
+            if (c.isGrouped && c.regions) {
+              return c.regions;
+            } else {
+              // Handle single concorsi that might have combined regions
+              const areaGeografica = c.AreaGeografica;
+              if (!areaGeografica) return [];
+              
+              // Use the utility function to split location strings
+              return splitLocationString(areaGeografica);
+            }
+          }).filter(Boolean)
+        )).sort()
+
+        const uniqueSettori = Array.from(new Set(
+          groupedDisplayedConcorsi
+            .map(c => c.settore_professionale)
+            .filter(Boolean)
+        )).sort()
+
+        setLocations(uniqueLocations)
+        setSettori(uniqueSettori)
+
+      } catch (error) {
+        console.error('Error fetching concorsi:', error)
+        toast.error('Errore nel caricamento dei concorsi. Riprova più tardi.')
+      } finally {
+        setLoading(false)
+>>>>>>> Stashed changes:src/app/(protected)/bandi/ente/[enteSlug]/page.tsx
       }
       
       const now = new Date()
@@ -96,6 +204,7 @@ export default function EnteClient({
     }
   }, [])
 
+<<<<<<< Updated upstream:src/app/bandi/ente/[ente]/client-page.tsx
   // Handle job selection for navigation
   const handleJobSelect = (job: ConcorsoData) => {
     try {
@@ -107,6 +216,14 @@ export default function EnteClient({
       // Fallback to ID-based URL if SEO URL generation fails
       router.push(`/bandi/${job.id}`);
     }
+=======
+    fetchConcorsiByEnte()
+  }, [user, params.enteSlug])
+
+  const handleJobSelect = (job: Concorso) => {
+    setSelectedJobId(job.id)
+    router.push(generateSEOConcorsoUrl(job))
+>>>>>>> Stashed changes:src/app/(protected)/bandi/ente/[enteSlug]/page.tsx
   }
 
   // Early return if no data
@@ -449,6 +566,35 @@ export default function EnteClient({
                   </Badge>
                   )}
               </div>
+<<<<<<< Updated upstream:src/app/bandi/ente/[ente]/client-page.tsx
+=======
+              {/* FAQ Section for SEO and UX */}
+              <div className="mt-8">
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Domande frequenti</h3>
+                <div className="space-y-4 text-gray-700">
+                  <div>
+                    <h4 className="font-medium">Come candidarsi ai concorsi di {ente}?</h4>
+                    <p>
+                      Utilizza questa pagina per consultare i concorsi attivi di {ente}. Puoi navigare
+                      per settore o località e aprire ciascun concorso per i dettagli su requisiti e domanda.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium">Quali sono le scadenze dei bandi di {ente}?</h4>
+                    <p>
+                      Ogni scheda riporta la data di scadenza aggiornata. Ti consigliamo di candidarti il prima possibile
+                      e di verificare spesso eventuali nuovi bandi di {ente}.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium">In quali settori assume {ente}?</h4>
+                    <p>
+                      {ente} pubblica bandi in diversi settori professionali.
+                      Puoi esplorare l&apos;elenco dei settori nella barra laterale e accedere ai relativi bandi.
+                    </p>
+                  </div>
+                </div>
+>>>>>>> Stashed changes:src/app/(protected)/bandi/ente/[enteSlug]/page.tsx
               </div>
           )}
   <h2 className="text-2xl font-bold text-gray-900 mb-4">

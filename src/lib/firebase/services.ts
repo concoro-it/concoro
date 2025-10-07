@@ -80,7 +80,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
         showSchool: data.showSchool || false
       };
 
-      console.log('Firebase Service - Retrieved user profile:', userId);
+      
       return convertedData;
     }
     
@@ -141,7 +141,7 @@ export const createProfile = async (userId: string, data: Partial<UserProfile>):
       updatedAt: serverTimestamp(),
     };
 
-    console.log('Firebase Service - Creating profile with data:', userId);
+    
     await setDoc(profileRef, profileData);
     
   } catch (error) {
@@ -152,14 +152,6 @@ export const createProfile = async (userId: string, data: Partial<UserProfile>):
 
 export const updateProfile = async (userId: string, updates: Partial<UserProfile>): Promise<void> => {
   try {
-    console.log('Firebase Service - updateProfile called with data:', JSON.stringify(updates, (key, value) => {
-      // Handle circular references in logging
-      if (value instanceof Timestamp) {
-        return `Timestamp(${value.toDate().toISOString()})`;
-      }
-      return value;
-    }, 2));
-    
     if (!db) {
       console.error('Firebase Service - Firestore database is not initialized');
       throw new Error('Database not available');
@@ -192,19 +184,19 @@ export const updateProfile = async (userId: string, updates: Partial<UserProfile
         // Only set the field if it's not undefined
         if (value !== undefined) {
           cleanedUpdates[field] = value;
-          console.log(`Firebase Service - Setting field ${field} to:`, value);
+          
         }
       }
     });
 
     // Special logging for city and postalCode fields
     if ('city' in updates) {
-      console.log('Firebase Service - Setting city field:', updates.city);
+      
       cleanedUpdates.city = updates.city;
     }
     
     if ('postalCode' in updates) {
-      console.log('Firebase Service - Setting postalCode field:', updates.postalCode);
+      
       cleanedUpdates.postalCode = updates.postalCode;
     }
 
@@ -215,7 +207,7 @@ export const updateProfile = async (userId: string, updates: Partial<UserProfile
       if (aboutValue !== undefined) {
         cleanedUpdates.about = aboutValue;
         cleanedUpdates.bio = aboutValue; // Keep both fields in sync
-        console.log('Firebase Service - Setting about/bio fields:', aboutValue);
+        
       }
     }
 
@@ -234,7 +226,7 @@ export const updateProfile = async (userId: string, updates: Partial<UserProfile
           location: exp.location || '',
           skills: Array.isArray(exp.skills) ? exp.skills : []
         }));
-        console.log(`Firebase Service - Setting experience field with ${validExperiences.length} items`);
+        
       } else {
         console.warn('Firebase Service - Experience field is not an array:', updates.experience);
       }
@@ -253,7 +245,7 @@ export const updateProfile = async (userId: string, updates: Partial<UserProfile
           endDate: edu.endDate ? (edu.endDate instanceof Timestamp ? edu.endDate : Timestamp.fromDate(new Date(edu.endDate))) : null,
           isCurrent: Boolean(edu.isCurrent),
         }));
-        console.log(`Firebase Service - Setting education field with ${validEducation.length} items`);
+        
       } else {
         console.warn('Firebase Service - Education field is not an array:', updates.education);
       }
@@ -279,10 +271,10 @@ export const updateProfile = async (userId: string, updates: Partial<UserProfile
             expiryDate: cert.expiryDate ? (cert.expiryDate instanceof Timestamp ? cert.expiryDate : Timestamp.fromDate(new Date(cert.expiryDate))) : null,
             certificateURL: cert.certificateURL || null
           }));
-          console.log(`Firebase Service - Setting certifications field with ${validCertifications.length} items`);
+          
         } else {
           cleanedUpdates.certifications = [];
-          console.log('Firebase Service - Setting empty certifications array');
+          
         }
       } else {
         console.warn('Firebase Service - Certifications field is not an array:', updates.certifications);
@@ -298,7 +290,7 @@ export const updateProfile = async (userId: string, updates: Partial<UserProfile
         
         if (validVolunteering.length > 0) {
           cleanedUpdates.volunteering = validVolunteering.map(vol => {
-            console.log('Firebase Service - Processing volunteering item:', vol);
+            
             return {
               ...vol,
               // Use null instead of undefined for Firebase
@@ -309,10 +301,10 @@ export const updateProfile = async (userId: string, updates: Partial<UserProfile
               endDate: vol.endDate ? (vol.endDate instanceof Timestamp ? vol.endDate : Timestamp.fromDate(new Date(vol.endDate))) : null,
             };
           });
-          console.log(`Firebase Service - Setting volunteering field with ${validVolunteering.length} items`);
+          
         } else {
           cleanedUpdates.volunteering = [];
-          console.log('Firebase Service - Setting empty volunteering array');
+          
         }
       } else {
         console.warn('Firebase Service - Volunteering field is not an array:', updates.volunteering);
@@ -331,7 +323,7 @@ export const updateProfile = async (userId: string, updates: Partial<UserProfile
           summary: pub.summary || '',
           link: pub.link || null
         }));
-        console.log(`Firebase Service - Setting publications field with ${validPublications.length} items`);
+        
       } else {
         console.warn('Firebase Service - Publications field is not an array:', updates.publications);
       }
@@ -345,7 +337,7 @@ export const updateProfile = async (userId: string, updates: Partial<UserProfile
           name: skill.name || '',
           proficiency: skill.proficiency || 'intermediate'
         }));
-        console.log(`Firebase Service - Setting skills field with ${validSkills.length} items`);
+        
       } else {
         console.warn('Firebase Service - Skills field is not an array:', updates.skills);
       }
@@ -359,7 +351,7 @@ export const updateProfile = async (userId: string, updates: Partial<UserProfile
           language: lang.language || '',
           proficiency: lang.proficiency || 'intermediate'
         }));
-        console.log(`Firebase Service - Setting languages field with ${validLanguages.length} items`);
+        
       } else {
         console.warn('Firebase Service - Languages field is not an array:', updates.languages);
       }
@@ -370,16 +362,16 @@ export const updateProfile = async (userId: string, updates: Partial<UserProfile
       const firstName = updates.firstName || cleanedUpdates.firstName || '';
       const lastName = updates.lastName || cleanedUpdates.lastName || '';
       cleanedUpdates.displayName = `${firstName} ${lastName}`.trim();
-      console.log('Firebase Service - Setting displayName:', cleanedUpdates.displayName);
+      
     }
 
     // Add timestamp for update
     cleanedUpdates.updatedAt = serverTimestamp();
-    console.log('Firebase Service - Final data to be updated:', cleanedUpdates);
+    
 
     try {
       const result = await updateDoc(profileRef, cleanedUpdates);
-      console.log('Firebase Service - Update successful, result:', result);
+      
     } catch (error) {
       console.error('Firebase Service - Error during Firestore update:', error);
       throw error;
@@ -529,7 +521,7 @@ export const addCertification = async (userId: string, certification: Omit<Certi
       id: crypto.randomUUID(),
     };
     
-    console.log('Firebase Service - Adding certification:', certificationWithId);
+    
     
     // Use certifications instead of licensesCertifications for consistency
     await updateDoc(profileRef, {

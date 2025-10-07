@@ -82,11 +82,7 @@ class BrevoService {
    */
   private transformUserProfileToBrevoContact(profile: UserProfile): BrevoContact {
     try {
-      console.log('Transforming profile for Brevo:', {
-        email: profile.email,
-        experienceCount: profile.experience?.length || 0,
-        educationCount: profile.education?.length || 0
-      });
+      
 
       // Extract skills as comma-separated string
       const skillsString = profile.skills
@@ -109,9 +105,9 @@ class BrevoService {
         : profile.currentPosition || '';
 
       // Calculate years of experience
-      console.log('Calculating years of experience...');
+      
       const yearsOfExperience = this.calculateYearsOfExperience(profile.experience);
-      console.log('Years of experience calculated:', yearsOfExperience);
+      
 
     return {
       email: profile.email,
@@ -179,13 +175,7 @@ class BrevoService {
    private parseDate(dateInput: any): Date | null {
      if (!dateInput) return null;
      
-     console.log('Parsing date input:', { 
-       type: typeof dateInput, 
-       value: dateInput,
-       isDate: dateInput instanceof Date,
-       hasToDate: dateInput && typeof dateInput.toDate === 'function',
-       hasSeconds: dateInput && typeof dateInput.seconds === 'number'
-     });
+     
      
      // If it's already a Date object
      if (dateInput instanceof Date) {
@@ -271,16 +261,16 @@ class BrevoService {
     try {
       const contact = this.transformUserProfileToBrevoContact(profile);
       
-      console.log('Creating/updating Brevo contact:', contact.email);
+      
       
       const response = await this.makeRequest('/contacts', 'POST', contact);
       
-      console.log('Brevo contact created/updated successfully:', response);
+      
       return response;
     } catch (error: any) {
       // If contact already exists, try to update it
       if (error.message.includes('409') || error.message.includes('already exists')) {
-        console.log('Contact exists, updating instead...');
+        
         return this.updateContact(profile);
       }
       
@@ -297,11 +287,11 @@ class BrevoService {
       const contact = this.transformUserProfileToBrevoContact(profile);
       const { email, ...updateData } = contact;
       
-      console.log('Updating Brevo contact:', email);
+      
       
       const response = await this.makeRequest(`/contacts/${encodeURIComponent(email)}`, 'PUT', updateData);
       
-      console.log('Brevo contact updated successfully');
+      
       return response;
     } catch (error) {
       console.error('Failed to update Brevo contact:', error);
@@ -375,11 +365,11 @@ class BrevoService {
    */
   async sendTransactionalEmail(emailData: TransactionalEmailData): Promise<BrevoApiResponse> {
     try {
-      console.log('Sending transactional email via Brevo:', emailData.to[0].email);
+      
       
       const response = await this.makeRequest('/smtp/email', 'POST', emailData);
       
-      console.log('Transactional email sent successfully:', response);
+      
       return response;
     } catch (error) {
       console.error('Failed to send transactional email:', error);

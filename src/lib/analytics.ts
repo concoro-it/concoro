@@ -23,7 +23,7 @@ export function updateConsentMode(granted: boolean) {
     'analytics_storage': consentState
   });
 
-  console.log(`Consent mode updated: ${consentState}`);
+  
 }
 
 /**
@@ -35,7 +35,7 @@ export async function loadGoogleAnalytics(measurementId: string = 'G-NVD6N18QWW'
   if (typeof window !== 'undefined' && window.gtag) {
     const hasConsent = hasAnalyticsConsent();
     updateConsentMode(hasConsent);
-    console.log(`Google Analytics consent updated: ${hasConsent ? 'granted' : 'denied'}`);
+    
   }
 }
 
@@ -44,30 +44,30 @@ export async function loadGoogleAnalytics(measurementId: string = 'G-NVD6N18QWW'
  */
 export function testGoogleAnalytics() {
   if (typeof window === 'undefined') {
-    console.log('❌ Not in browser environment');
+    
     return;
   }
 
-  console.log('🔍 Testing Google Analytics setup...');
+  
   
   // Check if gtag is available
   if (window.gtag) {
-    console.log('✅ gtag function is available');
+    
   } else {
-    console.log('❌ gtag function not found');
+    
   }
 
   // Check if dataLayer is available
   if (window.dataLayer && Array.isArray(window.dataLayer)) {
-    console.log('✅ dataLayer is available and is an array');
-    console.log(`📊 dataLayer has ${window.dataLayer.length} items`);
+    
+    
   } else {
-    console.log('❌ dataLayer not found or not an array');
+    
   }
 
   // Check consent status
   const hasConsent = hasAnalyticsConsent();
-  console.log(`🍪 Cookie consent status: ${hasConsent ? 'GRANTED' : 'DENIED/NOT SET'}`);
+  
 
   // Test sending a custom event (if consent is granted)
   if (hasConsent && window.gtag) {
@@ -76,9 +76,9 @@ export function testGoogleAnalytics() {
       event_label: 'google_analytics_setup',
       value: 1
     });
-    console.log('✅ Test event sent to Google Analytics');
+    
   } else {
-    console.log('⏸️ Test event NOT sent (no consent or gtag not available)');
+    
   }
 }
 
@@ -87,13 +87,13 @@ export function testGoogleAnalytics() {
  */
 export function trackEvent(eventName: string, parameters?: Record<string, any>) {
   if (!hasAnalyticsConsent()) {
-    console.log('Event tracking skipped - no cookie consent');
+    
     return;
   }
 
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', eventName, parameters);
-    console.log('Event tracked:', eventName, parameters);
+    
   }
 }
 
@@ -102,7 +102,7 @@ export function trackEvent(eventName: string, parameters?: Record<string, any>) 
  */
 export function trackPageView(url: string, title?: string) {
   if (!hasAnalyticsConsent()) {
-    console.log('Page view tracking skipped - no cookie consent');
+    
     return;
   }
 
@@ -111,7 +111,7 @@ export function trackPageView(url: string, title?: string) {
       page_location: url,
       page_title: title,
     });
-    console.log('Page view tracked:', url);
+    
   }
 }
 
@@ -120,7 +120,7 @@ export function trackPageView(url: string, title?: string) {
  */
 export async function loadPlausible(domain: string) {
   if (!hasAnalyticsConsent()) {
-    console.log('Plausible not loaded - no cookie consent');
+    
     return;
   }
 
@@ -139,7 +139,7 @@ export async function loadPlausible(domain: string) {
           document.head.appendChild(script);
         });
 
-        console.log(`Plausible Analytics loaded for domain: ${domain}`);
+        
       } catch (error) {
         console.error('Failed to load Plausible Analytics:', error);
       }
@@ -152,7 +152,7 @@ export async function loadPlausible(domain: string) {
  */
 export function trackArticleView(articleId: string, slug: string, title: string) {
   if (!hasAnalyticsConsent()) {
-    console.log('Article view tracking skipped - no cookie consent');
+    
     return;
   }
 
@@ -172,7 +172,7 @@ export function trackArticleView(articleId: string, slug: string, title: string)
       timestamp: new Date().toISOString()
     });
 
-    console.log('📊 Article view tracked:', { articleId, slug, title });
+    
   }
 }
 
@@ -181,7 +181,7 @@ export function trackArticleView(articleId: string, slug: string, title: string)
  */
 export function trackConcorsoEngagement(action: string, concorsoId: string, concorsoTitle?: string) {
   if (!hasAnalyticsConsent()) {
-    console.log('Concorso engagement tracking skipped - no cookie consent');
+    
     return;
   }
 
@@ -193,7 +193,7 @@ export function trackConcorsoEngagement(action: string, concorsoId: string, conc
       timestamp: new Date().toISOString()
     });
 
-    console.log('📊 Concorso engagement tracked:', { action, concorsoId, concorsoTitle });
+    
   }
 }
 
@@ -202,7 +202,7 @@ export function trackConcorsoEngagement(action: string, concorsoId: string, conc
  */
 export function trackSearch(searchTerm: string, resultsCount: number, filters?: Record<string, any>) {
   if (!hasAnalyticsConsent()) {
-    console.log('Search tracking skipped - no cookie consent');
+    
     return;
   }
 
@@ -214,6 +214,6 @@ export function trackSearch(searchTerm: string, resultsCount: number, filters?: 
       timestamp: new Date().toISOString()
     });
 
-    console.log('📊 Search tracked:', { searchTerm, resultsCount, filters });
+    
   }
 } 

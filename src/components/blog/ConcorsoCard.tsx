@@ -6,7 +6,11 @@ import { useAuth } from "@/lib/hooks/useAuth"
 import { useMemo } from "react"
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { FaviconImage } from '@/components/common/FaviconImage'
+<<<<<<< Updated upstream
 import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
+=======
+import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
+>>>>>>> Stashed changes
 
 interface ConcorsoCardProps {
   concorso: {
@@ -217,7 +221,11 @@ export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
       </div>
       
       <div className="flex flex-col sm:flex-row gap-2">
+<<<<<<< Updated upstream
         <Link href={generateUrlWithAuth(concorso as any, user)}>
+=======
+        <Link href={user ? generateSEOConcorsoUrl(concorso as any) : `/signin?redirect=${encodeURIComponent(generateSEOConcorsoUrl(concorso as any))}`}>
+>>>>>>> Stashed changes
           <Button className="gap-2 w-full sm:w-auto">
             {user ? (
               <>

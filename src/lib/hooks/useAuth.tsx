@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoading(prevLoading => {
             if (prevLoading) {
               if (process.env.NODE_ENV === 'development') {
-                console.log('Auth timeout reached - continuing with no user');
+                
               }
               setInitialized(true);
               return false;

@@ -37,17 +37,8 @@ export function RelatedArticlesSection({
         const sanitizedArea = AreaGeografica === 'undefined' || !AreaGeografica ? undefined : AreaGeografica;
         
         // Debug logging
-        console.log('🔍 RelatedArticlesSection - Starting fetch with:', {
-          currentArticleId,
-          categoria: sanitizedCategoria || 'undefined',
-          settore_professionale: sanitizedSettore || 'undefined',
-          AreaGeografica: sanitizedArea || 'undefined',
-          hasAnyMetadata: !!(sanitizedCategoria || sanitizedSettore || sanitizedArea)
-        })
-
         // Only fetch if we have at least one metadata field
         if (!sanitizedCategoria && !sanitizedSettore && !sanitizedArea) {
-          console.log('⚠️ RelatedArticlesSection - No metadata available, skipping fetch')
           setRelatedArticles([])
           return
         }
@@ -60,7 +51,6 @@ export function RelatedArticlesSection({
           4
         )
         
-        console.log('📝 RelatedArticlesSection - Fetched articles:', articles)
         setRelatedArticles(articles)
       } catch (error) {
         console.error("❌ RelatedArticlesSection - Error fetching related articles:", error)
@@ -104,7 +94,6 @@ export function RelatedArticlesSection({
 
   // Show loading state
   if (isLoading) {
-    console.log('⏳ RelatedArticlesSection - Loading...')
     return (
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
@@ -124,15 +113,8 @@ export function RelatedArticlesSection({
   }
 
   // Log final state
-  console.log('🎯 RelatedArticlesSection - Final render with:', {
-    relatedArticlesCount: relatedArticles.length,
-    isLoading,
-    hasArticles: relatedArticles.length > 0
-  })
-
   // Don't render if no related articles
   if (!relatedArticles || relatedArticles.length === 0) {
-    console.log('❌ RelatedArticlesSection - No articles to show')
     return null
   }
 

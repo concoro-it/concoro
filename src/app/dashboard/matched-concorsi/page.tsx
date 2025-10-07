@@ -32,22 +32,12 @@ export default function MatchedConcorsiPage() {
       // Check user profile
       const userProfilesCollection = collection(db, 'userProfiles')
       const userProfilesSnapshot = await getDocs(userProfilesCollection)
-      console.log('User profiles count:', userProfilesSnapshot.size)
-      console.log('User profiles IDs:', userProfilesSnapshot.docs.map(doc => doc.id))
-      
       // Check if current user exists
       const hasCurrentUser = userProfilesSnapshot.docs.some(doc => doc.id === user.uid)
-      console.log('Current user profile exists:', hasCurrentUser)
-      
       if (hasCurrentUser) {
         // Check matches collection
         const matchesCollection = collection(db, `userProfiles/${user.uid}/matches`)
         const matchesSnapshot = await getDocs(matchesCollection)
-        console.log('Matches count for current user:', matchesSnapshot.size)
-        console.log('Match documents:', matchesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          data: doc.data()
-        })))
         
         toast.success(`Found ${matchesSnapshot.size} matches for your profile`)
       } else {

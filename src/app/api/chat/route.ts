@@ -60,9 +60,9 @@ export async function POST(req: Request) {
       try {
         userData = await getUserProfile(userId);
         if (userData) {
-          console.log('User data loaded for Genio');
+          
         } else {
-          console.log(`No user profile found for userId: ${userId}`);
+          
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
         context,
       });
 
-      console.log('Sending prompt to Gemini');
+      
       const result = await chat.sendMessage(systemPrompt);
       const response = await result.response;
       const text = response.text();

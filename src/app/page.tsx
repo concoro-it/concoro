@@ -2,8 +2,13 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+<<<<<<< Updated upstream
 import { BellIcon, SearchIcon, BriefcaseIcon, SparklesIcon, UserIcon } from 'lucide-react';
 import { BentoCard, BentoGrid } from '@/components/ui/bento-grid';
+=======
+import { BellIcon, SearchIcon, BookmarkIcon, UserIcon, BriefcaseIcon, SparklesIcon } from 'lucide-react';
+// BentoGrid components are now lazy loaded
+>>>>>>> Stashed changes
 import { MainFooter } from '@/components/ui/main-footer';
 import dynamic from 'next/dynamic';
 import { getOrganizationStructuredData, getWebSiteStructuredData } from '@/lib/utils/guest-seo-utils';
@@ -24,6 +29,17 @@ const MagicText = dynamic(() => import('@/components/ui/magic-text').then(mod =>
 
 const CTASection = dynamic(() => import('@/components/ui/cta-section').then(mod => ({ default: mod.CTASection })), {
   loading: () => <div className="h-32 bg-gray-50 animate-pulse rounded-lg" />,
+});
+
+// Lazy load BentoGrid components
+const BentoCard = dynamic(() => import('@/components/ui/bento-grid').then(mod => ({ default: mod.BentoCard })), {
+  loading: () => <div className="h-48 bg-gray-50 animate-pulse rounded-lg" />,
+});
+
+const BentoGrid = dynamic(() => import('@/components/ui/bento-grid').then(mod => ({ default: mod.BentoGrid })), {
+  loading: () => <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-48 bg-gray-50 animate-pulse rounded-lg" />)}
+  </div>,
 });
 
 

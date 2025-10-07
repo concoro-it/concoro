@@ -90,11 +90,54 @@ export function getDeadlineCountdown(deadline: string | { seconds?: number; nano
 
   let deadlineDate: Date;
 
+<<<<<<< Updated upstream
   // Handle Firebase Timestamp (both formats)
   if (typeof deadline === 'object' && deadline !== null && ('seconds' in deadline || '_seconds' in deadline)) {
     const seconds = deadline.seconds || deadline._seconds;
     if (seconds) {
       deadlineDate = new Date(seconds * 1000);
+=======
+  try {
+    // Handle Firestore Timestamp (only available server-side or with full Firestore SDK)
+    if (deadline instanceof Timestamp) {
+      deadlineDate = deadline.toDate();
+    }
+    // Handle Firestore-like object (serialized timestamp from server)
+    else if (typeof deadline === 'object' && deadline !== null) {
+      // Check for both formats: with and without underscores
+      if ('seconds' in deadline && 'nanoseconds' in deadline) {
+        deadlineDate = new Date(deadline.seconds * 1000);
+      } else if ('_seconds' in deadline && '_nanoseconds' in deadline) {
+        deadlineDate = new Date((deadline as any)._seconds * 1000);
+      }
+    }
+    // Handle ISO string
+    else if (typeof deadline === 'string') {
+      deadlineDate = parseISO(deadline);
+    }
+    // Handle Date object
+    else if (deadline instanceof Date) {
+      deadlineDate = deadline;
+    }
+
+    if (!deadlineDate || !isValid(deadlineDate)) {
+      return null;
+    }
+
+    const today = new Date();
+    const daysUntilDeadline = differenceInDays(deadlineDate, today);
+
+    // If deadline has passed, don't show countdown
+    if (daysUntilDeadline < 0) {
+      return null;
+    }
+
+    // Format the countdown message
+    if (daysUntilDeadline === 0) {
+      return "Scade oggi";
+    } else if (daysUntilDeadline === 1) {
+      return "Scade domani";
+>>>>>>> Stashed changes
     } else {
       return null;
     }

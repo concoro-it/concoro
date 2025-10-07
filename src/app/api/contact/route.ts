@@ -25,9 +25,7 @@ export async function POST(request: NextRequest) {
 
     // Check if SMTP credentials are configured
     if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
-      console.log('SMTP credentials not configured. Email would be sent with these details:', {
-        firstName, lastName, email, subject, message
-      });
+      
       return NextResponse.json(
         { message: 'Messaggio ricevuto! Ti contatteremo presto.' },
         { status: 200 }

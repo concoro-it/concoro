@@ -18,6 +18,7 @@ import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import Image from "next/image"
 import Link from "next/link"
 import { Spinner } from "@/components/ui/spinner"
+<<<<<<< Updated upstream:src/app/saved-concorsi/page.tsx
 // Removed getBandoUrl import to avoid redirect loops
 
 const getFaviconChain = (domain: string): string[] => [
@@ -37,6 +38,10 @@ const extractDomain = (url: string | undefined): string => {
     return '';
   }
 };
+=======
+import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
+import { FaviconImage } from "@/components/common/FaviconImage"
+>>>>>>> Stashed changes:src/app/(protected)/saved-concorsi/page.tsx
 
 const cleanEnteName = (str: string | undefined): string => {
   if (!str) return '';
@@ -303,7 +308,11 @@ export default function SavedConcorsiPage() {
     return (
       <Link 
         key={concorso.id} 
+<<<<<<< Updated upstream:src/app/saved-concorsi/page.tsx
         href={bandoUrl}
+=======
+        href={generateSEOConcorsoUrl(concorso)}
+>>>>>>> Stashed changes:src/app/(protected)/saved-concorsi/page.tsx
         className="block"
       >
         <div 

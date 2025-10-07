@@ -473,16 +473,16 @@ export default function BasicInfoPage() {
 
       // Sync with Brevo and send welcome email
       try {
-        console.log('Syncing profile completion with Brevo...');
+        
         const brevoResult = await brevoClient.syncProfileCompletion(userProfile);
         
         if (brevoResult.success) {
-          console.log('Profile synced with Brevo and welcome email sent successfully');
+          
           if (brevoResult.data?.welcomeEmail) {
             if (brevoResult.data.welcomeEmail.error) {
               console.warn('Welcome email failed but sync succeeded:', brevoResult.data.welcomeEmail.error);
             } else {
-              console.log('Welcome email sent successfully');
+              
             }
           }
         } else {

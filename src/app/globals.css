@@ -124,6 +124,18 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Title letter spacing for all headings */
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.2px;
+  }
+}
+
+/* Utility class for title letter spacing */
+@layer utilities {
+  .tracking-title {
+    letter-spacing: -0.96px;
+  }
 }
 
 /* Custom styles for fixed header layout */

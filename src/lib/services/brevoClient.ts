@@ -19,7 +19,7 @@ export class BrevoClientService {
    */
   async syncProfile(profile: UserProfile, sendWelcomeEmail = false): Promise<BrevoSyncResponse> {
     try {
-      console.log('Syncing profile to Brevo via API:', profile.email);
+      
 
       const response = await fetch(this.baseUrl, {
         method: 'POST',
@@ -35,7 +35,7 @@ export class BrevoClientService {
         throw new Error(result.details || result.error || 'Failed to sync profile');
       }
 
-      console.log('Profile synced to Brevo successfully:', result);
+      
       return result;
     } catch (error: any) {
       console.error('Failed to sync profile to Brevo:', error);
@@ -52,7 +52,7 @@ export class BrevoClientService {
    */
   async updateProfile(profile: UserProfile): Promise<BrevoSyncResponse> {
     try {
-      console.log('Updating profile in Brevo via API:', profile.email);
+      
 
       const response = await fetch(this.baseUrl, {
         method: 'PUT',
@@ -68,7 +68,7 @@ export class BrevoClientService {
         throw new Error(result.details || result.error || 'Failed to update profile');
       }
 
-      console.log('Profile updated in Brevo successfully:', result);
+      
       return result;
     } catch (error: any) {
       console.error('Failed to update profile in Brevo:', error);
@@ -85,7 +85,7 @@ export class BrevoClientService {
    */
   async deleteContact(email: string): Promise<BrevoSyncResponse> {
     try {
-      console.log('Deleting contact from Brevo via API:', email);
+      
 
       const response = await fetch(`${this.baseUrl}?email=${encodeURIComponent(email)}`, {
         method: 'DELETE',
@@ -97,7 +97,7 @@ export class BrevoClientService {
         throw new Error(result.details || result.error || 'Failed to delete contact');
       }
 
-      console.log('Contact deleted from Brevo successfully:', result);
+      
       return result;
     } catch (error: any) {
       console.error('Failed to delete contact from Brevo:', error);
@@ -126,7 +126,7 @@ export class BrevoClientService {
         lastError = new Error(result.error || 'Unknown error');
         
         if (attempt < maxRetries) {
-          console.log(`Brevo sync attempt ${attempt} failed, retrying...`);
+          
           // Wait before retrying (exponential backoff)
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
         }
@@ -134,7 +134,7 @@ export class BrevoClientService {
         lastError = error;
         
         if (attempt < maxRetries) {
-          console.log(`Brevo sync attempt ${attempt} failed, retrying...`);
+          
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
         }
       }
@@ -164,7 +164,7 @@ export class BrevoClientService {
         lastError = new Error(result.error || 'Unknown error');
         
         if (attempt < maxRetries) {
-          console.log(`Brevo sync attempt ${attempt} failed, retrying...`);
+          
           // Wait before retrying (exponential backoff)
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
         }
@@ -172,7 +172,7 @@ export class BrevoClientService {
         lastError = error;
         
         if (attempt < maxRetries) {
-          console.log(`Brevo sync attempt ${attempt} failed, retrying...`);
+          
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
         }
       }

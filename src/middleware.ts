@@ -9,6 +9,7 @@ function isDocumentId(value: string): boolean {
   return /^[a-zA-Z0-9]{20,}$/.test(value);
 }
 
+<<<<<<< Updated upstream
 // Function to check if a string is a Firestore document ID (more comprehensive)
 function isFirestoreDocumentId(str: string): boolean {
   if (!str) return false;
@@ -31,6 +32,10 @@ export function middleware(request: NextRequest) {
     url.host = 'www.concoro.it';
     return NextResponse.redirect(url, 301); // 301 is permanent redirect
   }
+=======
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+>>>>>>> Stashed changes
   
   // SEO: Handle ID-based article URL redirects at server level for proper 301 redirects
   const articleMatch = pathname.match(/^\/articolo\/([^\/]+)$/);
@@ -95,6 +100,16 @@ export function middleware(request: NextRequest) {
     const response = NextResponse.next();
     response.headers.set('x-pathname', pathname);
     response.headers.set('x-bando-access-type', 'slug-based');
+    return response;
+  }
+  
+  // Handle expired concorsi - set x-concorso-status header for the page to check
+  const concorsoMatch = pathname.match(/^\/concorsi\/([^\/]+\/[^\/]+\/[^\/]+\/[^\/]+\/[a-zA-Z0-9]{20,})$/);
+  if (concorsoMatch) {
+    // Add header to track that this is a concorso page
+    const response = NextResponse.next();
+    response.headers.set('x-pathname', pathname);
+    response.headers.set('x-route-type', 'concorso');
     return response;
   }
   

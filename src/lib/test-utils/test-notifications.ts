@@ -86,7 +86,7 @@ export async function createTestNotifications(userId: string) {
       await setDoc(notificationRef, testNotifications[i]);
     }
 
-    console.log('Test notifications created successfully');
+    
     return true;
   } catch (error) {
     console.error('Error creating test notifications:', error);
@@ -112,7 +112,7 @@ export async function clearTestNotifications(userId: string) {
       await setDoc(concorsoRef, {}, { merge: false });
     }
 
-    console.log('Test notifications cleared successfully');
+    
     return true;
   } catch (error) {
     console.error('Error clearing test notifications:', error);

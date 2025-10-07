@@ -55,11 +55,7 @@ interface PineconeMatch {
 
 export async function fetchConcorsiFromPinecone(userMessage: string, topK = 5): Promise<string[]> {
   try {
-    console.log('🔍 Pinecone Query Start:', {
-      userMessage,
-      topK,
-      indexName: process.env.PINECONE_INDEX || 'concorsi'
-    });
+    
 
     // Check if we have required environment variables
     if (!process.env.PINECONE_API_KEY) {
@@ -68,44 +64,26 @@ export async function fetchConcorsiFromPinecone(userMessage: string, topK = 5): 
     }
 
     // Generate embeddings
-    console.log('📊 Generating embeddings for message...');
+    
     const embedded = await embedText(userMessage);
-    console.log('✅ Embeddings generated:', {
-      vectorLength: embedded.length,
-      sampleValues: embedded.slice(0, 3)
-    });
+    
 
     // Query Pinecone
-    console.log('🔍 Querying Pinecone index...');
+    
     const result = await pinecone.query({
       topK,
       vector: embedded,
       includeMetadata: true,
     });
 
-    console.log('📊 Pinecone query result:', {
-      matchesCount: result.matches?.length || 0,
-      namespace: result.namespace,
-      matches: result.matches?.map((match: PineconeMatch) => ({
-        id: match.id,
-        score: match.score,
-        metadata: match.metadata
-      })) || []
-    });
-
     // Extract concorso IDs from metadata
     const concorsoIds = result.matches?.map((match: PineconeMatch) => {
       const concorsoId = match.metadata?.concorso_id as string;
-      console.log('🔗 Processing match:', {
-        matchId: match.id,
-        score: match.score,
-        concorsoId,
-        metadata: match.metadata
-      });
+      
       return concorsoId;
     }).filter(Boolean) as string[];
 
-    console.log('✅ Extracted concorso IDs:', concorsoIds);
+    
 
     if (concorsoIds.length === 0) {
       console.warn('⚠️ No valid concorso IDs found in Pinecone results');
@@ -153,7 +131,7 @@ export async function getConcorsiFromFirestore(concorsoIds: string[]): Promise<J
       }
     }
 
-    console.log(`✅ Returned ${results.length} open concorsi out of ${concorsoIds.length} total`);
+    
     return results;
   } catch (error) {
     console.error('Error in getConcorsiFromFirestore:', error);

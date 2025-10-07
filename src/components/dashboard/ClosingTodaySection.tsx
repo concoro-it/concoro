@@ -15,6 +15,7 @@ import { useSavedConcorsi } from "@/lib/hooks/useSavedConcorsi"
 import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 import { formatLocalitaDisplay } from '@/lib/utils/region-utils'
 import { formatDistanceToNow } from "date-fns"
+<<<<<<< Updated upstream
 import { useBandoUrl } from '@/lib/hooks/useBandoUrl'
 import Image from "next/image"
 
@@ -52,6 +53,11 @@ const extractDomain = (url: string | undefined): string => {
     return '';
   }
 };
+=======
+import { FaviconImage } from "@/components/common/FaviconImage"
+import { toast } from "sonner"
+import { generateSEOConcorsoUrl } from '@/lib/utils/concorso-urls'
+>>>>>>> Stashed changes
 
 // Function to clean Ente names - display as-is without case conversion
 const cleanEnteName = (str: string | undefined): string => {
@@ -417,7 +423,11 @@ export function ClosingTodaySection() {
           return (
             <Link 
               key={concorso.id} 
+<<<<<<< Updated upstream
               href={generateUrl(concorso)}
+=======
+              href={generateSEOConcorsoUrl(concorso)}
+>>>>>>> Stashed changes
               className="block"
             >
               <div 
@@ -466,7 +476,20 @@ export function ClosingTodaySection() {
                 <div className="flex flex-wrap gap-3 text-sm text-black/70 mb-3">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
+<<<<<<< Updated upstream
                     <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
+=======
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        router.push(getLocalitaUrl(concorso.AreaGeografica || '', 'bandi'))
+                      }}
+                      className="hover:text-foreground transition-colors text-left"
+                    >
+                      <span>{formatLocalitaDisplay(concorso.AreaGeografica || '')}</span>
+                    </button>
+>>>>>>> Stashed changes
                   </div>
                   {deadlineStatus && (
                     <div className={`flex items-center gap-1 text-sm ${
