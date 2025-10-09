@@ -30,6 +30,9 @@ Disallow: /settings
 Allow: /api/sitemap
 Allow: /api/sitemap/concorsi
 
+# Block all other API routes (they return JSON, not HTML)
+Disallow: /api/
+
 # Block blog tag pages (not yet optimized for SEO)
 Disallow: /blog/tags/
 Disallow: /api/sitemap/tags

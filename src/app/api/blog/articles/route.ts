@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllArticoliServer } from '@/lib/blog/services-server';
 import { serializeArticles } from '@/lib/utils/firestore-serialization';
 
+// Force dynamic rendering for this API route (uses searchParams)
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/blog/articles
  * Returns paginated blog articles with Load More approach
