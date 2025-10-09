@@ -1,21 +1,46 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
-import { getArticoloWithConcorsoBySlugOrIdServer } from "@/lib/blog/services-server"
+import { getArticoloWithConcorsoBySlugOrIdServer, getAllArticoliServer } from "@/lib/blog/services-server"
 import { generateArticleSEO, generateAltText, generateSocialImage } from '@/lib/utils/seo-utils'
-import { getArticoloCanonicalUrl } from '@/lib/utils/articolo-canonical-utils'
+import { getArticoloCanonicalUrl, getArticoloCanonicalPath } from '@/lib/utils/articolo-canonical-utils'
 import { removeEmojis } from '@/lib/utils/text-utils'
-import { isDocumentId } from '@/lib/utils/slug-utils'
-import { ArticlePageClient } from '@/app/articolo/[slugOrId]/ArticlePageClient'
+import { parseArticoloSlug, isFirebaseDocumentId, findArticoloBySlug } from '@/lib/utils/articolo-urls'
+import { ArticlePageClient } from './ArticlePageClient'
 import { serializeArticle } from '@/lib/utils/firestore-serialization'
+import { ArticoloWithConcorso } from '@/types'
 
 interface ArticoloPageProps {
-  params: { slugOrId: string }
+  params: { slug: string[] }
 }
 
 // ✅ SERVER-SIDE METADATA GENERATION (Critical SEO Fix)
 export async function generateMetadata({ params }: ArticoloPageProps): Promise<Metadata> {
   try {
-    const article = await getArticoloWithConcorsoBySlugOrIdServer(params.slugOrId)
+    // Parse the URL slug segments
+    const slugPath = params.slug.join('/')
+    const slugComponents = parseArticoloSlug(slugPath)
+    
+    let article: ArticoloWithConcorso | null = null
+
+    // Try to fetch by ID first (most reliable)
+    if (slugComponents.id) {
+      article = await getArticoloWithConcorsoBySlugOrIdServer(slugComponents.id)
+    }
+    
+    // If not found by ID, try fuzzy matching with slug components
+    if (!article && (slugComponents.category || slugComponents.title || slugComponents.year)) {
+      const allArticles = await getAllArticoliServer()
+      const foundArticle = findArticoloBySlug(allArticles, slugComponents)
+      if (foundArticle) {
+        // Fetch the full article with concorso data
+        article = await getArticoloWithConcorsoBySlugOrIdServer(foundArticle.id)
+      }
+    }
+    
+    // Fallback: try treating the full path as a slug or ID
+    if (!article && params.slug.length === 1) {
+      article = await getArticoloWithConcorsoBySlugOrIdServer(params.slug[0])
+    }
     
     if (!article) {
       return {
@@ -94,9 +119,6 @@ export async function generateMetadata({ params }: ArticoloPageProps): Promise<M
         return new Date().toISOString();
       }
     };
-
-    // Check if we need to redirect (accessing by ID when slug exists)
-    const shouldRedirect = isDocumentId(params.slugOrId) && article.slug;
 
     // ✅ FRESHNESS SIGNAL: Check if concorso deadline has passed
     const isConcorsoExpired = article.concorso?.DataChiusura ? (() => {
@@ -202,23 +224,64 @@ export async function generateMetadata({ params }: ArticoloPageProps): Promise<M
 // ✅ SERVER COMPONENT - Fetches data server-side for optimal SEO
 export default async function ArticoloPage({ params }: ArticoloPageProps) {
   try {
-    const article = await getArticoloWithConcorsoBySlugOrIdServer(params.slugOrId)
+    // Parse the URL slug segments
+    const slugPath = params.slug.join('/')
+    const slugComponents = parseArticoloSlug(slugPath)
+    
+    let article: ArticoloWithConcorso | null = null
+
+    // Try to fetch by ID first (most reliable)
+    if (slugComponents.id) {
+      article = await getArticoloWithConcorsoBySlugOrIdServer(slugComponents.id)
+    }
+    
+    // If not found by ID, try fuzzy matching with slug components
+    if (!article && (slugComponents.category || slugComponents.title || slugComponents.year)) {
+      const allArticles = await getAllArticoliServer()
+      const foundArticle = findArticoloBySlug(allArticles, slugComponents)
+      if (foundArticle) {
+        // Fetch the full article with concorso data
+        article = await getArticoloWithConcorsoBySlugOrIdServer(foundArticle.id)
+      }
+    }
+    
+    // Fallback: try treating the full path or single segment as a slug or ID
+    if (!article) {
+      if (params.slug.length === 1) {
+        // Single segment - could be old-style slug or ID
+        article = await getArticoloWithConcorsoBySlugOrIdServer(params.slug[0])
+      }
+    }
     
     if (!article) {
       notFound()
     }
 
-    // ✅ SEO FIX: If accessing by ID but slug exists, redirect to slug URL (prioritize slug)
-    const shouldRedirect = isDocumentId(params.slugOrId) && article.slug;
-    if (shouldRedirect) {
-      redirect(`/articolo/${article.slug}`)
+    // ✅ SEO FIX: If accessing by old URL format, redirect to new SEO-friendly URL
+    const canonicalPath = getArticoloCanonicalPath(article)
+    const currentPath = `/articolo/${slugPath}`
+    
+    // Only redirect if:
+    // 1. Paths are different
+    // 2. Either: accessing by ONLY the ID (needs full slug), OR accessing by old slug format
+    // 3. Prevent redirect loop: if URL already has ID at end with multiple segments, assume it's canonical
+    const isIdOnly = slugPath === article.id
+    const hasMultipleSegmentsWithId = slugPath.includes('/') && slugPath.endsWith(article.id)
+    
+    const shouldPerformRedirect = 
+      currentPath !== canonicalPath && 
+      !hasMultipleSegmentsWithId  // Don't redirect if already using multi-segment URL with ID
+    
+    if (shouldPerformRedirect) {
+      console.log(`Redirecting from ${currentPath} to ${canonicalPath}`)
+      redirect(canonicalPath)
     }
 
     // ✅ FIX: Deep serialize ALL Firestore Timestamps to plain objects
     const serializedArticle = serializeArticle(article)
 
     // Pass serialized data to client component for interactivity
-    return <ArticlePageClient article={serializedArticle} slugOrId={params.slugOrId} />
+    return <ArticlePageClient article={serializedArticle} slugPath={slugPath} />
     
   } catch (error) {
     console.error('Error loading article page:', error)
@@ -229,3 +292,4 @@ export default async function ArticoloPage({ params }: ArticoloPageProps) {
 // ✅ DYNAMIC RENDERING: Tell Next.js this is a dynamic route
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600 // Revalidate every hour
+

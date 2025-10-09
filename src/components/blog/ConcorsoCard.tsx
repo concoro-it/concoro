@@ -109,9 +109,11 @@ const parseItalianDate = (dateStr: string) => {
 export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
   const { user } = useAuth();
   
+  
   // Format date to display
   const formatDate = (timestamp: any): string => {
     if (!timestamp) return "Data non disponibile";
+    
     
     try {
       // Convert Firebase timestamp to Date
@@ -121,6 +123,9 @@ export function ConcorsoCard({ concorso }: ConcorsoCardProps) {
       } else if (timestamp.seconds && timestamp.nanoseconds) {
         // Handle Firestore timestamp format
         date = new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate();
+      } else if (timestamp._seconds) {
+        // Handle serialized timestamp format
+        date = new Date(timestamp._seconds * 1000);
       } else if (typeof timestamp === 'string') {
         // Try to parse Italian date format
         const italianDate = parseItalianDate(timestamp);

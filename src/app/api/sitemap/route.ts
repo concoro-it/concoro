@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getAllArticoliServer } from '@/lib/blog/services-server';
-import { Articolo } from '@/types';
+import { getAllArticoliWithConcorsoForSitemapServer } from '@/lib/blog/services-server';
+import { ArticoloWithConcorso } from '@/types';
+import { generateSEOArticoloUrl } from '@/lib/utils/articolo-urls';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,19 +78,19 @@ export async function GET() {
       });
     });
 
-    // Fetch blog articles
+    // Fetch blog articles with their concorso data
     try {
-      const articles = await getAllArticoliServer();
+      const articles = await getAllArticoliWithConcorsoForSitemapServer();
       
       // Add individual blog articles
-      articles.forEach((article: Articolo) => {
+      articles.forEach((article: ArticoloWithConcorso) => {
         // Skip placeholder articles
         if (article.articolo_title === "Non specificato" && article.articolo_subtitle === "Non specificato") {
           return;
         }
 
-        // Use slug if available, otherwise fall back to ID
-        const articlePath = article.slug ? `/articolo/${article.slug}` : `/articolo/${article.id}`;
+        // ✅ SEO FIX: Use SEO-friendly multi-segment URL structure
+        const articlePath = generateSEOArticoloUrl(article);
         
         // Handle publication_date (could be Timestamp or string)
         let lastmod: string;
@@ -105,11 +106,56 @@ export async function GET() {
           lastmod = new Date().toISOString();
         }
 
+        // ✅ FRESHNESS SIGNAL: Check if concorso is expired
+        const isConcorsoExpired = (() => {
+          if (!article.concorso?.DataChiusura) return false;
+          
+          const deadline = article.concorso.DataChiusura;
+          let deadlineDate: Date | null = null;
+          
+          try {
+            if (typeof deadline === 'object' && 'seconds' in deadline) {
+              deadlineDate = new Date(deadline.seconds * 1000);
+            } else if (typeof deadline === 'string') {
+              deadlineDate = new Date(deadline);
+            }
+            
+            if (deadlineDate && !isNaN(deadlineDate.getTime())) {
+              return deadlineDate < new Date();
+            }
+          } catch (e) {
+            console.error('Error parsing deadline:', e);
+          }
+          
+          return false;
+        })();
+
+        // ✅ FRESHNESS SIGNAL: Lower priority for articles older than 6 months
+        const articleAge = Date.now() - new Date(lastmod).getTime();
+        const sixMonths = 6 * 30 * 24 * 60 * 60 * 1000;
+        const isRecent = articleAge < sixMonths;
+
+        // Expired concorsi get lowest priority and yearly changefreq
+        // This signals to Google that the content is archived/historical
+        let changefreq: 'weekly' | 'monthly' | 'yearly';
+        let priority: string;
+        
+        if (isConcorsoExpired) {
+          changefreq = 'yearly';
+          priority = '0.3'; // Low priority for expired content
+        } else if (isRecent) {
+          changefreq = 'weekly';
+          priority = '0.8'; // High priority for fresh, active content
+        } else {
+          changefreq = 'monthly';
+          priority = '0.6'; // Medium priority for older but still active content
+        }
+
         urls.push({
           loc: `https://concoro.it${articlePath}`,
           lastmod,
-          changefreq: 'monthly',
-          priority: '0.7'
+          changefreq,
+          priority
         });
       });
     } catch (error) {

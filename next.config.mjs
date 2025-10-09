@@ -67,6 +67,11 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'storage.googleapis.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'logo.clearbit.com',
         pathname: '/**',
       },

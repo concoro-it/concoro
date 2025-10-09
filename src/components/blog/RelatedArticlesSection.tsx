@@ -28,19 +28,40 @@ export function RelatedArticlesSection({
 
   useEffect(() => {
     const fetchRelatedArticles = async () => {
+      let timeoutId: NodeJS.Timeout | null = null;
+      
       try {
         setIsLoading(true)
         
-        // Sanitize input parameters
-        const sanitizedCategoria = categoria === 'undefined' || !categoria ? undefined : categoria;
-        const sanitizedSettore = settore_professionale === 'undefined' || !settore_professionale ? undefined : settore_professionale;
-        const sanitizedArea = AreaGeografica === 'undefined' || !AreaGeografica ? undefined : AreaGeografica;
+        // Add a timeout to prevent infinite loading
+        timeoutId = setTimeout(() => {
+          console.log('⏰ RelatedArticlesSection - Timeout reached, stopping loading');
+          setIsLoading(false);
+        }, 10000); // 10 second timeout
         
-        // Debug logging
+        // Sanitize input parameters - handle both article metadata and fallback to undefined if needed
+        const sanitizedCategoria = (categoria === 'undefined' || !categoria) ? undefined : categoria;
+        const sanitizedSettore = (settore_professionale === 'undefined' || !settore_professionale) ? undefined : settore_professionale;
+        const sanitizedArea = (AreaGeografica === 'undefined' || !AreaGeografica) ? undefined : AreaGeografica;
+        
+        
         // Only fetch if we have at least one metadata field
         if (!sanitizedCategoria && !sanitizedSettore && !sanitizedArea) {
-          setRelatedArticles([])
-          return
+          console.log('❌ RelatedArticlesSection - No metadata fields, trying fallback to recent articles');
+          
+          // Fallback: fetch recent articles if no metadata is available
+          try {
+            const { getAllArticoli } = await import('@/lib/blog/services');
+            const recentArticles = await getAllArticoli(4);
+            const filteredArticles = recentArticles.filter(article => article.id !== currentArticleId);
+            console.log('📄 RelatedArticlesSection - Fallback found articles:', filteredArticles.length);
+            setRelatedArticles(filteredArticles.slice(0, 4));
+            return;
+          } catch (error) {
+            console.error('❌ RelatedArticlesSection - Fallback failed:', error);
+            setRelatedArticles([]);
+            return;
+          }
         }
         
         const articles = await getRelatedArticoli(
@@ -56,6 +77,9 @@ export function RelatedArticlesSection({
         console.error("❌ RelatedArticlesSection - Error fetching related articles:", error)
         setRelatedArticles([])
       } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
         setIsLoading(false)
       }
     }

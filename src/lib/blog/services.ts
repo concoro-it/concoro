@@ -12,6 +12,7 @@ import {
   updateDoc,
   or,
   and,
+  QueryConstraint,
 } from 'firebase/firestore';
 import { db, getFirebaseFirestore } from '@/lib/firebase/config';
 import { Articolo, ArticoloWithConcorso } from '@/types';
@@ -463,6 +464,7 @@ export const updateArticleMetadata = async (articleId: string, concorsoId: strin
 
 /**
  * Fetches related articles based on categoria, settore_professionale, or AreaGeografica
+ * Prioritizes articles with Stato: OPEN, falls back to closed if no open ones found
  */
 export const getRelatedArticoli = async (
   currentArticleId: string,
@@ -478,12 +480,12 @@ export const getRelatedArticoli = async (
     const sanitizedArea = AreaGeografica === 'undefined' || !AreaGeografica ? undefined : AreaGeografica;
     
     
-    
     const firestore = db || getFirebaseFirestore();
+    const concorsiRef = collection(firestore, 'concorsi');
     const articoliRef = collection(firestore, 'articoli');
     
     // Build query conditions for matching metadata
-    const conditions = [];
+    const conditions: QueryConstraint[] = [];
     
     if (sanitizedCategoria) {
       conditions.push(where('categoria', '==', sanitizedCategoria));
@@ -495,24 +497,73 @@ export const getRelatedArticoli = async (
       conditions.push(where('AreaGeografica', '==', sanitizedArea));
     }
     
-    
-    
     if (conditions.length === 0) {
-      
       return [];
     }
     
-    // Create query with OR conditions to find articles with matching metadata
+    // Helper function to fetch concorsi with optional Stato filter
+    const fetchConcorsiWithConditions = async (statoFilter?: string) => {
+      let concorsiIds: string[] = [];
+      
+      // Try each condition separately since Firestore has limitations on OR queries
+      for (const condition of conditions) {
+        try {
+          const queryConstraints = [condition];
+          
+          // Add Stato filter if specified
+          if (statoFilter) {
+            queryConstraints.push(where('Stato', '==', statoFilter));
+          }
+          
+          queryConstraints.push(orderBy('publication_date', 'desc'));
+          queryConstraints.push(limit(limitCount * 2));
+          
+          const concorsiQuery = query(concorsiRef, ...queryConstraints);
+          const snapshot = await getDocs(concorsiQuery);
+          
+          const ids = snapshot.docs.map(doc => doc.id);
+          concorsiIds = [...concorsiIds, ...ids];
+        } catch (error) {
+          console.warn('Error in related concorsi query condition:', error);
+          continue;
+        }
+      }
+      
+      // Remove duplicates
+      return Array.from(new Set(concorsiIds));
+    };
+    
+    // First try to get OPEN concorsi
+    let concorsiIds = await fetchConcorsiWithConditions('OPEN');
+    // If no OPEN concorsi found, fallback to any stato (including closed)
+    if (concorsiIds.length === 0) {
+      concorsiIds = await fetchConcorsiWithConditions();
+    }
+    
+    if (concorsiIds.length === 0) {
+      // Fallback: get recent articles if no concorsi found
+      try {
+        const recentArticles = await getAllArticoli(limitCount);
+        const filteredArticles = recentArticles.filter(article => article.id !== currentArticleId);
+        return filteredArticles.slice(0, limitCount);
+      } catch (error) {
+        console.error('❌ getRelatedArticoli - Fallback failed:', error);
+        return [];
+      }
+    }
+    
+    // Fetch articles for these concorso IDs
     let relatedArticles: Articolo[] = [];
     
-    // Try each condition separately since Firestore has limitations on OR queries
-    for (const condition of conditions) {
+    // Firestore 'in' queries can only handle up to 10 items at a time
+    const chunkSize = 10;
+    for (let i = 0; i < concorsiIds.length; i += chunkSize) {
+      const chunk = concorsiIds.slice(i, i + chunkSize);
+      
       try {
         const articoliQuery = query(
           articoliRef,
-          condition,
-          orderBy('publication_date', 'desc'),
-          limit(limitCount * 2) // Get more than needed to filter duplicates
+          where('concorso_id', 'in', chunk)
         );
         
         const snapshot = await getDocs(articoliQuery);
@@ -523,20 +574,17 @@ export const getRelatedArticoli = async (
             ...doc.data(),
           } as Articolo));
         
-        
         relatedArticles = [...relatedArticles, ...articles];
       } catch (error) {
-        console.warn('Error in related articles query condition:', error);
+        console.warn('Error fetching articles for concorsi chunk:', error);
         continue;
       }
     }
     
-    // Remove duplicates and limit results
+    // Remove duplicates
     const uniqueArticles = relatedArticles.filter((article, index, self) => 
       index === self.findIndex(a => a.id === article.id) && article.id !== currentArticleId
     );
-    
-    
     
     // Sort by publication date and limit
     const result = uniqueArticles
@@ -546,7 +594,6 @@ export const getRelatedArticoli = async (
         return dateB.getTime() - dateA.getTime();
       })
       .slice(0, limitCount);
-      
     
     return result;
   } catch (error) {

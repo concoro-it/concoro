@@ -18,7 +18,8 @@ Disallow: /search
 Disallow: /*?search=*
 Disallow: /*?q=*
 Disallow: /*?query=*
-Disallow: /*?tag=*
+# ✅ ALLOW tag filter pages - they are valuable for long-tail SEO
+# Tag pages will be migrated to static routes: /blog/tags/[tag]
 
 # Block admin and user-specific paths
 Disallow: /dashboard
@@ -28,6 +29,10 @@ Disallow: /settings
 # Allow sitemap API endpoints (must come before the general /api/ block)
 Allow: /api/sitemap
 Allow: /api/sitemap/concorsi
+
+# Block blog tag pages (not yet optimized for SEO)
+Disallow: /blog/tags/
+Disallow: /api/sitemap/tags
 
 # Block legacy URL patterns (redirected to canonical)
 Disallow: /bandi?id=*
@@ -41,5 +46,6 @@ Allow: /blog/$
 # Filter pages use meta robots noindex,follow to prevent indexation while allowing crawling
 
 # Sitemaps
-Sitemap: https://www.concoro.it/api/sitemap
-Sitemap: https://www.concoro.it/sitemap.xml 
+Sitemap: https://concoro.it/sitemap.xml
+Sitemap: https://concoro.it/api/sitemap
+Sitemap: https://concoro.it/api/sitemap/concorsi 

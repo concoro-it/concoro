@@ -1,6 +1,18 @@
 import { Timestamp } from 'firebase/firestore';
 import type { Concorso } from './concorso';
 
+export interface ImageMeta {
+  mediaLink?: string;
+  bucket?: string;
+  name?: string;
+  generation?: string;
+}
+
+export interface FAQ {
+  domanda: string;
+  risposta: string;
+}
+
 export interface Articolo {
   id: string;
   articolo_title: string;
@@ -18,6 +30,10 @@ export interface Articolo {
   AreaGeografica?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  // New fields for enhanced content
+  image_meta?: ImageMeta;
+  faqs?: FAQ[];
+  people_also_ask?: FAQ[];
 }
 
 export interface ArticoloWithConcorso extends Articolo {

@@ -37,6 +37,60 @@ export const getAllArticoliServer = async (limitCount?: number): Promise<Articol
 };
 
 /**
+ * Fetches all articles with their concorso data for sitemap generation (server-side)
+ * This is optimized for sitemap generation by fetching concorsi in batch
+ */
+export const getAllArticoliWithConcorsoForSitemapServer = async (): Promise<ArticoloWithConcorso[]> => {
+  try {
+    const firestore = initializeFirebaseAdmin();
+    
+    // Fetch all articles
+    const articoliRef = firestore.collection('articoli');
+    const articoliSnapshot = await articoliRef.orderBy('publication_date', 'desc').get();
+    
+    if (articoliSnapshot.empty) {
+      return [];
+    }
+    
+    const articoli = articoliSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    } as Articolo));
+    
+    // Extract unique concorso IDs
+    const concorsoIds = Array.from(new Set(
+      articoli.map(a => a.concorso_id).filter(Boolean)
+    ));
+    
+    // Fetch concorsi in batches (Firestore 'in' query supports max 10 items)
+    const concorsiMap = new Map();
+    const batchSize = 10;
+    
+    for (let i = 0; i < concorsoIds.length; i += batchSize) {
+      const batch = concorsoIds.slice(i, i + batchSize);
+      const concorsiSnapshot = await firestore
+        .collection('concorsi')
+        .where('__name__', 'in', batch)
+        .get();
+      
+      concorsiSnapshot.docs.forEach(doc => {
+        concorsiMap.set(doc.id, { id: doc.id, ...doc.data() });
+      });
+    }
+    
+    // Combine articles with their concorso data
+    return articoli.map(articolo => ({
+      ...articolo,
+      concorso: concorsiMap.get(articolo.concorso_id) || undefined,
+    } as ArticoloWithConcorso));
+    
+  } catch (error) {
+    console.error('Error fetching articoli with concorso for sitemap (server):', error);
+    throw error;
+  }
+};
+
+/**
  * Fetches an article by its ID using Firebase Admin (server-side)
  */
 export const getArticoloByIdServer = async (articoloId: string): Promise<Articolo | null> => {
@@ -148,5 +202,54 @@ export const getArticoliByTagServer = async (tag: string, limitCount = 50): Prom
   } catch (error) {
     console.error('Error fetching articoli by tag (server):', error);
     throw error;
+  }
+};
+
+/**
+ * Get approximate article count (efficient - doesn't fetch all documents)
+ * Returns a cached/estimated count for performance
+ * Note: For exact count, this would require aggregation query or counter document
+ */
+export const getArticleCountServer = async (): Promise<number> => {
+  try {
+    // For now, return estimated count to avoid fetching all docs
+    // In production, you'd maintain a counter document that gets updated via Cloud Functions
+    // For the Load More approach, we don't need exact count anyway
+    return 1000; // Estimated count - doesn't need to be exact for Load More
+  } catch (error) {
+    console.error('Error getting article count (server):', error);
+    return 0;
+  }
+};
+
+/**
+ * Get all unique tags from articles efficiently
+ * Fetches tags from first N articles only for performance
+ */
+export const getAllTagsServer = async (): Promise<string[]> => {
+  try {
+    const firestore = initializeFirebaseAdmin();
+    const articoliRef = firestore.collection('articoli');
+    
+    // Only fetch tags from first 100 articles for performance
+    // This gives us most common tags without loading all 825 articles
+    const snapshot = await articoliRef
+      .select('articolo_tags')
+      .limit(100)
+      .get();
+    
+    const allTags = new Set<string>();
+    
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.articolo_tags && Array.isArray(data.articolo_tags)) {
+        data.articolo_tags.forEach((tag: string) => allTags.add(tag));
+      }
+    });
+    
+    return Array.from(allTags).sort();
+  } catch (error) {
+    console.error('Error fetching tags (server):', error);
+    return [];
   }
 }; 

@@ -1,166 +1,175 @@
-"use client"
-
-import { useState, useEffect, useMemo } from "react"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
-import { getArticoliByTag } from "@/lib/blog/services"
-import { Articolo } from "@/types"
-import { ArticleCard } from "@/components/blog/ArticleCard"
-import { Pagination } from "@/components/blog/Pagination"
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { getArticoliByTagServer, getAllTagsServer } from '@/lib/blog/services-server'
+import { BlogTagPageClient } from './BlogTagPageClient'
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
+import { serializeArticles } from '@/lib/utils/firestore-serialization'
 
-const ARTICLES_PER_PAGE = 9
+interface TagPageProps {
+  params: { tag: string }
+  searchParams: { page?: string }
+}
 
-export default function TagPage({ params }: { params: { tag: string } }) {
-  const [articles, setArticles] = useState<Articolo[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const { tag } = params
-  
-  useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        
-        const articoliData = await getArticoliByTag(decodeURIComponent(tag))
-        setArticles(articoliData)
-      } catch (err) {
-        console.error("Error fetching articles by tag:", err)
-        setError("Impossibile caricare gli articoli. Riprova più tardi.")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    
-    fetchArticles()
-  }, [tag])
+// ✅ SERVER-SIDE METADATA for Tag Pages (Critical SEO)
+export async function generateMetadata({ params, searchParams }: TagPageProps): Promise<Metadata> {
+  const decodedTag = decodeURIComponent(params.tag)
+  const formattedTag = toItalianSentenceCase(decodedTag)
+  const page = parseInt(searchParams.page || '1', 10)
 
-  // Calculate pagination
-  const totalPages = Math.ceil(articles.length / ARTICLES_PER_PAGE)
-  const paginatedArticles = useMemo(() => {
-    const startIndex = (currentPage - 1) * ARTICLES_PER_PAGE
-    const endIndex = startIndex + ARTICLES_PER_PAGE
-    return articles.slice(startIndex, endIndex)
-  }, [articles, currentPage])
+  const title = page > 1 
+    ? `${formattedTag} - Pagina ${page} | Concoro Blog`
+    : `${formattedTag} - Blog Concorsi Pubblici | Concoro`
+  const description = `Tutti gli articoli su ${formattedTag.toLowerCase()}. Guide pratiche, consigli e strategie di preparazione per concorsi pubblici in Italia.`
+  const baseUrl = `https://www.concoro.it/blog/tags/${params.tag}`
+  const canonicalUrl = page > 1 ? `${baseUrl}?page=${page}` : baseUrl
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    // Scroll to top when page changes
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-  
-  if (isLoading) {
-    return (
-      <div className="container mx-auto py-12 px-4 md:px-8">
-        <div className="flex items-center gap-2 mb-8">
-          <Link href="/blog">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft size={16} />
-              Torna al blog
-            </Button>
-          </Link>
-        </div>
-        
-        <h1 className="text-3xl font-bold mb-2">Tag: {toItalianSentenceCase(decodeURIComponent(tag))}</h1>
-        <p className="text-gray-500 mb-8">Caricamento articoli...</p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((_, index) => (
-            <Card key={index} className="animate-pulse h-96">
-              <div className="h-48 bg-gray-200 rounded-t-lg"></div>
-              <div className="p-6">
-                <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/4 mt-auto"></div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
-  }
-  
-  if (error) {
-    return (
-      <div className="container mx-auto py-12 px-4 md:px-8">
-        <div className="flex items-center gap-2 mb-8">
-          <Link href="/blog">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft size={16} />
-              Torna al blog
-            </Button>
-          </Link>
-        </div>
-        
-        <h1 className="text-3xl font-bold mb-8">Tag: {toItalianSentenceCase(decodeURIComponent(tag))}</h1>
-        
-        <Card className="p-8">
-          <p className="text-center text-red-500">{error}</p>
-          <div className="flex justify-center mt-4">
-            <Button onClick={() => window.location.reload()}>
-              Riprova
-            </Button>
-          </div>
-        </Card>
-      </div>
-    )
-  }
-  
-  return (
-    <div className="container mx-auto py-12 px-4 md:px-8">
-      <div className="flex items-center gap-2 mb-8">
-        <Link href="/blog">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft size={16} />
-            Torna al blog
-          </Button>
-        </Link>
-      </div>
-      
-      <h1 className="text-3xl font-bold mb-2">Tag: {toItalianSentenceCase(decodeURIComponent(tag))}</h1>
-      <p className="text-gray-500 mb-8">
-        {articles.length} {articles.length === 1 ? 'articolo trovato' : 'articoli trovati'}
-      </p>
-
-      {/* Articles count and pagination info */}
-      {articles.length > 0 && (
-        <div className="mb-6 text-sm text-gray-600">
-          Mostrando {((currentPage - 1) * ARTICLES_PER_PAGE) + 1}-{Math.min(currentPage * ARTICLES_PER_PAGE, articles.length)} di {articles.length} articoli
-        </div>
-      )}
-      
-      {articles.length === 0 ? (
-        <Card className="p-8">
-          <p className="text-center text-gray-500">
-            Nessun articolo trovato per il tag "{toItalianSentenceCase(decodeURIComponent(tag))}"
-          </p>
-          <div className="flex justify-center mt-4">
-            <Link href="/blog">
-              <Button>
-                Torna al blog
-              </Button>
-            </Link>
-          </div>
-        </Card>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {paginatedArticles.map(article => (
-              <ArticleCard key={article.id} article={article} />
-            ))}
-          </div>
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        </>
-      )}
-    </div>
+  // Calculate total pages for rel=prev/next
+  const allArticles = await getArticoliByTagServer(decodedTag, 100)
+  const validArticles = allArticles.filter(article => 
+    !(article.articolo_title === "Non specificato" && article.articolo_subtitle === "Non specificato")
   )
-} 
+  const totalPages = Math.ceil(validArticles.length / 9)
+
+  // Build alternates object with prev/next for pagination
+  const alternates: any = {
+    canonical: canonicalUrl,
+    languages: {
+      'it-IT': canonicalUrl,
+    },
+  }
+
+  // Add rel=prev for pages > 1
+  if (page > 1) {
+    const prevPage = page - 1
+    alternates.types = alternates.types || {}
+    alternates.types.prev = prevPage === 1 ? baseUrl : `${baseUrl}?page=${prevPage}`
+  }
+
+  // Add rel=next for pages < totalPages
+  if (page < totalPages) {
+    alternates.types = alternates.types || {}
+    alternates.types.next = `${baseUrl}?page=${page + 1}`
+  }
+
+  return {
+    title,
+    description,
+    keywords: [
+      formattedTag.toLowerCase(),
+      'concorsi pubblici',
+      'preparazione concorsi',
+      'guide concorsi',
+      'blog concorsi',
+      `concorsi ${formattedTag.toLowerCase()}`,
+      'pubblica amministrazione'
+    ].join(', '),
+    
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
+
+    openGraph: {
+      type: 'website',
+      locale: 'it_IT',
+      url: canonicalUrl,
+      title,
+      description,
+      siteName: 'Concoro',
+      images: [
+        {
+          url: 'https://www.concoro.it/banner.png',
+          width: 1200,
+          height: 630,
+          alt: `${formattedTag} - Concoro Blog`,
+        }
+      ],
+    },
+
+    twitter: {
+      card: 'summary_large_image',
+      site: '@concoro_it',
+      creator: '@concoro_it',
+      title,
+      description,
+      images: ['https://www.concoro.it/banner.png'],
+    },
+
+    alternates,
+  }
+}
+
+// ✅ Generate static params for popular tags (improves build time SEO)
+export async function generateStaticParams() {
+  try {
+    // ⚡ OPTIMIZED: Get all tags efficiently without fetching full articles
+    const allTags = await getAllTagsServer()
+
+    // Return top 20 tags for static generation
+    // Note: This doesn't sort by popularity anymore to avoid fetching all articles
+    // Tags are already sorted alphabetically by getAllTagsServer
+    const popularTags = allTags
+      .slice(0, 20)
+      .map(tag => ({
+        tag: encodeURIComponent(tag.toLowerCase())
+      }))
+
+    return popularTags
+  } catch (error) {
+    console.error('Error generating static params for tags:', error)
+    return []
+  }
+}
+
+// ✅ SERVER COMPONENT - Fetches data server-side
+export default async function TagPage({ params, searchParams }: TagPageProps) {
+  try {
+    const decodedTag = decodeURIComponent(params.tag)
+    const page = parseInt(searchParams.page || '1', 10)
+    const articlesPerPage = 9
+
+    // Fetch articles for this tag
+    const allArticles = await getArticoliByTagServer(decodedTag, 100)
+
+    // Filter out placeholder articles
+    const validArticles = allArticles.filter(article => 
+      !(article.articolo_title === "Non specificato" && article.articolo_subtitle === "Non specificato")
+    )
+
+    if (validArticles.length === 0) {
+      notFound()
+    }
+
+    // Calculate pagination
+    const totalPages = Math.ceil(validArticles.length / articlesPerPage)
+    const startIndex = (page - 1) * articlesPerPage
+    const paginatedArticles = validArticles.slice(startIndex, startIndex + articlesPerPage)
+
+    // ✅ FIX: Serialize Firestore Timestamps to plain objects
+    const serializedArticles = serializeArticles(paginatedArticles)
+
+    return (
+      <BlogTagPageClient 
+        tag={decodedTag}
+        articles={serializedArticles}
+        currentPage={page}
+        totalPages={totalPages}
+        totalArticles={validArticles.length}
+      />
+    )
+  } catch (error) {
+    console.error('Error loading tag page:', error)
+    notFound()
+  }
+}
+
+// ✅ DYNAMIC RENDERING with revalidation
+export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // Revalidate every hour

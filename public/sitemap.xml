@@ -6,6 +6,8 @@
   
   Note: lastmod tags removed because child sitemaps are dynamically generated.
   Google will fetch the child sitemaps on every crawl to check for updates.
+  
+  Blog tags are temporarily disabled from sitemap until they are fully optimized.
 -->
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>

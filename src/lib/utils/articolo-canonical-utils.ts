@@ -1,4 +1,5 @@
 import { Articolo } from '@/types'
+import { generateArticoloSlug, generateSEOArticoloUrl } from './articolo-urls'
 
 /**
  * Canonicalization utilities for articolo pages
@@ -7,19 +8,20 @@ import { Articolo } from '@/types'
 
 /**
  * Gets the canonical URL for an articolo
- * Always prioritizes slug over ID
+ * Uses SEO-friendly multi-segment URL structure: /articolo/[category]/[title]/[year]/[id]
  */
 export function getArticoloCanonicalUrl(article: Articolo): string {
   const baseUrl = 'https://www.concoro.it'
-  return `${baseUrl}/articolo/${article.slug || article.id}`
+  const seoUrl = generateSEOArticoloUrl(article)
+  return `${baseUrl}${seoUrl}`
 }
 
 /**
  * Gets the canonical path (without domain) for an articolo
- * Always prioritizes slug over ID
+ * Uses SEO-friendly multi-segment URL structure
  */
 export function getArticoloCanonicalPath(article: Articolo): string {
-  return `/articolo/${article.slug || article.id}`
+  return generateSEOArticoloUrl(article)
 }
 
 /**
@@ -27,16 +29,16 @@ export function getArticoloCanonicalPath(article: Articolo): string {
  * Used to determine if a redirect is needed
  */
 export function isCanonicalUrl(urlParam: string, article: Articolo): boolean {
-  const canonicalParam = article.slug || article.id
-  return urlParam === canonicalParam
+  const canonicalSlug = generateArticoloSlug(article)
+  return urlParam === canonicalSlug
 }
 
 /**
  * Gets the canonical URL parameter for internal linking
- * This ensures all internal links use the canonical form
+ * This ensures all internal links use the canonical SEO-friendly form
  */
 export function getCanonicalUrlParam(article: Articolo): string {
-  return article.slug || article.id
+  return generateArticoloSlug(article)
 }
 
 /**
