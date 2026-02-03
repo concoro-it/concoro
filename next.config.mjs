@@ -22,28 +22,6 @@ const nextConfig = {
     },
   }),
   serverExternalPackages: ['firebase', 'firebase-admin'],
-  turbopack: {
-    resolveAlias: {
-      'fs': 'false',
-      'net': 'false',
-      'tls': 'false',
-      'crypto': 'false',
-      'http2': 'false',
-      'child_process': 'false',
-      'stream': 'false',
-      'url': 'false',
-      'buffer': 'false',
-      'util': 'false',
-      'assert': 'false',
-      'http': 'false',
-      'https': 'false',
-      'os': 'false',
-      'path': 'false',
-      'querystring': 'false',
-      'firebase-admin': 'false',
-      'farmhash-modern': 'false',
-    },
-  },
   experimental: {
     optimizeCss: true, // Enable CSS optimization
     optimizePackageImports: ['framer-motion', 'lodash', '@radix-ui/react-icons'], // Tree shake large packages

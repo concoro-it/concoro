@@ -24,21 +24,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if SMTP credentials are configured
-    if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
-      
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD || !process.env.SMTP_EMAIL) {
+
       return NextResponse.json(
         { message: 'Messaggio ricevuto! Ti contatteremo presto.' },
         { status: 200 }
       );
     }
 
-    // Create transporter with secure SMTP settings for Google Workspace
+    // Create transporter with secure SMTP settings
     const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true, // use SSL
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: false, // true for 465, false for other ports
       auth: {
-        user: process.env.SMTP_EMAIL,
+        user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASSWORD,
       },
     });

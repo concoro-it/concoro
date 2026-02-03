@@ -43,6 +43,7 @@ interface TransactionalEmailData {
   to: Array<{ email: string; name?: string }>;
   templateId?: number;
   sender?: { email: string; name?: string };
+  replyTo?: { email: string; name?: string };
   subject?: string;
   htmlContent?: string;
   textContent?: string;
@@ -82,7 +83,7 @@ class BrevoService {
    */
   private transformUserProfileToBrevoContact(profile: UserProfile): BrevoContact {
     try {
-      
+
 
       // Extract skills as comma-separated string
       const skillsString = profile.skills
@@ -105,41 +106,41 @@ class BrevoService {
         : profile.currentPosition || '';
 
       // Calculate years of experience
-      
-      const yearsOfExperience = this.calculateYearsOfExperience(profile.experience);
-      
 
-    return {
-      email: profile.email,
-      attributes: {
-        FIRSTNAME: profile.firstName,
-        LASTNAME: profile.lastName,
-        REGION: profile.region,
-        CITY: profile.city,
-        LOCATION: profile.location,
-        IS_STUDENT: profile.isStudent,
-        HEADLINE: profile.headline,
-        CURRENT_POSITION: profile.currentPosition,
-        CURRENT_COMPANY: profile.currentCompany,
-        ABOUT: profile.about,
-        PHONE: profile.phone || profile.contactInfo?.phone,
-        WEBSITE: profile.website || profile.contactInfo?.website,
-        YEARS_OF_EXPERIENCE: yearsOfExperience,
-        SKILLS: skillsString,
-        LANGUAGES: languagesString,
-        EDUCATION_COUNT: profile.education?.length || 0,
-        EXPERIENCE_COUNT: profile.experience?.length || 0,
-        CERTIFICATIONS_COUNT: profile.certifications?.length || 0,
-        LATEST_EDUCATION: latestEducation,
-        LATEST_POSITION: latestPosition,
-        CREATED_AT: this.parseDate(profile.createdAt)?.toISOString() || new Date().toISOString(),
-        UPDATED_AT: this.parseDate(profile.updatedAt)?.toISOString() || new Date().toISOString(),
-        PROFILE_COMPLETE: this.isProfileComplete(profile),
-        // Additional fields that might be in the Firebase document
-        PREFERRED_REGIONS: (profile as any).RegioniPreferite?.join(', ') || '',
-        SECTOR_INTERESTS: (profile as any).SettoriInteresse?.join(', ') || '',
-      }
-    };
+      const yearsOfExperience = this.calculateYearsOfExperience(profile.experience);
+
+
+      return {
+        email: profile.email,
+        attributes: {
+          FIRSTNAME: profile.firstName,
+          LASTNAME: profile.lastName,
+          REGION: profile.region,
+          CITY: profile.city,
+          LOCATION: profile.location,
+          IS_STUDENT: profile.isStudent,
+          HEADLINE: profile.headline,
+          CURRENT_POSITION: profile.currentPosition,
+          CURRENT_COMPANY: profile.currentCompany,
+          ABOUT: profile.about,
+          PHONE: profile.phone || profile.contactInfo?.phone,
+          WEBSITE: profile.website || profile.contactInfo?.website,
+          YEARS_OF_EXPERIENCE: yearsOfExperience,
+          SKILLS: skillsString,
+          LANGUAGES: languagesString,
+          EDUCATION_COUNT: profile.education?.length || 0,
+          EXPERIENCE_COUNT: profile.experience?.length || 0,
+          CERTIFICATIONS_COUNT: profile.certifications?.length || 0,
+          LATEST_EDUCATION: latestEducation,
+          LATEST_POSITION: latestPosition,
+          CREATED_AT: this.parseDate(profile.createdAt)?.toISOString() || new Date().toISOString(),
+          UPDATED_AT: this.parseDate(profile.updatedAt)?.toISOString() || new Date().toISOString(),
+          PROFILE_COMPLETE: this.isProfileComplete(profile),
+          // Additional fields that might be in the Firebase document
+          PREFERRED_REGIONS: (profile as any).RegioniPreferite?.join(', ') || '',
+          SECTOR_INTERESTS: (profile as any).SettoriInteresse?.join(', ') || '',
+        }
+      };
     } catch (error) {
       console.error('Error transforming profile for Brevo:', error);
       console.error('Profile data:', JSON.stringify(profile, null, 2));
@@ -158,10 +159,10 @@ class BrevoService {
       // Handle different date formats (Timestamp, Date, or string)
       const startDate = this.parseDate(exp.startDate);
       const endDate = exp.endDate ? this.parseDate(exp.endDate) : new Date();
-      
+
       if (!startDate || !endDate) continue; // Skip if we can't parse the start or end date
-      
-      const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 
+
+      const months = (endDate.getFullYear() - startDate.getFullYear()) * 12
         + (endDate.getMonth() - startDate.getMonth());
       totalMonths += Math.max(0, months); // Ensure no negative months
     }
@@ -169,38 +170,38 @@ class BrevoService {
     return Math.round(totalMonths / 12 * 10) / 10; // Round to 1 decimal place
   }
 
-     /**
-    * Parse various date formats into a Date object
-    */
-   private parseDate(dateInput: any): Date | null {
-     if (!dateInput) return null;
-     
-     
-     
-     // If it's already a Date object
-     if (dateInput instanceof Date) {
-       return dateInput;
-     }
-     
-     // If it's a Firestore Timestamp with toDate method
-     if (dateInput && typeof dateInput.toDate === 'function') {
-       return dateInput.toDate();
-     }
-     
-     // If it's a string or number, try to parse it
-     if (typeof dateInput === 'string' || typeof dateInput === 'number') {
-       const parsed = new Date(dateInput);
-       return isNaN(parsed.getTime()) ? null : parsed;
-     }
-     
-     // If it has seconds property (Firestore Timestamp-like object)
-     if (dateInput && typeof dateInput.seconds === 'number') {
-       return new Date(dateInput.seconds * 1000);
-     }
-     
-     console.warn('Unable to parse date:', dateInput);
-     return null;
-   }
+  /**
+ * Parse various date formats into a Date object
+ */
+  private parseDate(dateInput: any): Date | null {
+    if (!dateInput) return null;
+
+
+
+    // If it's already a Date object
+    if (dateInput instanceof Date) {
+      return dateInput;
+    }
+
+    // If it's a Firestore Timestamp with toDate method
+    if (dateInput && typeof dateInput.toDate === 'function') {
+      return dateInput.toDate();
+    }
+
+    // If it's a string or number, try to parse it
+    if (typeof dateInput === 'string' || typeof dateInput === 'number') {
+      const parsed = new Date(dateInput);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    // If it has seconds property (Firestore Timestamp-like object)
+    if (dateInput && typeof dateInput.seconds === 'number') {
+      return new Date(dateInput.seconds * 1000);
+    }
+
+    console.warn('Unable to parse date:', dateInput);
+    return null;
+  }
 
   /**
    * Check if profile is complete enough for job matching
@@ -220,7 +221,7 @@ class BrevoService {
    */
   private async makeRequest(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', data?: any): Promise<any> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     const options: RequestInit = {
       method,
       headers: {
@@ -236,7 +237,7 @@ class BrevoService {
 
     try {
       const response = await fetch(url, options);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('Brevo API Error:', {
@@ -260,20 +261,20 @@ class BrevoService {
   async createOrUpdateContact(profile: UserProfile): Promise<BrevoApiResponse> {
     try {
       const contact = this.transformUserProfileToBrevoContact(profile);
-      
-      
-      
+
+
+
       const response = await this.makeRequest('/contacts', 'POST', contact);
-      
-      
+
+
       return response;
     } catch (error: any) {
       // If contact already exists, try to update it
       if (error.message.includes('409') || error.message.includes('already exists')) {
-        
+
         return this.updateContact(profile);
       }
-      
+
       console.error('Failed to create/update Brevo contact:', error);
       throw error;
     }
@@ -286,12 +287,12 @@ class BrevoService {
     try {
       const contact = this.transformUserProfileToBrevoContact(profile);
       const { email, ...updateData } = contact;
-      
-      
-      
+
+
+
       const response = await this.makeRequest(`/contacts/${encodeURIComponent(email)}`, 'PUT', updateData);
-      
-      
+
+
       return response;
     } catch (error) {
       console.error('Failed to update Brevo contact:', error);
@@ -331,7 +332,7 @@ class BrevoService {
       const data = {
         emails: [email]
       };
-      
+
       return await this.makeRequest(`/contacts/lists/${listId}/contacts/add`, 'POST', data);
     } catch (error) {
       console.error('Failed to add contact to list:', error);
@@ -345,7 +346,7 @@ class BrevoService {
   async syncProfileCompletion(profile: UserProfile): Promise<BrevoApiResponse> {
     try {
       const isComplete = this.isProfileComplete(profile);
-      
+
       const updateData = {
         attributes: {
           PROFILE_COMPLETE: isComplete,
@@ -365,11 +366,11 @@ class BrevoService {
    */
   async sendTransactionalEmail(emailData: TransactionalEmailData): Promise<BrevoApiResponse> {
     try {
-      
-      
+
+
       const response = await this.makeRequest('/smtp/email', 'POST', emailData);
-      
-      
+
+
       return response;
     } catch (error) {
       console.error('Failed to send transactional email:', error);
@@ -381,8 +382,8 @@ class BrevoService {
    * Send notification email for concorso deadline approaching
    */
   async sendNotificationEmail(
-    userEmail: string, 
-    userName: string, 
+    userEmail: string,
+    userName: string,
     notifications: NotificationWithConcorso[]
   ): Promise<BrevoApiResponse> {
     try {
@@ -397,7 +398,7 @@ class BrevoService {
       let priority = 'normal';
 
       if (urgentNotifications.length > 0) {
-        subject = urgentNotifications.length === 1 
+        subject = urgentNotifications.length === 1
           ? `Hai ancora poche ore per candidarti a ${urgentNotifications[0].concorsoTitoloBreve}`
           : `🚨 ${urgentNotifications.length} concorso scadono OGGI!`;
         priority = 'high';
@@ -418,9 +419,9 @@ class BrevoService {
 
       const emailData: TransactionalEmailData = {
         to: [{ email: userEmail, name: userName }],
-        sender: { 
-          email: 'notifiche@concoro.it', 
-          name: 'Concoro Smart Reminder' 
+        sender: {
+          email: 'notifiche@concoro.it',
+          name: 'Concoro Smart Reminder'
         },
         subject: subject,
         htmlContent: htmlContent,
@@ -461,26 +462,26 @@ class BrevoService {
     // Get deadline status with same logic as app
     const getDeadlineStatus = (daysLeft: number) => {
       if (daysLeft === 0) {
-        return { 
-          text: 'Scade oggi', 
+        return {
+          text: 'Scade oggi',
           color: '#dc2626',
           isUrgent: true
         };
       } else if (daysLeft === 1) {
-        return { 
-          text: 'Scade domani', 
+        return {
+          text: 'Scade domani',
           color: '#d97706',
           isUrgent: true
         };
       } else if (daysLeft >= 2 && daysLeft <= 7) {
-        return { 
-          text: `Scade tra ${daysLeft} giorni`, 
+        return {
+          text: `Scade tra ${daysLeft} giorni`,
           color: '#f59e0b',
           isUrgent: true
         };
       } else {
-        return { 
-          text: `Scade tra ${daysLeft} giorni`, 
+        return {
+          text: `Scade tra ${daysLeft} giorni`,
           color: '#6b7280',
           isUrgent: false
         };
@@ -489,7 +490,7 @@ class BrevoService {
 
     const generateNotificationCard = (notification: NotificationWithConcorso) => {
       const status = getDeadlineStatus(notification.daysLeft);
-      
+
       return `
         <div style="
           background: white;
@@ -801,9 +802,9 @@ class BrevoService {
     try {
       const emailData: TransactionalEmailData = {
         to: [{ email: userEmail, name: userName }],
-        sender: { 
-          email: 'welcome@concoro.it', 
-          name: 'Team Concoro' 
+        sender: {
+          email: 'welcome@concoro.it',
+          name: 'Team Concoro'
         },
         subject: `Benvenuto su Concoro, ${userName}! 🎉`,
         htmlContent: this.generateWelcomeEmailHTML(userName),
@@ -979,8 +980,139 @@ Inizia subito:
 - Esplora i Concorsi: https://concoro.it/bandi
 - Prova Genio AI: https://concoro.it/chat
 
-© 2024 Concoro. Tutti i diritti riservati.
+© 2026 Concoro. Tutti i diritti riservati.
     `;
+  }
+
+  /**
+   * Send report email (Segnalazione)
+   */
+  async sendReportEmail(data: {
+    name: string;
+    email: string;
+    issueType: string;
+    description: string;
+    details?: string;
+    concorsoId: string;
+    concorsoTitle: string;
+    concorsoEnte: string;
+    timestamp: string;
+    issueInfo: { label: string; tag: string; priority: string };
+  }): Promise<BrevoApiResponse> {
+    try {
+      const { name, email, description, details, concorsoId, concorsoTitle, concorsoEnte, timestamp, issueInfo } = data;
+
+      const emailData: TransactionalEmailData = {
+        to: [{ email: 'info@concoro.it', name: 'Concoro Admin' }],
+        sender: {
+          email: 'notifiche@concoro.it',
+          name: 'Concoro Segnalazioni'
+        },
+        replyTo: email ? { email, name } : undefined,
+        subject: `[${issueInfo.tag}] [${issueInfo.priority}] Segnalazione: ${issueInfo.label} - ${concorsoTitle}`,
+        htmlContent: `
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #0A1F44 0%, #1a365d 100%); color: white; padding: 25px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px; display: flex; align-items: center;">
+              🚩 Nuova Segnalazione Concorso
+            </h1>
+            <div style="margin-top: 10px; display: flex; gap: 10px;">
+              <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                ${issueInfo.tag}
+              </span>
+              <span style="background: ${issueInfo.priority === 'HIGH' ? '#dc2626' : issueInfo.priority === 'MEDIUM' ? '#d97706' : '#6b7280'}; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                PRIORITÀ ${issueInfo.priority}
+              </span>
+            </div>
+          </div>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-left: 4px solid #0A1F44;">
+            <h2 style="color: #0A1F44; margin-top: 0; font-size: 18px;">📋 Dettagli del Concorso Segnalato</h2>
+            <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef;">
+              <p style="margin: 0;"><strong>ID Concorso:</strong> ${concorsoId}</p>
+              <p style="margin: 5px 0;"><strong>Titolo:</strong> ${concorsoTitle}</p>
+              <p style="margin: 5px 0 0 0;"><strong>Ente:</strong> ${concorsoEnte}</p>
+            </div>
+          </div>
+          
+          <div style="background-color: #fff; padding: 20px; border: 1px solid #e9ecef;">
+            <h2 style="color: #0A1F44; margin-top: 0; font-size: 18px;">⚠️ Problema Segnalato</h2>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+              <p style="margin: 0;"><strong>Tipo di Problema:</strong> ${issueInfo.label}</p>
+              <p style="margin: 10px 0 0 0;"><strong>Tag Categorizzazione:</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">${issueInfo.tag}</code></p>
+            </div>
+            
+            <div style="background-color: #fff; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px;">
+              <h3 style="color: #0A1F44; margin-top: 0; font-size: 16px;">Descrizione del Problema:</h3>
+              <p style="line-height: 1.6; white-space: pre-wrap; margin: 0;">${description}</p>
+            </div>
+            
+            ${details ? `
+              <div style="background-color: #fff; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-top: 15px;">
+                <h3 style="color: #0A1F44; margin-top: 0; font-size: 16px;">Dettagli Aggiuntivi:</h3>
+                <p style="line-height: 1.6; white-space: pre-wrap; margin: 0;">${details}</p>
+              </div>
+            ` : ''}
+          </div>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; border: 1px solid #e9ecef; border-top: 0;">
+            <h2 style="color: #0A1F44; margin-top: 0; font-size: 18px;">👤 Informazioni Reporter</h2>
+            <div style="background: white; padding: 15px; border-radius: 6px;">
+              <p style="margin: 0;"><strong>Nome:</strong> ${name || 'Non fornito'}</p>
+              <p style="margin: 5px 0;"><strong>Email:</strong> ${email || 'Non fornita'}</p>
+              <p style="margin: 5px 0 0 0;"><strong>Data Segnalazione:</strong> ${new Date(timestamp).toLocaleString('it-IT', {
+          timeZone: 'Europe/Rome',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}</p>
+            </div>
+          </div>
+          
+          <div style="margin-top: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196f3;">
+            <p style="margin: 0; font-size: 14px; color: #1565c0;">
+              💡 <strong>Azione Suggerita:</strong> Verifica il concorso con ID <code>${concorsoId}</code> 
+              ${email ? `e rispondi a ${email} una volta risolto il problema.` : 'nel sistema.'}
+            </p>
+          </div>
+        </div>
+        `,
+        textContent: `
+        NUOVA SEGNALAZIONE CONCORSO
+        Tag: ${issueInfo.tag} | Priorità: ${issueInfo.priority}
+        
+        DETTAGLI CONCORSO:
+        - ID: ${concorsoId}
+        - Titolo: ${concorsoTitle}
+        - Ente: ${concorsoEnte}
+        
+        PROBLEMA SEGNALATO:
+        - Tipo: ${issueInfo.label}
+        - Tag Categorizzazione: ${issueInfo.tag}
+        
+        Descrizione:
+        ${description}
+        
+        ${details ? `Dettagli Aggiuntivi:\n${details}\n` : ''}
+        
+        INFORMAZIONI REPORTER:
+        - Nome: ${name || 'Non fornito'}
+        - Email: ${email || 'Non fornita'}
+        - Data: ${new Date(timestamp).toLocaleString('it-IT', { timeZone: 'Europe/Rome' })}
+        
+        ---
+        Questa segnalazione è stata inviata dal sistema di report del sito Concoro.
+        `,
+        tags: ['report', 'admin', issueInfo.tag]
+      };
+
+      return await this.sendTransactionalEmail(emailData);
+    } catch (error) {
+      console.error('Failed to send report email:', error);
+      throw error;
+    }
   }
 }
 
@@ -1004,7 +1136,8 @@ export const brevoService = {
   get syncProfileCompletion() { return getBrevoService().syncProfileCompletion.bind(getBrevoService()); },
   get sendTransactionalEmail() { return getBrevoService().sendTransactionalEmail.bind(getBrevoService()); },
   get sendNotificationEmail() { return getBrevoService().sendNotificationEmail.bind(getBrevoService()); },
-  get sendWelcomeEmail() { return getBrevoService().sendWelcomeEmail.bind(getBrevoService()); }
+  get sendWelcomeEmail() { return getBrevoService().sendWelcomeEmail.bind(getBrevoService()); },
+  get sendReportEmail() { return getBrevoService().sendReportEmail.bind(getBrevoService()); }
 };
 
 export default brevoService; 
