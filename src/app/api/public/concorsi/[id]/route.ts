@@ -13,7 +13,7 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'Concorso ID is required' },
@@ -22,10 +22,10 @@ export async function GET(
     }
 
     const db = getFirestoreForSEO();
-    
+
     // Fetch the specific concorso
     const concorsoDoc = await db.collection('concorsi').doc(id).get();
-    
+
     if (!concorsoDoc.exists) {
       return NextResponse.json(
         { error: 'Concorso not found' },
@@ -40,7 +40,29 @@ export async function GET(
 
     // Only return if concorso is open/active for SEO purposes
     const validStates = ['open', 'aperto', 'OPEN', 'APERTO'];
-    if (!concorso.Stato || !validStates.includes(concorso.Stato)) {
+    const now = new Date();
+
+    // Helper to convert date
+    const toDate = (value: any): Date | null => {
+      if (!value) return null;
+      if (typeof value === 'string') return new Date(value);
+      if (typeof value === 'object' && ('seconds' in value || '_seconds' in value)) {
+        const seconds = value.seconds || value._seconds;
+        return new Date(seconds * 1000);
+      }
+      return null;
+    };
+
+    const isExpired = () => {
+      if (!concorso.Stato || !validStates.includes(concorso.Stato)) return true;
+      if (concorso.DataChiusura) {
+        const deadline = toDate(concorso.DataChiusura);
+        if (deadline && deadline < now) return true;
+      }
+      return false;
+    };
+
+    if (isExpired()) {
       return NextResponse.json(
         { error: 'Concorso not available' },
         { status: 404 }
@@ -49,7 +71,7 @@ export async function GET(
 
     // Fetch related concorsi (same ente or settore)
     let relatedConcorsi: Concorso[] = [];
-    
+
     try {
       const relatedQuery = db.collection('concorsi')
         .where('Stato', 'in', validStates)
@@ -57,20 +79,33 @@ export async function GET(
         .limit(6);
 
       const relatedSnapshot = await relatedQuery.get();
-      
+
       relatedConcorsi = relatedSnapshot.docs
         .map(doc => ({
           id: doc.id,
           ...doc.data()
         }) as Concorso)
-        .filter(related => 
-          related.id !== id && (
+        .filter(related => {
+          // Check if it's the same ID
+          if (related.id === id) return false;
+
+          // Check if it matches ente or settore
+          const matchesContext = (
             related.Ente === concorso.Ente ||
             related.settore_professionale === concorso.settore_professionale
-          )
-        )
+          );
+          if (!matchesContext) return false;
+
+          // Check if it's expired by date
+          if (related.DataChiusura) {
+            const deadline = toDate(related.DataChiusura);
+            if (deadline && deadline < now) return false;
+          }
+
+          return true;
+        })
         .slice(0, 3);
-        
+
     } catch (error) {
       console.warn('Failed to fetch related concorsi:', error);
       // Continue without related concorsi
@@ -88,7 +123,7 @@ export async function GET(
     });
 
     return new NextResponse(JSON.stringify(response), { headers });
-    
+
   } catch (error) {
     console.error('Error fetching concorso details:', error);
     return NextResponse.json(
@@ -100,7 +135,7 @@ export async function GET(
 
 // Health check endpoint
 export async function HEAD() {
-  return new NextResponse(null, { 
+  return new NextResponse(null, {
     status: 200,
     headers: {
       'Cache-Control': 'public, max-age=60'

@@ -10,14 +10,14 @@ function isDocumentId(value: string): boolean {
   return /^[a-zA-Z0-9]{20,}$/.test(value);
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // SEO: Handle ID-based article URL redirects at server level for proper 301 redirects
   const articleMatch = pathname.match(/^\/articolo\/([^\/]+)$/);
   if (articleMatch) {
     const slugOrId = articleMatch[1];
-    
+
     // If it's a document ID, we should ideally redirect to slug
     // However, we need the slug from the database, so we'll let the client handle this
     // and rely on the meta robots noindex,follow tags we added
@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
 
   // Handle mobile pagination URLs - redirect to main page with query params
   const mobilePageMatch = pathname.match(/^\/bandi\/page\/(\d+)\/([a-f0-9]{32})$/);
-  
+
   if (mobilePageMatch) {
     const id = mobilePageMatch[2];
     // Mobile pagination URL - redirect to main page with query params
@@ -59,19 +59,19 @@ export async function middleware(request: NextRequest) {
   const bandoSlugMatch = pathname.match(/^\/bandi\/(.+)$/);
   if (bandoSlugMatch) {
     const slugPath = bandoSlugMatch[1];
-    
+
     // Skip if it's a single segment that looks like an ID (handled above)
     if (!slugPath.includes('/') && isFirebaseDocumentId(slugPath)) {
       return NextResponse.next();
     }
-    
+
     // SEO-friendly slug - let it pass through
     const response = NextResponse.next();
     response.headers.set('x-pathname', pathname);
     response.headers.set('x-bando-access-type', 'slug-based');
     return response;
   }
-  
+
   // Handle expired concorsi - set x-concorso-status header for the page to check
   const concorsoMatch = pathname.match(/^\/concorsi\/([^\/]+\/[^\/]+\/[^\/]+\/[^\/]+\/[a-zA-Z0-9]{20,})$/);
   if (concorsoMatch) {
@@ -81,10 +81,10 @@ export async function middleware(request: NextRequest) {
     response.headers.set('x-route-type', 'concorso');
     return response;
   }
-  
+
   // Create a new response object
   const response = NextResponse.next();
-  
+
   // Set the x-pathname header with the current path
   response.headers.set('x-pathname', pathname);
 

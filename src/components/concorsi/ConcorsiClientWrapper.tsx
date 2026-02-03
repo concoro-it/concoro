@@ -36,7 +36,7 @@ interface ConcorsiClientWrapperProps {
 
 function createPaginationUrl(page: number, searchParams: any): string {
   const params = new URLSearchParams();
-  
+
   if (page > 1) params.set('page', page.toString());
   if (searchParams.ente) params.set('ente', searchParams.ente);
   if (searchParams.localita) params.set('localita', searchParams.localita);
@@ -44,7 +44,7 @@ function createPaginationUrl(page: number, searchParams: any): string {
   if (searchParams.scadenza) params.set('scadenza', searchParams.scadenza);
   if (searchParams.sort) params.set('sort', searchParams.sort);
   if (searchParams.search) params.set('search', searchParams.search);
-  
+
   const queryString = params.toString();
   return queryString ? `/concorsi?${queryString}` : '/concorsi';
 }
@@ -76,9 +76,9 @@ export function ConcorsiClientWrapper({
   // Track URL changes to detect page regeneration
   useEffect(() => {
     if (!isLoading) return; // Only run when loading is active
-    
+
     const currentUrl = window.location.href;
-    
+
     // Fallback timeout to prevent infinite loading
     const timeout = setTimeout(() => {
       setIsLoading(false);
@@ -96,7 +96,7 @@ export function ConcorsiClientWrapper({
     // Also listen for page load events
     const handleLoad = () => setIsLoading(false);
     const handlePopstate = () => setIsLoading(false);
-    
+
     window.addEventListener('load', handleLoad);
     window.addEventListener('popstate', handlePopstate);
 
@@ -115,7 +115,7 @@ export function ConcorsiClientWrapper({
         setShowFilterSidebar(false);
       }
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [showFilterSidebar, isMobile]);
@@ -127,7 +127,7 @@ export function ConcorsiClientWrapper({
     } else {
       document.body.style.overflow = 'auto';
     }
-    
+
     return () => {
       document.body.style.overflow = 'auto';
     };
@@ -138,13 +138,13 @@ export function ConcorsiClientWrapper({
       {/* Page Title - H1 for SEO */}
       <div className="mb-6">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-          {currentFilters.search 
+          {currentFilters.search
             ? `Concorsi Pubblici: ${decodeURIComponent(currentFilters.search)}`
-            : 'Concorsi Pubblici 2025'
+            : 'Concorsi Pubblici 2026'
           }
         </h1>
         <p className="text-gray-600 text-lg">
-          {currentFilters.search 
+          {currentFilters.search
             ? `${initialData.totalCount} ${initialData.totalCount === 1 ? 'concorso trovato' : 'concorsi trovati'} per "${decodeURIComponent(currentFilters.search)}"`
             : `Trova e candidati ai migliori concorsi nella Pubblica Amministrazione italiana`
           }
@@ -180,7 +180,7 @@ export function ConcorsiClientWrapper({
             </div>
           </div>
         )}
-        
+
         {/* Main Content */}
         <div className={isMobile ? "col-span-1" : "lg:col-span-3"}>
           {/* Loading Skeleton */}
@@ -209,8 +209,8 @@ export function ConcorsiClientWrapper({
             <div className="space-y-4">
               {initialData.concorsi.length > 0 ? (
                 initialData.concorsi.map((concorso) => (
-                  <ConcorsoCardCompact 
-                    key={concorso.id} 
+                  <ConcorsoCardCompact
+                    key={concorso.id}
                     concorso={concorso}
                     showSaveButton={false}
                   />
@@ -227,13 +227,13 @@ export function ConcorsiClientWrapper({
               )}
             </div>
           )}
-          
+
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-8 flex justify-center">
               <div className="flex items-center gap-2">
                 {currentPage > 1 && (
-                  <a 
+                  <a
                     href={createPaginationUrl(currentPage - 1, currentFilters)}
                     className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   >
@@ -244,7 +244,7 @@ export function ConcorsiClientWrapper({
                   Pagina {currentPage} di {totalPages}
                 </span>
                 {currentPage < totalPages && (
-                  <a 
+                  <a
                     href={createPaginationUrl(currentPage + 1, currentFilters)}
                     className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   >

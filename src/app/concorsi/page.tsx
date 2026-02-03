@@ -8,8 +8,8 @@ import { SettoreView } from '@/components/concorsi/SettoreView';
 import { Skeleton } from '@/components/ui/skeleton';
 import { generateMetadata as generateSEOMetadata, seoConfigs, generateStructuredData } from '@/lib/seo';
 import { RelatedConcorsiFooter } from '@/components/concorsi/RelatedConcorsiFooter';
-import { 
-  extractProvince, 
+import {
+  extractProvince,
   extractRegion,
   groupLocationsByProvince,
   groupLocationsByRegion,
@@ -34,7 +34,7 @@ function serializeConcorso(concorso: any): Concorso {
     }
     return value;
   }));
-  
+
   return serialized as Concorso;
 }
 
@@ -42,16 +42,18 @@ function serializeConcorsi(concorsi: any[]): Concorso[] {
   return concorsi.map(serializeConcorso);
 }
 
+interface ConcorsiSearchParams {
+  page?: string;
+  ente?: string;
+  localita?: string;
+  settore?: string;
+  scadenza?: string;
+  sort?: string;
+  search?: string;
+}
+
 interface ConcorsiPageProps {
-  searchParams: {
-    page?: string;
-    ente?: string;
-    localita?: string;
-    settore?: string;
-    scadenza?: string;
-    sort?: string;
-    search?: string;
-  };
+  searchParams: Promise<ConcorsiSearchParams>;
 }
 
 interface ConcorsiData {
@@ -105,29 +107,29 @@ async function getLocalitaData(localita: string): Promise<LocalitaData> {
     const params = new URLSearchParams();
     params.set('localita', localita);
     params.set('limit', '100'); // Reduced to prevent 2MB cache limit
-    
+
     // Use relative URL for production, absolute for development
-    const baseUrl = process.env.NODE_ENV === 'production' 
+    const baseUrl = process.env.NODE_ENV === 'production'
       ? process.env.NEXT_PUBLIC_SITE_URL || 'https://concoro.it'
       : 'http://localhost:3000';
     const apiUrl = `${baseUrl}/api/public/concorsi?${params.toString()}`;
-    
+
     const response = await fetch(apiUrl, {
       next: { revalidate: 7200 } // 2 hours revalidation
     });
-    
+
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
     }
-    
+
     const apiData = await response.json();
     const concorsiData = apiData.concorsi || [];
-    
+
     // Use filter data from API which represents ALL results, not just current page
     const filters = apiData.filters || { enti: [], localita: [], settori: [] };
-    
+
     // Calculate total positions from current page (for display purposes only)
-    const totalPositions = concorsiData.reduce((total: number, concorso: any) => 
+    const totalPositions = concorsiData.reduce((total: number, concorso: any) =>
       total + (concorso.numero_di_posti || 1), 0
     );
 
@@ -143,32 +145,32 @@ async function getLocalitaData(localita: string): Promise<LocalitaData> {
 
     // Get all locations for finding related provinces and regions
     const allLocations = filters.localita || [];
-    
+
     const currentProvince = extractProvince(localita);
     const currentRegion = extractRegion(localita);
     const groupedLocationsByProv = groupLocationsByProvince(allLocations);
     const groupedLocationsByReg = groupLocationsByRegion(allLocations);
-    
+
     // Get related provinces (same province or nearby)
-    const relatedProvincesList = currentProvince 
+    const relatedProvincesList = currentProvince
       ? Array.from(new Set(Object.keys(groupedLocationsByProv)
-          .filter(province => 
-            province !== 'Altre' && 
-            (province === currentProvince || 
-             province.toLowerCase().includes(currentProvince.toLowerCase()) ||
-             currentProvince.toLowerCase().includes(province.toLowerCase()))
-          )))
+        .filter(province =>
+          province !== 'Altre' &&
+          (province === currentProvince ||
+            province.toLowerCase().includes(currentProvince.toLowerCase()) ||
+            currentProvince.toLowerCase().includes(province.toLowerCase()))
+        )))
       : [];
 
     // Get related regions (same region or nearby)
-    const relatedRegionsList = currentRegion 
+    const relatedRegionsList = currentRegion
       ? Array.from(new Set(Object.keys(groupedLocationsByReg)
-          .filter(region => 
-            region !== 'Altre' && 
-            region !== currentRegion &&
-            (region.toLowerCase().includes(currentRegion.toLowerCase()) ||
-             currentRegion.toLowerCase().includes(region.toLowerCase()))
-          )))
+        .filter(region =>
+          region !== 'Altre' &&
+          region !== currentRegion &&
+          (region.toLowerCase().includes(currentRegion.toLowerCase()) ||
+            currentRegion.toLowerCase().includes(region.toLowerCase()))
+        )))
       : [];
 
     return {
@@ -201,29 +203,29 @@ async function getEnteData(ente: string): Promise<EnteData> {
     const params = new URLSearchParams();
     params.set('ente', ente);
     params.set('limit', '100'); // Reduced to prevent 2MB cache limit
-    
+
     // Use relative URL for production, absolute for development
-    const baseUrl = process.env.NODE_ENV === 'production' 
+    const baseUrl = process.env.NODE_ENV === 'production'
       ? process.env.NEXT_PUBLIC_SITE_URL || 'https://concoro.it'
       : 'http://localhost:3000';
     const apiUrl = `${baseUrl}/api/public/concorsi?${params.toString()}`;
-    
+
     const response = await fetch(apiUrl, {
       next: { revalidate: 7200 } // 2 hours revalidation
     });
-    
+
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
     }
-    
+
     const apiData = await response.json();
     const concorsiData = apiData.concorsi || [];
-    
+
     // Use filter data from API which represents ALL results, not just current page
     const filters = apiData.filters || { enti: [], localita: [], settori: [] };
-    
+
     // Calculate total positions from current page (for display purposes only)
-    const totalPositions = concorsiData.reduce((total: number, concorso: any) => 
+    const totalPositions = concorsiData.reduce((total: number, concorso: any) =>
       total + (concorso.numero_di_posti || 1), 0
     );
 
@@ -267,29 +269,29 @@ async function getSettoreData(settore: string): Promise<SettoreData> {
     const params = new URLSearchParams();
     params.set('settore', settore);
     params.set('limit', '100'); // Reduced to prevent 2MB cache limit
-    
+
     // Use relative URL for production, absolute for development
-    const baseUrl = process.env.NODE_ENV === 'production' 
+    const baseUrl = process.env.NODE_ENV === 'production'
       ? process.env.NEXT_PUBLIC_SITE_URL || 'https://concoro.it'
       : 'http://localhost:3000';
     const apiUrl = `${baseUrl}/api/public/concorsi?${params.toString()}`;
-    
+
     const response = await fetch(apiUrl, {
       next: { revalidate: 7200 } // 2 hours revalidation
     });
-    
+
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
     }
-    
+
     const apiData = await response.json();
     const concorsiData = apiData.concorsi || [];
-    
+
     // Use filter data from API which represents ALL results, not just current page
     const filters = apiData.filters || { enti: [], localita: [], settori: [] };
-    
+
     // Calculate total positions from current page (for display purposes only)
-    const totalPositions = concorsiData.reduce((total: number, concorso: any) => 
+    const totalPositions = concorsiData.reduce((total: number, concorso: any) =>
       total + (concorso.numero_di_posti || 1), 0
     );
 
@@ -327,7 +329,7 @@ async function getSettoreData(settore: string): Promise<SettoreData> {
 }
 
 // Server-side data fetching using the API endpoint
-async function getConcorsiData(searchParams: ConcorsiPageProps['searchParams']): Promise<ConcorsiData & { 
+async function getConcorsiData(searchParams: ConcorsiSearchParams): Promise<ConcorsiData & {
   totalPositions: number;
   uniqueEntiCount: number;
   uniqueLocalitaCount: number;
@@ -343,37 +345,37 @@ async function getConcorsiData(searchParams: ConcorsiPageProps['searchParams']):
     if (searchParams.sort) params.set('sort', searchParams.sort);
     if (searchParams.search) params.set('search', searchParams.search);
     params.set('limit', '100'); // Reduced to prevent 2MB cache limit
-    
+
     // Use relative URL for production, absolute for development
-    const baseUrl = process.env.NODE_ENV === 'production' 
+    const baseUrl = process.env.NODE_ENV === 'production'
       ? process.env.NEXT_PUBLIC_SITE_URL || 'https://concoro.it'
       : 'http://localhost:3000';
     const apiUrl = `${baseUrl}/api/public/concorsi?${params.toString()}`;
-    
+
     const response = await fetch(apiUrl, {
       next: { revalidate: 7200 } // 2 hours revalidation
     });
-    
+
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
     }
-    
+
     const apiData = await response.json();
     const concorsiData = apiData.concorsi || [];
-    
+
     // Use filter data from API which represents ALL results, not just current page
     const filters = apiData.filters || { enti: [], localita: [], settori: [] };
-    
+
     // Calculate total positions from current page (for display purposes only)
-    const totalPositions = concorsiData.reduce((total: number, concorso: any) => 
+    const totalPositions = concorsiData.reduce((total: number, concorso: any) =>
       total + (concorso.numero_di_posti || 1), 0
     );
-    
+
     // Split localita properly since API returns combined strings like "Roma, Lazio"
     const uniqueLocalita = new Set(
       filters.localita.flatMap((loc: string) => splitLocationString(loc))
     );
-    
+
     return {
       concorsi: concorsiData,
       totalCount: apiData.pagination?.total || 0,
@@ -406,55 +408,56 @@ async function getConcorsiData(searchParams: ConcorsiPageProps['searchParams']):
 
 // Metadata generation
 export async function generateMetadata({ searchParams }: ConcorsiPageProps): Promise<Metadata> {
-  const hasFilters = searchParams.ente || searchParams.localita || searchParams.settore || searchParams.scadenza || searchParams.sort;
-  const currentPage = parseInt(searchParams.page || '1');
-  
+  const resolvedSearchParams = await searchParams;
+  const hasFilters = resolvedSearchParams.ente || resolvedSearchParams.localita || resolvedSearchParams.settore || resolvedSearchParams.scadenza || resolvedSearchParams.sort;
+  const currentPage = parseInt(resolvedSearchParams.page || '1');
+
   let seoConfig;
-  
-  if (searchParams.search) {
-    const searchTerm = decodeURIComponent(searchParams.search);
+
+  if (resolvedSearchParams.search) {
+    const searchTerm = decodeURIComponent(resolvedSearchParams.search);
     seoConfig = seoConfigs.concorsiBySearch(searchTerm);
-  } else if (searchParams.ente) {
-    const ente = decodeURIComponent(searchParams.ente);
+  } else if (resolvedSearchParams.ente) {
+    const ente = decodeURIComponent(resolvedSearchParams.ente);
     seoConfig = seoConfigs.concorsiByOrganization(ente);
-  } else if (searchParams.localita) {
-    const localita = decodeURIComponent(searchParams.localita);
+  } else if (resolvedSearchParams.localita) {
+    const localita = decodeURIComponent(resolvedSearchParams.localita);
     seoConfig = seoConfigs.concorsiByLocation(localita);
-  } else if (searchParams.settore) {
-    const settore = decodeURIComponent(searchParams.settore);
+  } else if (resolvedSearchParams.settore) {
+    const settore = decodeURIComponent(resolvedSearchParams.settore);
     seoConfig = seoConfigs.concorsiBySector(settore);
   } else {
     seoConfig = seoConfigs.concorsi;
   }
-  
+
   const metadata = generateSEOMetadata(seoConfig);
-  
+
   // Build canonical URL
   const baseUrl = 'https://concoro.it/concorsi';
   const params = new URLSearchParams();
-  
+
   // Add filter parameters (but not page for canonical)
-  if (searchParams.ente) params.set('ente', searchParams.ente);
-  if (searchParams.localita) params.set('localita', searchParams.localita);
-  if (searchParams.settore) params.set('settore', searchParams.settore);
-  if (searchParams.scadenza) params.set('scadenza', searchParams.scadenza);
-  if (searchParams.sort) params.set('sort', searchParams.sort);
-  if (searchParams.search) params.set('search', searchParams.search);
-  
+  if (resolvedSearchParams.ente) params.set('ente', resolvedSearchParams.ente);
+  if (resolvedSearchParams.localita) params.set('localita', resolvedSearchParams.localita);
+  if (resolvedSearchParams.settore) params.set('settore', resolvedSearchParams.settore);
+  if (resolvedSearchParams.scadenza) params.set('scadenza', resolvedSearchParams.scadenza);
+  if (resolvedSearchParams.sort) params.set('sort', resolvedSearchParams.sort);
+  if (resolvedSearchParams.search) params.set('search', resolvedSearchParams.search);
+
   const queryString = params.toString();
-  const canonicalUrl = currentPage === 1 
+  const canonicalUrl = currentPage === 1
     ? `${baseUrl}${queryString ? `?${queryString}` : ''}`
     : `${baseUrl}?${queryString ? `${queryString}&` : ''}page=${currentPage}`;
-  
+
   // Fetch data to determine total pages for pagination links
-  const data = await getConcorsiData(searchParams);
+  const data = await getConcorsiData(resolvedSearchParams);
   const totalPages = Math.ceil(data.totalCount / 20);
-  
+
   // Build prev/next URLs for pagination
   const baseWithParams = queryString ? `${baseUrl}?${queryString}` : baseUrl;
   const prevPage = currentPage > 1 ? currentPage - 1 : null;
   const nextPage = currentPage < totalPages ? currentPage + 1 : null;
-  
+
   // Add canonical URL to metadata
   // Note: rel="prev/next" are added via PaginationHead component in the page
   return {
@@ -472,13 +475,14 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 7200; // Revalidate every 2 hours
 
 export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) {
+  const resolvedSearchParams = await searchParams;
   // Check if we should render the locality-specific view
-  const shouldRenderLocalitaView = searchParams.localita && !searchParams.ente && !searchParams.settore && !searchParams.search;
-  
-  if (shouldRenderLocalitaView && searchParams.localita) {
-    const localita = decodeURIComponent(searchParams.localita);
+  const shouldRenderLocalitaView = resolvedSearchParams.localita && !resolvedSearchParams.ente && !resolvedSearchParams.settore && !resolvedSearchParams.search;
+
+  if (shouldRenderLocalitaView && resolvedSearchParams.localita) {
+    const localita = decodeURIComponent(resolvedSearchParams.localita);
     const localitaData = await getLocalitaData(localita);
-    
+
     return (
       <>
         <LocalitaView
@@ -491,7 +495,7 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
           relatedProvinces={localitaData.relatedProvinces}
           relatedRegions={localitaData.relatedRegions}
         />
-        
+
         {/* Structured Data */}
         <script
           type="application/ld+json"
@@ -538,14 +542,14 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
       </>
     );
   }
-  
+
   // Check if we should render the ente-specific view
-  const shouldRenderEnteView = searchParams.ente && !searchParams.localita && !searchParams.settore && !searchParams.search;
-  
-  if (shouldRenderEnteView && searchParams.ente) {
-    const ente = decodeURIComponent(searchParams.ente);
+  const shouldRenderEnteView = resolvedSearchParams.ente && !resolvedSearchParams.localita && !resolvedSearchParams.settore && !resolvedSearchParams.search;
+
+  if (shouldRenderEnteView && resolvedSearchParams.ente) {
+    const ente = decodeURIComponent(resolvedSearchParams.ente);
     const enteData = await getEnteData(ente);
-    
+
     return (
       <>
         <EnteView
@@ -556,7 +560,7 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
           locations={enteData.locations}
           settori={enteData.settori}
         />
-        
+
         {/* Structured Data */}
         <script
           type="application/ld+json"
@@ -603,14 +607,14 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
       </>
     );
   }
-  
+
   // Check if we should render the settore-specific view
-  const shouldRenderSettoreView = searchParams.settore && !searchParams.localita && !searchParams.ente && !searchParams.search;
-  
-  if (shouldRenderSettoreView && searchParams.settore) {
-    const settore = decodeURIComponent(searchParams.settore);
+  const shouldRenderSettoreView = resolvedSearchParams.settore && !resolvedSearchParams.localita && !resolvedSearchParams.ente && !resolvedSearchParams.search;
+
+  if (shouldRenderSettoreView && resolvedSearchParams.settore) {
+    const settore = decodeURIComponent(resolvedSearchParams.settore);
     const settoreData = await getSettoreData(settore);
-    
+
     return (
       <>
         <SettoreView
@@ -621,7 +625,7 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
           locations={settoreData.locations}
           enti={settoreData.enti}
         />
-        
+
         {/* Structured Data */}
         <script
           type="application/ld+json"
@@ -668,75 +672,75 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
       </>
     );
   }
-  
+
   // Default view - fetch data via API
-  const data = await getConcorsiData(searchParams);
-  const currentPage = parseInt(searchParams.page || '1');
+  const data = await getConcorsiData(resolvedSearchParams);
+  const currentPage = parseInt(resolvedSearchParams.page || '1');
   const totalPages = Math.ceil(data.totalCount / 20);
-  
+
   // Build pagination URLs for link tags
   const baseUrl = 'https://concoro.it/concorsi';
   const params = new URLSearchParams();
-  if (searchParams.ente) params.set('ente', searchParams.ente);
-  if (searchParams.localita) params.set('localita', searchParams.localita);
-  if (searchParams.settore) params.set('settore', searchParams.settore);
-  if (searchParams.scadenza) params.set('scadenza', searchParams.scadenza);
-  if (searchParams.sort) params.set('sort', searchParams.sort);
-  if (searchParams.search) params.set('search', searchParams.search);
-  
+  if (resolvedSearchParams.ente) params.set('ente', resolvedSearchParams.ente);
+  if (resolvedSearchParams.localita) params.set('localita', resolvedSearchParams.localita);
+  if (resolvedSearchParams.settore) params.set('settore', resolvedSearchParams.settore);
+  if (resolvedSearchParams.scadenza) params.set('scadenza', resolvedSearchParams.scadenza);
+  if (resolvedSearchParams.sort) params.set('sort', resolvedSearchParams.sort);
+  if (resolvedSearchParams.search) params.set('search', resolvedSearchParams.search);
+
   const queryString = params.toString();
   const baseWithParams = queryString ? `${baseUrl}?${queryString}` : baseUrl;
   const prevPage = currentPage > 1 ? currentPage - 1 : null;
   const nextPage = currentPage < totalPages ? currentPage + 1 : null;
-  
-  const prevUrl = prevPage === 1 
-    ? baseWithParams 
-    : prevPage 
-    ? `${baseWithParams}${queryString ? '&' : '?'}page=${prevPage}`
-    : null;
-    
-  const nextUrl = nextPage 
+
+  const prevUrl = prevPage === 1
+    ? baseWithParams
+    : prevPage
+      ? `${baseWithParams}${queryString ? '&' : '?'}page=${prevPage}`
+      : null;
+
+  const nextUrl = nextPage
     ? `${baseWithParams}${queryString ? '&' : '?'}page=${nextPage}`
     : null;
-  
+
   return (
     <>
       {/* Pagination SEO - Add prev/next link tags */}
       <PaginationHead prevUrl={prevUrl} nextUrl={nextUrl} />
-      
+
       <div className="min-h-screen bg-gray-50">
         <main className="container mx-auto px-4 py-6 pt-8">
           {/* Breadcrumbs */}
-          {searchParams.search && (
-            <Breadcrumbs 
+          {resolvedSearchParams.search && (
+            <Breadcrumbs
               items={[
                 { label: 'Concorsi', href: '/concorsi' },
-                { label: `Concorsi ${decodeURIComponent(searchParams.search)}`, href: `/concorsi?search=${searchParams.search}` }
+                { label: `Concorsi ${decodeURIComponent(resolvedSearchParams.search)}`, href: `/concorsi?search=${resolvedSearchParams.search}` }
               ]}
             />
           )}
-          
+
           {/* Main Content */}
           <ConcorsiClientWrapper
             initialData={data}
-            currentFilters={searchParams}
+            currentFilters={resolvedSearchParams}
             currentPage={currentPage}
             totalPages={totalPages}
           />
-          
+
           {/* Related Searches for SEO */}
-          {searchParams.search && (
+          {resolvedSearchParams.search && (
             <div className="container mx-auto px-4">
-              <RelatedSearches 
-                searchTerm={decodeURIComponent(searchParams.search)}
+              <RelatedSearches
+                searchTerm={decodeURIComponent(resolvedSearchParams.search)}
                 totalCount={data.totalCount}
               />
             </div>
           )}
         </main>
-        
+
         {/* Breadcrumb Structured Data */}
-        {searchParams.search && (
+        {resolvedSearchParams.search && (
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
@@ -759,15 +763,15 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
                   {
                     "@type": "ListItem",
                     "position": 3,
-                    "name": `Concorsi ${decodeURIComponent(searchParams.search)}`,
-                    "item": `https://concoro.it/concorsi?search=${encodeURIComponent(searchParams.search)}`
+                    "name": `Concorsi ${decodeURIComponent(resolvedSearchParams.search)}`,
+                    "item": `https://concoro.it/concorsi?search=${encodeURIComponent(resolvedSearchParams.search)}`
                   }
                 ]
               })
             }}
           />
         )}
-        
+
         {/* Structured Data */}
         <script
           type="application/ld+json"
@@ -775,18 +779,18 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebPage",
-              "name": searchParams.search 
-                ? `Concorsi Pubblici ${decodeURIComponent(searchParams.search)} 2025`
-                : "Concorsi Pubblici 2025",
-              "description": searchParams.search
-                ? `Cerca concorsi pubblici per ${decodeURIComponent(searchParams.search)}. Scopri tutte le opportunità disponibili nella pubblica amministrazione italiana.`
+              "name": resolvedSearchParams.search
+                ? `Concorsi Pubblici ${decodeURIComponent(resolvedSearchParams.search)} 2026`
+                : "Concorsi Pubblici 2026",
+              "description": resolvedSearchParams.search
+                ? `Cerca concorsi pubblici per ${decodeURIComponent(resolvedSearchParams.search)}. Scopri tutte le opportunità disponibili nella pubblica amministrazione italiana.`
                 : "Trova e candidati ai migliori concorsi pubblici in Italia",
-              "url": searchParams.search
-                ? `https://concoro.it/concorsi?search=${encodeURIComponent(searchParams.search)}`
+              "url": resolvedSearchParams.search
+                ? `https://concoro.it/concorsi?search=${encodeURIComponent(resolvedSearchParams.search)}`
                 : "https://concoro.it/concorsi",
-              "keywords": searchParams.search
-                ? `concorsi ${decodeURIComponent(searchParams.search)}, lavoro ${decodeURIComponent(searchParams.search)}, bandi ${decodeURIComponent(searchParams.search)}, concorsi pubblici 2025`
-                : "concorsi pubblici, lavoro pubblico, bandi concorsi, concorsi 2025",
+              "keywords": resolvedSearchParams.search
+                ? `concorsi ${decodeURIComponent(resolvedSearchParams.search)}, lavoro ${decodeURIComponent(resolvedSearchParams.search)}, bandi ${decodeURIComponent(resolvedSearchParams.search)}, concorsi pubblici 2026`
+                : "concorsi pubblici, lavoro pubblico, bandi concorsi, concorsi 2026",
               "mainEntity": {
                 "@type": "ItemList",
                 "numberOfItems": data.totalCount,
@@ -820,7 +824,7 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
             })
           }}
         />
-        
+
         {/* Additional Structured Data - SearchAction */}
         <script
           type="application/ld+json"
@@ -840,9 +844,9 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
             })
           }}
         />
-        
+
         {/* FAQPage Structured Data for Search Pages */}
-        {searchParams.search && (
+        {resolvedSearchParams.search && (
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
@@ -852,26 +856,26 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
                 "mainEntity": [
                   {
                     "@type": "Question",
-                    "name": `Come candidarsi ai concorsi ${decodeURIComponent(searchParams.search)}?`,
+                    "name": `Come candidarsi ai concorsi ${decodeURIComponent(resolvedSearchParams.search)}?`,
                     "acceptedAnswer": {
                       "@type": "Answer",
-                      "text": `Per candidarsi ai concorsi ${decodeURIComponent(searchParams.search)}, è necessario visitare il portale INPA o il sito dell'ente che bandisce il concorso. Su Concoro puoi trovare tutti i link diretti per candidarti facilmente.`
+                      "text": `Per candidarsi ai concorsi ${decodeURIComponent(resolvedSearchParams.search)}, è necessario visitare il portale INPA o il sito dell'ente che bandisce il concorso. Su Concoro puoi trovare tutti i link diretti per candidarti facilmente.`
                     }
                   },
                   {
                     "@type": "Question",
-                    "name": `Quali sono i requisiti per i concorsi ${decodeURIComponent(searchParams.search)}?`,
+                    "name": `Quali sono i requisiti per i concorsi ${decodeURIComponent(resolvedSearchParams.search)}?`,
                     "acceptedAnswer": {
                       "@type": "Answer",
-                      "text": `I requisiti variano per ogni concorso ${decodeURIComponent(searchParams.search)}. Generalmente includono cittadinanza italiana o UE, età minima e massima, titolo di studio richiesto e eventuali abilitazioni professionali. Consulta ogni singolo bando per i requisiti specifici.`
+                      "text": `I requisiti variano per ogni concorso ${decodeURIComponent(resolvedSearchParams.search)}. Generalmente includono cittadinanza italiana o UE, età minima e massima, titolo di studio richiesto e eventuali abilitazioni professionali. Consulta ogni singolo bando per i requisiti specifici.`
                     }
                   },
                   {
                     "@type": "Question",
-                    "name": `Quanto dura un concorso pubblico per ${decodeURIComponent(searchParams.search)}?`,
+                    "name": `Quanto dura un concorso pubblico per ${decodeURIComponent(resolvedSearchParams.search)}?`,
                     "acceptedAnswer": {
                       "@type": "Answer",
-                      "text": `La durata di un concorso pubblico per ${decodeURIComponent(searchParams.search)} varia da alcuni mesi a oltre un anno, includendo presentazione domanda, prove scritte, prove orali e formazione della graduatoria finale.`
+                      "text": `La durata di un concorso pubblico per ${decodeURIComponent(resolvedSearchParams.search)} varia da alcuni mesi a oltre un anno, includendo presentazione domanda, prove scritte, prove orali e formazione della graduatoria finale.`
                     }
                   }
                 ]
@@ -880,7 +884,7 @@ export default async function ConcorsiPage({ searchParams }: ConcorsiPageProps) 
           />
         )}
       </div>
-      
+
       {/* Related Concorsi Footer */}
       <RelatedConcorsiFooter />
     </>

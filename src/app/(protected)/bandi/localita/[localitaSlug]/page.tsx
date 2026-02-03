@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, Suspense, use } from "react"
 import { collection, getDocs, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase/config"
 import { ConcoroList } from "@/components/bandi/ConcoroList"
@@ -13,50 +13,52 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { GlowingEffect } from "@/components/ui/glowing-effect"
 import { Breadcrumb } from "@/components/ui/breadcrumb"
-import { 
-  Calendar, 
-  MapPin, 
-  Users, 
+import {
+  Calendar,
+  MapPin,
+  Users,
   Building2
 } from "lucide-react"
 import Link from "next/link"
-import { 
-  decodeLocalitaSlug, 
-  extractProvince, 
+import {
+  decodeLocalitaSlug,
+  extractProvince,
   extractRegion,
   groupLocationsByProvince,
   groupLocationsByRegion,
   locationMatchesSearch
 } from "@/lib/utils/localita-utils"
-import { 
-  groupConcorsiByConcorsoId, 
-  createGroupedConcorso 
+import {
+  groupConcorsiByConcorsoId,
+  createGroupedConcorso
 } from "@/lib/utils/ente-utils"
 
 interface LocalitaPageProps {
-  params: {
+  params: Promise<{
     localitaSlug: string
-  }
+  }>
 }
 
 export default function LocalitaPage({ params }: LocalitaPageProps) {
+  const resolvedParams = use(params);
+  const { localitaSlug } = resolvedParams;
   const [loading, setLoading] = useState(true)
   const [concorsi, setConcorsi] = useState<Concorso[]>([])
   const [displayedConcorsi, setDisplayedConcorsi] = useState<Concorso[]>([])
   const [localita, setLocalita] = useState<string>("")
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 25
-  
+
   // Filter options
   const [enti, setEnti] = useState<string[]>([])
   const [allEnti, setAllEnti] = useState<string[]>([])
   const [showAllEnti, setShowAllEnti] = useState(false)
   const [relatedProvinces, setRelatedProvinces] = useState<string[]>([])
   const [relatedRegions, setRelatedRegions] = useState<string[]>([])
-  
+
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
 
@@ -78,26 +80,26 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
   useEffect(() => {
     async function fetchConcorsiByLocalita() {
       if (!user) return
-      
+
       try {
         setLoading(true)
-        
+
         if (!db) {
           console.error('Firestore database is not initialized')
           toast.error('Failed to connect to database. Please try again later.')
           setLoading(false)
           return
         }
-        
+
         // Decode the località slug to get the actual location name
-        const locationName = decodeLocalitaSlug(params.localitaSlug)
+        const locationName = decodeLocalitaSlug(localitaSlug)
         setLocalita(locationName)
-        
+
         const concorsiCollection = collection(db, 'concorsi')
-        
+
         // Fetch ALL concorsi for client-side filtering
         const concorsiSnapshot = await getDocs(concorsiCollection)
-        
+
         // Filter concorsi that contain the location name in their AreaGeografica
         const concorsiData = concorsiSnapshot.docs
           .map(doc => {
@@ -111,7 +113,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
             // First filter by location
             const locationMatch = locationMatchesSearch(concorso.AreaGeografica || '', locationName)
             if (!locationMatch) return false
-            
+
             // Then filter out closed concorsi by default
             const status = concorso.Stato?.toLowerCase()
             return status === 'open' || status === 'aperto' || !status
@@ -119,16 +121,16 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
 
         // Group concorsi by concorso_id to handle multiple regions
         const groupedConcorsi = groupConcorsiByConcorsoId(concorsiData)
-        
+
         // Create grouped concorsi but filter to show only relevant regions
         const processedConcorsiData = Object.values(groupedConcorsi).map(group => {
           const groupedConcorso = createGroupedConcorso(group)
           if (groupedConcorso && groupedConcorso.isGrouped) {
             // Filter regions to only show the current location and related ones
-            const relevantRegions = groupedConcorso.regions.filter((region: string) => 
+            const relevantRegions = groupedConcorso.regions.filter((region: string) =>
               locationMatchesSearch(region, locationName)
             )
-            
+
             if (relevantRegions.length > 0) {
               return {
                 ...groupedConcorso,
@@ -147,8 +149,8 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
             .slice(0, 10)
             .map((doc: any) => (doc.data() as { AreaGeografica?: string }).AreaGeografica)
             .filter(Boolean);
-          
-          
+
+
         }
 
         // All fetched concorsi are already open, so no need for additional filtering
@@ -169,30 +171,30 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
         const allLocations = concorsiSnapshot.docs
           .map((doc: any) => (doc.data() as { AreaGeografica?: string }).AreaGeografica)
           .filter((loc): loc is string => Boolean(loc))
-        
+
         const currentProvince = extractProvince(locationName)
         const currentRegion = extractRegion(locationName)
         const groupedLocationsByProv = groupLocationsByProvince(allLocations)
         const groupedLocationsByReg = groupLocationsByRegion(allLocations)
-        
+
         // Get related provinces (same province or nearby)
-        const relatedProvincesList = currentProvince 
-          ? Object.keys(groupedLocationsByProv).filter(province => 
-              province !== 'Altre' && 
-              (province === currentProvince || 
-               province.toLowerCase().includes(currentProvince.toLowerCase()) ||
-               currentProvince.toLowerCase().includes(province.toLowerCase()))
-            )
+        const relatedProvincesList = currentProvince
+          ? Object.keys(groupedLocationsByProv).filter(province =>
+            province !== 'Altre' &&
+            (province === currentProvince ||
+              province.toLowerCase().includes(currentProvince.toLowerCase()) ||
+              currentProvince.toLowerCase().includes(province.toLowerCase()))
+          )
           : []
 
         // Get related regions (same region or nearby)
-        const relatedRegionsList = currentRegion 
-          ? Object.keys(groupedLocationsByReg).filter(region => 
-              region !== 'Altre' && 
-              (region === currentRegion || 
-               region.toLowerCase().includes(currentRegion.toLowerCase()) ||
-               currentRegion.toLowerCase().includes(region.toLowerCase()))
-            )
+        const relatedRegionsList = currentRegion
+          ? Object.keys(groupedLocationsByReg).filter(region =>
+            region !== 'Altre' &&
+            (region === currentRegion ||
+              region.toLowerCase().includes(currentRegion.toLowerCase()) ||
+              currentRegion.toLowerCase().includes(region.toLowerCase()))
+          )
           : []
 
         setEnti(activeEnti)
@@ -209,7 +211,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
     }
 
     fetchConcorsiByLocalita()
-  }, [user, params.localitaSlug])
+  }, [user, localitaSlug])
 
   const handleJobSelect = (job: Concorso) => {
     setSelectedJobId(job.id)
@@ -217,7 +219,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
   }
 
   const totalCount = displayedConcorsi.length
-  const totalPositions = displayedConcorsi.reduce((total, concorso) => 
+  const totalPositions = displayedConcorsi.reduce((total, concorso) =>
     total + (concorso.numero_di_posti || 1), 0
   )
   const activeEnti = Array.from(new Set(
@@ -266,7 +268,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
             <div className="relative group">
               <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-lg">
                 <div className="absolute inset-0">
-                  <GlowingEffect 
+                  <GlowingEffect
                     disabled={false}
                     glow={true}
                     blur={10}
@@ -294,7 +296,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
             <div className="relative group">
               <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-lg">
                 <div className="absolute inset-0">
-                  <GlowingEffect 
+                  <GlowingEffect
                     disabled={false}
                     glow={true}
                     blur={10}
@@ -322,7 +324,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
             <div className="relative group">
               <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-lg">
                 <div className="absolute inset-0">
-                  <GlowingEffect 
+                  <GlowingEffect
                     disabled={false}
                     glow={true}
                     blur={10}
@@ -360,7 +362,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
               <Card className="overflow-hidden">
                 <div className="flex justify-between items-center pt-6 pl-4 pr-2">
                   <h2 className="text-xl font-semibold text-gray-900">
-                    Enti ({showAllEnti ? allEnti.length : enti.length})  
+                    Enti ({showAllEnti ? allEnti.length : enti.length})
                   </h2>
                 </div>
                 <CardContent className="p-0">
@@ -368,27 +370,26 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
                     <div className="px-2 pb-6 space-y-2">
                       {(showAllEnti ? allEnti : enti).map((ente, index) => {
                         // Count active concorsi for this ente
-                        const activeCount = displayedConcorsi.filter(c => 
+                        const activeCount = displayedConcorsi.filter(c =>
                           c.Ente?.toLowerCase() === ente.toLowerCase()
                         ).length;
-                        
+
                         // Count total concorsi for this ente
-                        const totalCount = concorsi.filter(c => 
+                        const totalCount = concorsi.filter(c =>
                           c.Ente?.toLowerCase() === ente.toLowerCase()
                         ).length;
-                        
+
                         const isActive = activeCount > 0;
-                        
+
                         return (
-                          <Link 
+                          <Link
                             key={index}
                             href={`/bandi/ente/${encodeURIComponent(ente)}`}
                             className="block"
                           >
-                            <div 
-                              className={`p-3 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden ${
-                                !isActive ? 'opacity-60' : ''
-                              }`}
+                            <div
+                              className={`p-3 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden ${!isActive ? 'opacity-60' : ''
+                                }`}
                             >
                               <div className="font-medium text-sm line-clamp-2 break-words min-w-0" title={ente}>
                                 {ente}
@@ -409,7 +410,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
                         );
                       })}
                     </div>
-                    
+
                     {/* Show All / Show Less button */}
                     {allEnti.length > enti.length && (
                       <div className="px-6 pb-4 pt-4 border-t">
@@ -440,12 +441,12 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
                   <CardContent className="px-6 pb-6">
                     <div className="space-y-2">
                       {relatedProvinces.map((province, index) => (
-                        <Link 
+                        <Link
                           key={index}
                           href={`/bandi/localita/${encodeURIComponent(province)}`}
                           className="block"
                         >
-                          <div 
+                          <div
                             className="p-3 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
                           >
                             <div className="font-medium text-sm line-clamp-2 break-words" title={province}>
@@ -470,12 +471,12 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
                   <CardContent className="px-6 pb-6">
                     <div className="space-y-2">
                       {relatedRegions.map((region, index) => (
-                        <Link 
+                        <Link
                           key={index}
                           href={`/bandi/localita/${encodeURIComponent(region)}`}
                           className="block"
                         >
-                          <div 
+                          <div
                             className="p-3 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
                           >
                             <div className="font-medium text-sm line-clamp-2 break-words" title={region}>
@@ -500,10 +501,10 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
                     Concorsi Disponibili ({totalCount}) a {localita}
                   </h2>
                 </div>
-                
+
                 <Suspense fallback={<div>Caricamento concorsi...</div>}>
-                  <ConcoroList 
-                    jobs={displayedConcorsi.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)} 
+                  <ConcoroList
+                    jobs={displayedConcorsi.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)}
                     isLoading={loading}
                     selectedJobId={selectedJobId}
                     onJobSelect={handleJobSelect}
@@ -541,7 +542,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
             <Card className="">
               <div className="flex justify-between items-center pt-6 pl-6 pr-3">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Enti ({showAllEnti ? allEnti.length : enti.length})  
+                  Enti ({showAllEnti ? allEnti.length : enti.length})
                 </h2>
               </div>
               <CardContent className="">
@@ -549,27 +550,26 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
                   <div className="space-y-2">
                     {(showAllEnti ? allEnti : enti).map((ente, index) => {
                       // Count active concorsi for this ente
-                      const activeCount = displayedConcorsi.filter(c => 
+                      const activeCount = displayedConcorsi.filter(c =>
                         c.Ente?.toLowerCase() === ente.toLowerCase()
                       ).length;
-                      
+
                       // Count total concorsi for this ente
-                      const totalCount = concorsi.filter(c => 
+                      const totalCount = concorsi.filter(c =>
                         c.Ente?.toLowerCase() === ente.toLowerCase()
                       ).length;
-                      
+
                       const isActive = activeCount > 0;
-                      
+
                       return (
-                        <Link 
+                        <Link
                           key={index}
                           href={`/bandi/ente/${encodeURIComponent(ente)}`}
                           className="block"
                         >
-                          <div 
-                            className={`p-2 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden ${
-                              !isActive ? 'opacity-60' : ''
-                            }`}
+                          <div
+                            className={`p-2 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden ${!isActive ? 'opacity-60' : ''
+                              }`}
                           >
                             <div className="font-medium text-sm line-clamp-2 break-words min-w-0" title={ente}>
                               {ente}
@@ -590,7 +590,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
                       );
                     })}
                   </div>
-                  
+
                   {/* Show All / Show Less button */}
                   {allEnti.length > enti.length && (
                     <div className="mt-4 pt-4 border-t">
@@ -612,7 +612,7 @@ export default function LocalitaPage({ params }: LocalitaPageProps) {
           </div>
 
         </div>
-        
+
 
       </div>
     </div>

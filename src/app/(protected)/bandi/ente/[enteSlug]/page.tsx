@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, Suspense, use } from "react"
 import { collection, getDocs, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase/config"
 import { ConcoroList } from "@/components/bandi/ConcoroList"
@@ -13,43 +13,45 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { GlowingEffect } from "@/components/ui/glowing-effect"
 import { Breadcrumb } from "@/components/ui/breadcrumb"
-import { 
-  Calendar, 
-  MapPin, 
-  Users, 
+import {
+  Calendar,
+  MapPin,
+  Users,
   Building2
 } from "lucide-react"
 import Link from "next/link"
-import { 
+import {
   decodeEnteSlug,
-  groupConcorsiByConcorsoId, 
-  createGroupedConcorso 
+  groupConcorsiByConcorsoId,
+  createGroupedConcorso
 } from "@/lib/utils/ente-utils"
-import { 
+import {
   extractAllRegions
 } from "@/lib/utils/region-utils"
-import { 
+import {
   groupLocationsByProvince,
   groupLocationsByRegion
 } from "@/lib/utils/localita-utils"
 
 interface EntePageProps {
-  params: {
+  params: Promise<{
     enteSlug: string
-  }
+  }>
 }
 
 export default function EntePage({ params }: EntePageProps) {
+  const resolvedParams = use(params);
+  const { enteSlug } = resolvedParams;
   const [loading, setLoading] = useState(true)
   const [concorsi, setConcorsi] = useState<Concorso[]>([])
   const [displayedConcorsi, setDisplayedConcorsi] = useState<Concorso[]>([])
   const [ente, setEnte] = useState<string>("")
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 25
-  
+
   // Filter options
   const [locations, setLocations] = useState<string[]>([])
   const [allLocations, setAllLocations] = useState<string[]>([])
@@ -57,7 +59,7 @@ export default function EntePage({ params }: EntePageProps) {
   const [settori, setSettori] = useState<string[]>([])
   const [relatedProvinces, setRelatedProvinces] = useState<string[]>([])
   const [relatedRegions, setRelatedRegions] = useState<string[]>([])
-  
+
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
 
@@ -79,26 +81,26 @@ export default function EntePage({ params }: EntePageProps) {
   useEffect(() => {
     async function fetchConcorsiByEnte() {
       if (!user) return
-      
+
       try {
         setLoading(true)
-        
+
         if (!db) {
           console.error('Firestore database is not initialized')
           toast.error('Failed to connect to database. Please try again later.')
           setLoading(false)
           return
         }
-        
+
         // Decode the ente slug to get the actual ente name
-        const enteName = decodeEnteSlug(params.enteSlug)
+        const enteName = decodeEnteSlug(enteSlug)
         setEnte(enteName)
-        
+
         const concorsiCollection = collection(db, 'concorsi')
-        
+
         // Fetch ALL concorsi for client-side filtering
         const concorsiSnapshot = await getDocs(concorsiCollection)
-        
+
         // Filter concorsi that match the ente name
         const concorsiData = concorsiSnapshot.docs
           .map(doc => {
@@ -112,7 +114,7 @@ export default function EntePage({ params }: EntePageProps) {
             // First filter by ente (case-insensitive)
             const enteMatch = concorso.Ente?.toLowerCase().trim() === enteName.toLowerCase().trim()
             if (!enteMatch) return false
-            
+
             // Then filter out closed concorsi by default
             const status = concorso.Stato?.toLowerCase()
             return status === 'open' || status === 'aperto' || !status
@@ -120,7 +122,7 @@ export default function EntePage({ params }: EntePageProps) {
 
         // Group concorsi by concorso_id to handle multiple regions
         const groupedConcorsi = groupConcorsiByConcorsoId(concorsiData)
-        
+
         // Create grouped concorsi
         const processedConcorsiData = Object.values(groupedConcorsi).map(group => {
           return createGroupedConcorso(group)
@@ -132,7 +134,7 @@ export default function EntePage({ params }: EntePageProps) {
         // Extract unique locations from all concorsi
         const allLocationStrings = processedConcorsiData.map(c => c.AreaGeografica)
           .filter((location): location is string => Boolean(location))
-        
+
         const allRegions = extractAllRegions(allLocationStrings)
         const uniqueLocations = Array.from(new Set(allRegions)).sort()
 
@@ -146,12 +148,12 @@ export default function EntePage({ params }: EntePageProps) {
         // Group locations by province and region for related locations
         const groupedLocationsByProv = groupLocationsByProvince(allLocationStrings)
         const groupedLocationsByReg = groupLocationsByRegion(allLocationStrings)
-        
+
         // Get related provinces and regions (show top ones)
         const relatedProvincesList = Object.keys(groupedLocationsByProv)
           .filter(province => province !== 'Altre')
           .slice(0, 10)
-        
+
         const relatedRegionsList = Object.keys(groupedLocationsByReg)
           .filter(region => region !== 'Altre')
           .slice(0, 10)
@@ -171,7 +173,7 @@ export default function EntePage({ params }: EntePageProps) {
     }
 
     fetchConcorsiByEnte()
-  }, [user, params.enteSlug])
+  }, [user, enteSlug])
 
   const handleJobSelect = (job: Concorso) => {
     setSelectedJobId(job.id)
@@ -179,7 +181,7 @@ export default function EntePage({ params }: EntePageProps) {
   }
 
   const totalCount = displayedConcorsi.length
-  const totalPositions = displayedConcorsi.reduce((total, concorso) => 
+  const totalPositions = displayedConcorsi.reduce((total, concorso) =>
     total + (concorso.numero_di_posti || 1), 0
   )
   const activeLocations = Array.from(new Set(
@@ -228,7 +230,7 @@ export default function EntePage({ params }: EntePageProps) {
             <div className="relative group">
               <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-lg">
                 <div className="absolute inset-0">
-                  <GlowingEffect 
+                  <GlowingEffect
                     disabled={false}
                     glow={true}
                     blur={10}
@@ -256,7 +258,7 @@ export default function EntePage({ params }: EntePageProps) {
             <div className="relative group">
               <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-lg">
                 <div className="absolute inset-0">
-                  <GlowingEffect 
+                  <GlowingEffect
                     disabled={false}
                     glow={true}
                     blur={10}
@@ -284,7 +286,7 @@ export default function EntePage({ params }: EntePageProps) {
             <div className="relative group">
               <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-lg">
                 <div className="absolute inset-0">
-                  <GlowingEffect 
+                  <GlowingEffect
                     disabled={false}
                     glow={true}
                     blur={10}
@@ -322,7 +324,7 @@ export default function EntePage({ params }: EntePageProps) {
               <Card className="overflow-hidden">
                 <div className="flex justify-between items-center pt-6 pl-4 pr-2">
                   <h2 className="text-xl font-semibold text-gray-900">
-                    Località ({showAllLocations ? allLocations.length : locations.length})  
+                    Località ({showAllLocations ? allLocations.length : locations.length})
                   </h2>
                 </div>
                 <CardContent className="p-0">
@@ -330,27 +332,26 @@ export default function EntePage({ params }: EntePageProps) {
                     <div className="px-2 pb-6 space-y-2">
                       {(showAllLocations ? allLocations : locations).map((location, index) => {
                         // Count active concorsi for this location
-                        const activeCount = displayedConcorsi.filter(c => 
+                        const activeCount = displayedConcorsi.filter(c =>
                           c.AreaGeografica?.toLowerCase().includes(location.toLowerCase())
                         ).length;
-                        
+
                         // Count total concorsi for this location
-                        const totalCount = concorsi.filter(c => 
+                        const totalCount = concorsi.filter(c =>
                           c.AreaGeografica?.toLowerCase().includes(location.toLowerCase())
                         ).length;
-                        
+
                         const isActive = activeCount > 0;
-                        
+
                         return (
-                          <Link 
+                          <Link
                             key={index}
                             href={`/bandi/localita/${encodeURIComponent(location)}`}
                             className="block"
                           >
-                            <div 
-                              className={`p-3 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden ${
-                                !isActive ? 'opacity-60' : ''
-                              }`}
+                            <div
+                              className={`p-3 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden ${!isActive ? 'opacity-60' : ''
+                                }`}
                             >
                               <div className="font-medium text-sm line-clamp-2 break-words min-w-0" title={location}>
                                 {location}
@@ -371,7 +372,7 @@ export default function EntePage({ params }: EntePageProps) {
                         );
                       })}
                     </div>
-                    
+
                     {/* Show All / Show Less button */}
                     {allLocations.length > locations.length && (
                       <div className="px-6 pb-4 pt-4 border-t">
@@ -402,12 +403,12 @@ export default function EntePage({ params }: EntePageProps) {
                   <CardContent className="px-6 pb-6">
                     <div className="space-y-2">
                       {settori.map((settore, index) => {
-                        const settoreCount = displayedConcorsi.filter(c => 
+                        const settoreCount = displayedConcorsi.filter(c =>
                           c.settore_professionale?.toLowerCase() === settore.toLowerCase()
                         ).length;
-                        
+
                         return (
-                          <Link 
+                          <Link
                             key={index}
                             href={`/bandi?settore=${encodeURIComponent(settore)}`}
                             className="block"
@@ -439,7 +440,7 @@ export default function EntePage({ params }: EntePageProps) {
                   <CardContent className="px-6 pb-6">
                     <div className="space-y-2">
                       {relatedProvinces.map((province, index) => (
-                        <Link 
+                        <Link
                           key={index}
                           href={`/bandi/localita/${encodeURIComponent(province)}`}
                           className="block"
@@ -467,7 +468,7 @@ export default function EntePage({ params }: EntePageProps) {
                   <CardContent className="px-6 pb-6">
                     <div className="space-y-2">
                       {relatedRegions.map((region, index) => (
-                        <Link 
+                        <Link
                           key={index}
                           href={`/bandi/localita/${encodeURIComponent(region)}`}
                           className="block"
@@ -495,10 +496,10 @@ export default function EntePage({ params }: EntePageProps) {
                     Concorsi Disponibili ({totalCount}) di {ente}
                   </h2>
                 </div>
-                
+
                 <Suspense fallback={<div>Caricamento concorsi...</div>}>
-                  <ConcoroList 
-                    jobs={displayedConcorsi.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)} 
+                  <ConcoroList
+                    jobs={displayedConcorsi.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)}
                     isLoading={loading}
                     selectedJobId={selectedJobId}
                     onJobSelect={handleJobSelect}
@@ -536,7 +537,7 @@ export default function EntePage({ params }: EntePageProps) {
             <Card className="">
               <div className="flex justify-between items-center pt-6 pl-6 pr-3">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Località ({showAllLocations ? allLocations.length : locations.length})  
+                  Località ({showAllLocations ? allLocations.length : locations.length})
                 </h2>
               </div>
               <CardContent className="">
@@ -544,27 +545,26 @@ export default function EntePage({ params }: EntePageProps) {
                   <div className="space-y-2">
                     {(showAllLocations ? allLocations : locations).map((location, index) => {
                       // Count active concorsi for this location
-                      const activeCount = displayedConcorsi.filter(c => 
+                      const activeCount = displayedConcorsi.filter(c =>
                         c.AreaGeografica?.toLowerCase().includes(location.toLowerCase())
                       ).length;
-                      
+
                       // Count total concorsi for this location
-                      const totalCount = concorsi.filter(c => 
+                      const totalCount = concorsi.filter(c =>
                         c.AreaGeografica?.toLowerCase().includes(location.toLowerCase())
                       ).length;
-                      
+
                       const isActive = activeCount > 0;
-                      
+
                       return (
-                        <Link 
+                        <Link
                           key={index}
                           href={`/bandi/localita/${encodeURIComponent(location)}`}
                           className="block"
                         >
-                          <div 
-                            className={`p-2 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden ${
-                              !isActive ? 'opacity-60' : ''
-                            }`}
+                          <div
+                            className={`p-2 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden ${!isActive ? 'opacity-60' : ''
+                              }`}
                           >
                             <div className="font-medium text-sm line-clamp-2 break-words min-w-0" title={location}>
                               {location}
@@ -585,7 +585,7 @@ export default function EntePage({ params }: EntePageProps) {
                       );
                     })}
                   </div>
-                  
+
                   {/* Show All / Show Less button */}
                   {allLocations.length > locations.length && (
                     <div className="mt-4 pt-4 border-t">
@@ -607,7 +607,7 @@ export default function EntePage({ params }: EntePageProps) {
           </div>
 
         </div>
-        
+
 
       </div>
     </div>

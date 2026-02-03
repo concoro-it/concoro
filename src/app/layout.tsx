@@ -49,6 +49,10 @@ export default function RootLayout({
           src="https://www.googletagmanager.com/gtag/js?id=G-NVD6N18QWW"
           strategy="lazyOnload"
         />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17657894796"
+          strategy="lazyOnload"
+        />
         <Script id="google-analytics" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
@@ -65,6 +69,7 @@ export default function RootLayout({
             });
 
             gtag('config', 'G-NVD6N18QWW');
+            gtag('config', 'AW-17657894796');
 
             // Check if user has already consented and update accordingly
             if (typeof window !== 'undefined') {

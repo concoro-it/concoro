@@ -9,14 +9,15 @@ import { ArticlePageClient } from '@/app/articolo/[slugOrId]/ArticlePageClient'
 import { serializeArticle } from '@/lib/utils/firestore-serialization'
 
 interface ArticoloPageProps {
-  params: { slugOrId: string }
+  params: Promise<{ slugOrId: string }>
 }
 
 // ✅ SERVER-SIDE METADATA GENERATION (Critical SEO Fix)
 export async function generateMetadata({ params }: ArticoloPageProps): Promise<Metadata> {
+  const resolvedParams = await params;
   try {
-    const article = await getArticoloWithConcorsoBySlugOrIdServer(params.slugOrId)
-    
+    const article = await getArticoloWithConcorsoBySlugOrIdServer(resolvedParams.slugOrId)
+
     if (!article) {
       return {
         title: 'Articolo non trovato | Concoro',
@@ -29,13 +30,13 @@ export async function generateMetadata({ params }: ArticoloPageProps): Promise<M
     }
 
     // Extract role and location for SEO
-    const role = article.concorso?.Titolo?.includes('Istruttore') ? 'Istruttore' : 
-                 article.concorso?.Titolo?.includes('Dirigente') ? 'Dirigente' :
-                 article.concorso?.Titolo?.includes('Funzionario') ? 'Funzionario' :
-                 article.concorso?.Titolo?.includes('Assistente') ? 'Assistente' :
-                 article.concorso?.Titolo?.includes('Operatore') ? 'Operatore' :
-                 article.concorso?.Titolo?.includes('Tecnico') ? 'Tecnico' :
-                 undefined;
+    const role = article.concorso?.Titolo?.includes('Istruttore') ? 'Istruttore' :
+      article.concorso?.Titolo?.includes('Dirigente') ? 'Dirigente' :
+        article.concorso?.Titolo?.includes('Funzionario') ? 'Funzionario' :
+          article.concorso?.Titolo?.includes('Assistente') ? 'Assistente' :
+            article.concorso?.Titolo?.includes('Operatore') ? 'Operatore' :
+              article.concorso?.Titolo?.includes('Tecnico') ? 'Tecnico' :
+                undefined;
 
     const location = article.AreaGeografica || article.concorso?.AreaGeografica;
     const region = (article.concorso as any)?.Regione;
@@ -61,8 +62,8 @@ export async function generateMetadata({ params }: ArticoloPageProps): Promise<M
     const canonicalUrl = getArticoloCanonicalUrl(article);
 
     // Get image URL - use fallback logic for deterministic image selection
-    const concorsoIdHash = article.concorso_id ? 
-      (article.concorso_id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 12 + 1) : 
+    const concorsoIdHash = article.concorso_id ?
+      (article.concorso_id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 12 + 1) :
       1;
     const imageSrc = article.image_meta?.mediaLink || `/blog/${concorsoIdHash}.png`;
     const socialImageUrl = generateSocialImage(
@@ -75,7 +76,7 @@ export async function generateMetadata({ params }: ArticoloPageProps): Promise<M
     // Helper to convert Firestore timestamp to ISO string
     const toISOString = (timestamp: any): string => {
       if (!timestamp) return new Date().toISOString();
-      
+
       try {
         if (timestamp._seconds !== undefined) {
           return new Date(timestamp._seconds * 1000).toISOString();
@@ -96,13 +97,13 @@ export async function generateMetadata({ params }: ArticoloPageProps): Promise<M
     };
 
     // Check if we need to redirect (accessing by ID when slug exists)
-    const shouldRedirect = isDocumentId(params.slugOrId) && article.slug;
+    const shouldRedirect = isDocumentId(resolvedParams.slugOrId) && article.slug;
 
     // ✅ FRESHNESS SIGNAL: Check if concorso deadline has passed
     const isConcorsoExpired = article.concorso?.DataChiusura ? (() => {
       const deadline: any = article.concorso.DataChiusura
       let deadlineDate: Date | null = null
-      
+
       try {
         if (deadline._seconds) {
           deadlineDate = new Date(deadline._seconds * 1000)
@@ -111,11 +112,11 @@ export async function generateMetadata({ params }: ArticoloPageProps): Promise<M
         } else if (typeof deadline === 'string') {
           deadlineDate = new Date(deadline)
         }
-        
+
         if (deadlineDate && !isNaN(deadlineDate.getTime())) {
           return deadlineDate < new Date()
         }
-      } catch {}
+      } catch { }
       return false
     })() : false
 
@@ -126,7 +127,7 @@ export async function generateMetadata({ params }: ArticoloPageProps): Promise<M
       authors: [{ name: 'Concoro' }],
       creator: 'Concoro',
       publisher: 'Concoro',
-      
+
       // ✅ FRESHNESS: Robots directives - reduce indexing priority for expired articles
       robots: {
         index: !isConcorsoExpired, // Don't index expired concorsi
@@ -201,15 +202,16 @@ export async function generateMetadata({ params }: ArticoloPageProps): Promise<M
 
 // ✅ SERVER COMPONENT - Fetches data server-side for optimal SEO
 export default async function ArticoloPage({ params }: ArticoloPageProps) {
+  const resolvedParams = await params;
   try {
-    const article = await getArticoloWithConcorsoBySlugOrIdServer(params.slugOrId)
-    
+    const article = await getArticoloWithConcorsoBySlugOrIdServer(resolvedParams.slugOrId)
+
     if (!article) {
       notFound()
     }
 
     // ✅ SEO FIX: If accessing by ID but slug exists, redirect to slug URL (prioritize slug)
-    const shouldRedirect = isDocumentId(params.slugOrId) && article.slug;
+    const shouldRedirect = isDocumentId(resolvedParams.slugOrId) && article.slug;
     if (shouldRedirect) {
       redirect(`/articolo/${article.slug}`)
     }
@@ -218,8 +220,8 @@ export default async function ArticoloPage({ params }: ArticoloPageProps) {
     const serializedArticle = serializeArticle(article)
 
     // Pass serialized data to client component for interactivity
-    return <ArticlePageClient article={serializedArticle} slugOrId={params.slugOrId} />
-    
+    return <ArticlePageClient article={serializedArticle} slugOrId={resolvedParams.slugOrId} />
+
   } catch (error) {
     console.error('Error loading article page:', error)
     notFound()

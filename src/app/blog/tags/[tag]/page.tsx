@@ -6,26 +6,27 @@ import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
 import { serializeArticles } from '@/lib/utils/firestore-serialization'
 
 interface TagPageProps {
-  params: { tag: string }
-  searchParams: { page?: string }
+  params: Promise<{ tag: string }>
+  searchParams: Promise<{ page?: string }>
 }
 
 // ✅ SERVER-SIDE METADATA for Tag Pages (Critical SEO)
 export async function generateMetadata({ params, searchParams }: TagPageProps): Promise<Metadata> {
-  const decodedTag = decodeURIComponent(params.tag)
+  const [resolvedParams, resolvedSearchParams] = await Promise.all([params, searchParams]);
+  const decodedTag = decodeURIComponent(resolvedParams.tag)
   const formattedTag = toItalianSentenceCase(decodedTag)
-  const page = parseInt(searchParams.page || '1', 10)
+  const page = parseInt(resolvedSearchParams.page || '1', 10)
 
-  const title = page > 1 
+  const title = page > 1
     ? `${formattedTag} - Pagina ${page} | Concoro Blog`
     : `${formattedTag} - Blog Concorsi Pubblici | Concoro`
   const description = `Tutti gli articoli su ${formattedTag.toLowerCase()}. Guide pratiche, consigli e strategie di preparazione per concorsi pubblici in Italia.`
-  const baseUrl = `https://www.concoro.it/blog/tags/${params.tag}`
+  const baseUrl = `https://www.concoro.it/blog/tags/${resolvedParams.tag}`
   const canonicalUrl = page > 1 ? `${baseUrl}?page=${page}` : baseUrl
 
   // Calculate total pages for rel=prev/next
   const allArticles = await getArticoliByTagServer(decodedTag, 100)
-  const validArticles = allArticles.filter(article => 
+  const validArticles = allArticles.filter(article =>
     !(article.articolo_title === "Non specificato" && article.articolo_subtitle === "Non specificato")
   )
   const totalPages = Math.ceil(validArticles.length / 9)
@@ -63,7 +64,7 @@ export async function generateMetadata({ params, searchParams }: TagPageProps): 
       `concorsi ${formattedTag.toLowerCase()}`,
       'pubblica amministrazione'
     ].join(', '),
-    
+
     robots: {
       index: true,
       follow: true,
@@ -130,16 +131,17 @@ export async function generateStaticParams() {
 
 // ✅ SERVER COMPONENT - Fetches data server-side
 export default async function TagPage({ params, searchParams }: TagPageProps) {
+  const [resolvedParams, resolvedSearchParams] = await Promise.all([params, searchParams]);
   try {
-    const decodedTag = decodeURIComponent(params.tag)
-    const page = parseInt(searchParams.page || '1', 10)
+    const decodedTag = decodeURIComponent(resolvedParams.tag)
+    const page = parseInt(resolvedSearchParams.page || '1', 10)
     const articlesPerPage = 9
 
     // Fetch articles for this tag
     const allArticles = await getArticoliByTagServer(decodedTag, 100)
 
     // Filter out placeholder articles
-    const validArticles = allArticles.filter(article => 
+    const validArticles = allArticles.filter(article =>
       !(article.articolo_title === "Non specificato" && article.articolo_subtitle === "Non specificato")
     )
 
@@ -156,7 +158,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
     const serializedArticles = serializeArticles(paginatedArticles)
 
     return (
-      <BlogTagPageClient 
+      <BlogTagPageClient
         tag={decodedTag}
         articles={serializedArticles}
         currentPage={page}

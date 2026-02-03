@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState, useRef, use } from "react"
 import { doc, getDoc, Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase/config"
 import { Badge } from "@/components/ui/badge"
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/prompt-input"
 import { marked } from 'marked'
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
-import { formatMetodoValutazione } from '@/lib/utils/date-utils'
+import { formatMetodoValutazione, formatItalianDate } from '@/lib/utils/date-utils'
 import { getEnteUrl } from '@/lib/utils/ente-utils'
 import { getLocalitaUrl, splitLocationString } from '@/lib/utils/localita-utils'
 
@@ -99,16 +99,16 @@ interface Job {
 
 const parseDate = (dateStr: string | undefined): Date | null => {
   if (!dateStr) return null;
-  
+
   try {
     // First try standard date parsing
     const date = new Date(dateStr);
     if (!isNaN(date.getTime())) return date;
-    
+
     // Try Italian date format (e.g., "31 Gen 2023" or "31/01/2023")
     // Remove any time part
     const datePart = dateStr.split(' ').slice(0, 3).join(' ');
-    
+
     // Try different Italian date formats
     const formats = [
       // DD Month YYYY
@@ -127,34 +127,34 @@ const parseDate = (dateStr: string | undefined): Date | null => {
           'Nov': 10, 'Novembre': 10,
           'Dic': 11, 'Dicembre': 11
         };
-        
+
         const parts = str.split(' ');
         if (parts.length < 3) return null;
-        
+
         const day = parseInt(parts[0], 10);
         const month = monthMap[parts[1]];
         const year = parseInt(parts[2], 10);
-        
+
         if (isNaN(day) || month === undefined || isNaN(year)) return null;
-        
+
         return new Date(year, month, day);
       },
-      
+
       // DD/MM/YYYY
       (str: string) => {
         const parts = str.split('/');
         if (parts.length !== 3) return null;
-        
+
         const day = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10) - 1; // JS months are 0-based
         const year = parseInt(parts[2], 10);
-        
+
         if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-        
+
         return new Date(year, month, day);
       }
     ];
-    
+
     // Try each format
     for (const format of formats) {
       const parsedDate = format(datePart);
@@ -162,7 +162,7 @@ const parseDate = (dateStr: string | undefined): Date | null => {
         return parsedDate;
       }
     }
-    
+
     return null;
   } catch (error) {
     console.error("Error parsing date:", error);
@@ -172,7 +172,7 @@ const parseDate = (dateStr: string | undefined): Date | null => {
 
 const getDeadlineStatus = (dateStr: string | undefined | { seconds: number, nanoseconds: number }) => {
   if (!dateStr) return null;
-  
+
   // Handle Timestamp objects
   if (typeof dateStr === 'object' && 'seconds' in dateStr && 'nanoseconds' in dateStr) {
     try {
@@ -188,16 +188,16 @@ const getDeadlineStatus = (dateStr: string | undefined | { seconds: number, nano
       return null;
     }
   }
-  
+
   const date = parseDate(dateStr);
   if (!date) return null;
-  
+
   if (isToday(date)) {
     return { text: "Scade oggi", color: "#dc2626", textColor: "#dc2626" };
   } else if (isThisWeek(date, { weekStartsOn: 1 })) {
     return { text: "Scade questa settimana", color: "#f59e0b", textColor: "#f59e0b" };
   }
-  
+
   return null;
 };
 
@@ -214,7 +214,7 @@ const renderGroupedRegions = (job: Job) => {
         <div className="flex flex-wrap gap-1">
           {job.regions.slice(0, 3).map((region: string, index: number) => (
             <React.Fragment key={region}>
-              <Link 
+              <Link
                 href={getLocalitaUrl(region, 'bandi')}
                 className="hover:text-foreground transition-colors text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md"
               >
@@ -237,11 +237,11 @@ const renderGroupedRegions = (job: Job) => {
       </div>
     );
   }
-  
+
   // Single region display or split combined regions
   const locationText = job.job_location || job.AreaGeografica || 'Località non specificata';
   const regions = splitLocationString(locationText);
-  
+
   if (regions.length > 1) {
     return (
       <div className="flex flex-wrap items-center gap-1">
@@ -249,7 +249,7 @@ const renderGroupedRegions = (job: Job) => {
         <div className="flex flex-wrap gap-1">
           {regions.slice(0, 3).map((region: string, index: number) => (
             <React.Fragment key={region}>
-              <Link 
+              <Link
                 href={getLocalitaUrl(region, 'bandi')}
                 className="hover:text-foreground transition-colors text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md"
               >
@@ -272,12 +272,12 @@ const renderGroupedRegions = (job: Job) => {
       </div>
     );
   }
-  
+
   // Single region display
   return (
     <div className="flex items-center">
       <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-      <Link 
+      <Link
         href={getLocalitaUrl(locationText, 'bandi')}
         className="hover:text-foreground transition-colors"
       >
@@ -301,31 +301,31 @@ const hasValidContent = (content: string | string[] | undefined): boolean => {
   return content.trim() !== 'Non specificato' && content.trim() !== '';
 };
 
-  // Simple function to safely get text content
+// Simple function to safely get text content
+// Simple function to safely get text content
 const safeText = (text: unknown): string => {
   if (text === null || text === undefined) return '';
   if (typeof text === 'string') return text;
   if (['number', 'boolean'].includes(typeof text)) return String(text);
-  if (text instanceof Date) return text.toLocaleDateString();
-  if (text instanceof Timestamp) return text.toDate().toLocaleDateString();
-  if (typeof text === 'object' && 'seconds' in text && 'nanoseconds' in text) {
-    try {
-      const timestampObj = text as { seconds: number; nanoseconds: number };
-      return new Timestamp(timestampObj.seconds, timestampObj.nanoseconds).toDate().toLocaleDateString();
-    } catch {
-      return 'Invalid date';
-    }
+
+  // Try to format as date first
+  if (text instanceof Date || text instanceof Timestamp || (typeof text === 'object' && ('seconds' in text || '_seconds' in text))) {
+    const formatted = formatItalianDate(text);
+    if (formatted) return formatted;
   }
+
   return JSON.stringify(text);
 };
 
-export default function JobPage({ params }: { params: { id: string } }) {
+export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const id = resolvedParams.id;
   const [job, setJob] = useState<Job | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const { user } = useAuth()
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi();
-  
+
   // Chat state
   const [inputValue, setInputValue] = useState("")
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([])
@@ -338,10 +338,10 @@ export default function JobPage({ params }: { params: { id: string } }) {
     const isDesktop = window.innerWidth >= 1024
     if (isDesktop) {
       // Redirect to main page with ID parameter on desktop
-      router.replace(`/bandi?id=${params.id}`)
+      router.replace(`/bandi?id=${id}`)
       return
     }
-  }, [params.id, router])
+  }, [id, router])
 
   // Scroll to bottom of chat
   const scrollToBottom = () => {
@@ -359,21 +359,21 @@ export default function JobPage({ params }: { params: { id: string } }) {
     async function fetchJob() {
       try {
         setIsLoading(true)
-         // Debug log
-        
+        // Debug log
+
         if (!db) {
           console.error('Firestore instance not available');
           throw new Error('Firestore instance not available');
         }
-        
-        const jobDoc = await getDoc(doc(db, "concorsi", params.id))
-         // Debug log
+
+        const jobDoc = await getDoc(doc(db, "concorsi", id))
+        // Debug log
         if (jobDoc.exists()) {
           const data = jobDoc.data();
-           // Debug log
+          // Debug log
 
           // Convert Firestore timestamps to strings
-          const openingDate = data["Data apertura candidature"] instanceof Timestamp 
+          const openingDate = data["Data apertura candidature"] instanceof Timestamp
             ? data["Data apertura candidature"].toDate().toLocaleDateString()
             : data["Data apertura candidature"];
           const closingDate = data["Data chiusura candidature"] instanceof Timestamp
@@ -399,7 +399,7 @@ export default function JobPage({ params }: { params: { id: string } }) {
     }
 
     fetchJob()
-  }, [params.id])
+  }, [id])
 
   const handleBack = () => {
     // Get the last visited page from sessionStorage or default to page 1
@@ -409,7 +409,7 @@ export default function JobPage({ params }: { params: { id: string } }) {
 
   const handleSaveJob = async () => {
     if (!job) return;
-    
+
     try {
       if (!user) {
         toast.error("Please log in to save jobs");
@@ -478,8 +478,8 @@ export default function JobPage({ params }: { params: { id: string } }) {
         <div className="container py-8 pt-24">
           <div className="space-y-4">
             <h1 className="text-2xl font-bold">Job not found</h1>
-            <Button 
-              variant="default" 
+            <Button
+              variant="default"
               className="flex items-center text-brand hover:text-brand/80"
               onClick={handleBack}
             >
@@ -522,8 +522,8 @@ export default function JobPage({ params }: { params: { id: string } }) {
                 <div className="flex items-center">
                   {/* Show deadline badge if available, otherwise show status badge */}
                   {deadlineStatus ? (
-                    <Badge 
-                      className="flex-shrink-0 bg-transparent border-0 px-0" 
+                    <Badge
+                      className="flex-shrink-0 bg-transparent border-0 px-0"
                       style={{
                         color: deadlineStatus.textColor,
                         fontWeight: "600"
@@ -533,13 +533,13 @@ export default function JobPage({ params }: { params: { id: string } }) {
                     </Badge>
                   ) : (
                     <Badge className="inline-flex items-center justify-center px-4 py-1 whitespace-nowrap rounded-full text-sm font-medium transition-colors outline-offset-2 bg-primary text-primary-foreground">
-                      {job.Stato ? (safeText(job.Stato).toLowerCase() === 'open' ? 'Aperto' : 
+                      {job.Stato ? (safeText(job.Stato).toLowerCase() === 'open' ? 'Aperto' :
                         safeText(job.Stato).toLowerCase() === 'closed' ? 'Chiuso' : safeText(job.Stato)) : 'Stato non disponibile'}
                     </Badge>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <BookmarkIconButton 
+                  <BookmarkIconButton
                     isSaved={isConcorsoSaved(job.id)}
                     onClick={handleSaveJob}
                   />
@@ -559,7 +559,7 @@ export default function JobPage({ params }: { params: { id: string } }) {
                 <div className="flex items-center text-gray-600 mt-2">
                   <Building2 className="w-4 h-4 mr-1 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <Link 
+                    <Link
                       href={getEnteUrl(safeText(job["Ente di riferimento"] || job.Ente), 'bandi')}
                       className="truncate hover:text-foreground transition-colors"
                       title={safeText(job["Ente di riferimento"] || job.Ente)}
@@ -581,27 +581,27 @@ export default function JobPage({ params }: { params: { id: string } }) {
 
               {/* Action Buttons */}
               <div className="flex gap-2">
-                  <Button asChild className="inline-flex items-center justify-center px-4 py- whitespace-nowrap text-sm font-medium transition-colors outline-offset-2 bg-primary text-primary-foreground">
-                    <a href={safeText(job.apply_link || job.Link)} target="_blank" rel="noopener noreferrer">
-                      Candidati Ora
-                      <ExternalLinkIcon className="w-4 h-4 ml-2" />
-                    </a>
-                  </Button>
-                  <Button variant="ghost" asChild>
-                    <a href={safeText(job.Link)} target="_blank" rel="noopener noreferrer">
-                      Visualizza su INPA
-                      <ExternalLinkIcon className="w-4 h-4 ml-2" />
-                    </a>
-                  </Button>
-                </div>
+                <Button asChild className="inline-flex items-center justify-center px-4 py- whitespace-nowrap text-sm font-medium transition-colors outline-offset-2 bg-primary text-primary-foreground">
+                  <a href={safeText(job.apply_link || job.Link)} target="_blank" rel="noopener noreferrer">
+                    Candidati Ora
+                    <ExternalLinkIcon className="w-4 h-4 ml-2" />
+                  </a>
+                </Button>
+                <Button variant="ghost" asChild>
+                  <a href={safeText(job.Link)} target="_blank" rel="noopener noreferrer">
+                    Visualizza su INPA
+                    <ExternalLinkIcon className="w-4 h-4 ml-2" />
+                  </a>
+                </Button>
+              </div>
 
               {/* Summary Section */}
               {(job.summary || job.riassunto) && (
-                <div className="rounded-lg p-4 md:p-6" style={{ 
+                <div className="rounded-lg p-4 md:p-6" style={{
                   backgroundImage: 'linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)'
                 }}>
                   <h2 className="text-lg font-semibold mb-2">Sommario</h2>
-                  <div dangerouslySetInnerHTML={{ 
+                  <div dangerouslySetInnerHTML={{
                     __html: safeText(job.summary || job.riassunto)
                       .replace(/<\/?[^>]+(>|$)/g, " ")
                       .replace(/\n/g, '<br />')
@@ -616,7 +616,7 @@ export default function JobPage({ params }: { params: { id: string } }) {
             <h2 className="text-lg font-semibold">Informazioni sul Ruolo</h2>
             <div className="prose max-w-none">
               {job["Job Details"] || job.Descrizione || job.riassunto ? (
-                <div dangerouslySetInnerHTML={{ 
+                <div dangerouslySetInnerHTML={{
                   __html: safeText(job["Job Details"] || job.Descrizione || job.riassunto)
                     .replace(/<\/?[^>]+(>|$)/g, " ")
 
@@ -673,141 +673,141 @@ export default function JobPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* Organizational Details */}
-          {(job.collocazione_organizzativa || job.ambito_lavorativo || job.tipologia || job.categoria || 
-            job.settore || job.regime || job.settore_professionale || job.regime_impegno || 
+          {(job.collocazione_organizzativa || job.ambito_lavorativo || job.tipologia || job.categoria ||
+            job.settore || job.regime || job.settore_professionale || job.regime_impegno ||
             job.collocazione_organizzativa || job.ambito_lavorativo) && (
-            <div className="bg-white rounded-lg border p-6 space-y-4">
-              <h2 className="text-lg font-semibold">Dettagli Organizzativi</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {job.collocazione_organizzativa && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Collocazione Organizzativa</p>
-                    <p className="font-medium">{safeText(job.collocazione_organizzativa)}</p>
-                  </div>
-                )}
-                {job.ambito_lavorativo && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Ambito Lavorativo</p>
-                    <p className="font-medium">{safeText(job.ambito_lavorativo)}</p>
-                  </div>
-                )}
-                {job.settore_professionale && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Settore Professionale</p>
-                    <p className="font-medium">{safeText(job.settore_professionale)}</p>
-                  </div>
-                )}
-                {job.regime_impegno && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Regime di Impegno</p>
-                    <p className="font-medium">{safeText(job.regime_impegno)}</p>
-                  </div>
-                )}
-                {job.tipologia && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Tipologia</p>
-                    <p className="font-medium">{safeText(job.tipologia)}</p>
-                  </div>
-                )}
-                {job.categoria && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Categoria</p>
-                    <p className="font-medium">{safeText(job.categoria)}</p>
-                  </div>
-                )}
-                {job.settore && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Settore</p>
-                    <p className="font-medium">{safeText(job.settore)}</p>
-                  </div>
-                )}
-                {job.regime && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Regime</p>
-                    <p className="font-medium">{safeText(job.regime)}</p>
-                  </div>
-                )}
+              <div className="bg-white rounded-lg border p-6 space-y-4">
+                <h2 className="text-lg font-semibold">Dettagli Organizzativi</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {job.collocazione_organizzativa && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Collocazione Organizzativa</p>
+                      <p className="font-medium">{safeText(job.collocazione_organizzativa)}</p>
+                    </div>
+                  )}
+                  {job.ambito_lavorativo && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Ambito Lavorativo</p>
+                      <p className="font-medium">{safeText(job.ambito_lavorativo)}</p>
+                    </div>
+                  )}
+                  {job.settore_professionale && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Settore Professionale</p>
+                      <p className="font-medium">{safeText(job.settore_professionale)}</p>
+                    </div>
+                  )}
+                  {job.regime_impegno && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Regime di Impegno</p>
+                      <p className="font-medium">{safeText(job.regime_impegno)}</p>
+                    </div>
+                  )}
+                  {job.tipologia && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Tipologia</p>
+                      <p className="font-medium">{safeText(job.tipologia)}</p>
+                    </div>
+                  )}
+                  {job.categoria && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Categoria</p>
+                      <p className="font-medium">{safeText(job.categoria)}</p>
+                    </div>
+                  )}
+                  {job.settore && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Settore</p>
+                      <p className="font-medium">{safeText(job.settore)}</p>
+                    </div>
+                  )}
+                  {job.regime && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Regime</p>
+                      <p className="font-medium">{safeText(job.regime)}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Technical Requirements */}
-          {(hasValidContent(job.conoscenzeTecnicoSpecialistiche) || 
-            hasValidContent(job.conoscenze_tecnico_specialistiche) || 
-            hasValidContent(job.capacitaRichieste) || 
-            hasValidContent(job.programma_di_esame) || 
+          {(hasValidContent(job.conoscenzeTecnicoSpecialistiche) ||
+            hasValidContent(job.conoscenze_tecnico_specialistiche) ||
+            hasValidContent(job.capacitaRichieste) ||
+            hasValidContent(job.programma_di_esame) ||
             hasValidContent(job.requisiti_generali)) && (
-            <div className="bg-white rounded-lg border p-6 space-y-4">
-              <h2 className="text-lg font-semibold">Requisiti e Programma</h2>
-              <div className="space-y-6">
-                {hasValidContent(job.requisiti_generali) && (
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold mb-2">Requisiti Generali</h3>
-                    <ul className="list-disc pl-5">
-                      {Array.isArray(job.requisiti_generali) 
-                        ? job.requisiti_generali
+              <div className="bg-white rounded-lg border p-6 space-y-4">
+                <h2 className="text-lg font-semibold">Requisiti e Programma</h2>
+                <div className="space-y-6">
+                  {hasValidContent(job.requisiti_generali) && (
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold mb-2">Requisiti Generali</h3>
+                      <ul className="list-disc pl-5">
+                        {Array.isArray(job.requisiti_generali)
+                          ? job.requisiti_generali
                             .filter(item => item.trim() !== 'Non specificato')
                             .map((item: string, index: number) => (
                               <li key={index}>{formatListItem(item)}</li>
                             ))
-                        : <li>{formatListItem(String(job.requisiti_generali || ''))}</li>
-                      }
-                    </ul>
-                  </div>
-                )}
-                {(hasValidContent(job.conoscenzeTecnicoSpecialistiche) || hasValidContent(job.conoscenze_tecnico_specialistiche)) && (
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold mb-2">Conoscenze Tecnico-Specialistiche</h3>
-                    <ul className="list-disc pl-5">
-                      {(() => {
-                        const knowledge = job.conoscenzeTecnicoSpecialistiche || job.conoscenze_tecnico_specialistiche;
-                        if (Array.isArray(knowledge)) {
-                          return knowledge
-                            .filter(item => item.trim() !== 'Non specificato')
-                            .map((item: string, index: number) => (
-                              <li key={index}>{formatListItem(item)}</li>
-                            ));
+                          : <li>{formatListItem(String(job.requisiti_generali || ''))}</li>
                         }
-                        return knowledge && knowledge.trim() !== 'Non specificato' 
-                          ? <li>{formatListItem(String(knowledge))}</li>
-                          : null;
-                      })()}
-                    </ul>
-                  </div>
-                )}
-                {hasValidContent(job.capacitaRichieste) && (
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold mb-2">Capacità Richieste</h3>
-                    <ul className="list-disc pl-5">
-                      {Array.isArray(job.capacitaRichieste)
-                        ? job.capacitaRichieste
+                      </ul>
+                    </div>
+                  )}
+                  {(hasValidContent(job.conoscenzeTecnicoSpecialistiche) || hasValidContent(job.conoscenze_tecnico_specialistiche)) && (
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold mb-2">Conoscenze Tecnico-Specialistiche</h3>
+                      <ul className="list-disc pl-5">
+                        {(() => {
+                          const knowledge = job.conoscenzeTecnicoSpecialistiche || job.conoscenze_tecnico_specialistiche;
+                          if (Array.isArray(knowledge)) {
+                            return knowledge
+                              .filter(item => item.trim() !== 'Non specificato')
+                              .map((item: string, index: number) => (
+                                <li key={index}>{formatListItem(item)}</li>
+                              ));
+                          }
+                          return knowledge && knowledge.trim() !== 'Non specificato'
+                            ? <li>{formatListItem(String(knowledge))}</li>
+                            : null;
+                        })()}
+                      </ul>
+                    </div>
+                  )}
+                  {hasValidContent(job.capacitaRichieste) && (
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold mb-2">Capacità Richieste</h3>
+                      <ul className="list-disc pl-5">
+                        {Array.isArray(job.capacitaRichieste)
+                          ? job.capacitaRichieste
                             .filter((item: string) => item.trim() !== 'Non specificato')
                             .map((item: string, index: number) => (
                               <li key={index}>{formatListItem(item)}</li>
                             ))
-                        : <li>{formatListItem(String(job.capacitaRichieste || ''))}</li>
-                      }
-                    </ul>
-                  </div>
-                )}
-                {hasValidContent(job.programma_di_esame) && (
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold mb-2">Programma d&apos;Esame</h3>
-                    <ul className="list-disc pl-5">
-                      {Array.isArray(job.programma_di_esame)
-                        ? job.programma_di_esame
+                          : <li>{formatListItem(String(job.capacitaRichieste || ''))}</li>
+                        }
+                      </ul>
+                    </div>
+                  )}
+                  {hasValidContent(job.programma_di_esame) && (
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold mb-2">Programma d&apos;Esame</h3>
+                      <ul className="list-disc pl-5">
+                        {Array.isArray(job.programma_di_esame)
+                          ? job.programma_di_esame
                             .filter(item => item.trim() !== 'Non specificato')
                             .map((item: string, index: number) => (
                               <li key={index}>{formatListItem(item)}</li>
                             ))
-                        : <li>{formatListItem(String(job.programma_di_esame || ''))}</li>
-                      }
-                    </ul>
-                  </div>
-                )}
+                          : <li>{formatListItem(String(job.programma_di_esame || ''))}</li>
+                        }
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Contact Information */}
           {(job.contatti || job.pa_link || job["Link al sito della PA"]) && (
@@ -823,14 +823,14 @@ export default function JobPage({ params }: { params: { id: string } }) {
                 {(job.pa_link || job["Link al sito della PA"]) && (
                   <div className="space-y-2">
                     <p className="text-sm text-gray-500">Link PA</p>
-                    <Button 
-                      variant="ghost" 
-                      asChild 
+                    <Button
+                      variant="ghost"
+                      asChild
                       className="w-full justify-start p-2 h-auto"
                     >
-                      <a 
-                        href={safeText(job.pa_link || job["Link al sito della PA"])} 
-                        target="_blank" 
+                      <a
+                        href={safeText(job.pa_link || job["Link al sito della PA"])}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center text-left"
                       >
@@ -850,10 +850,10 @@ export default function JobPage({ params }: { params: { id: string } }) {
               <h2 className="text-lg font-semibold">Documenti Aggiuntivi</h2>
               <div className="space-y-2">
                 {job.pdf_links.map((link, index) => (
-                  <Button 
-                    key={index} 
-                    variant="ghost" 
-                    asChild 
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    asChild
                     className="w-full justify-start"
                   >
                     <a href={link} target="_blank" rel="noopener noreferrer">
@@ -893,12 +893,12 @@ export default function JobPage({ params }: { params: { id: string } }) {
                 Domande su requisiti o scadenze? Chiedi a Genio, il tuo assistente AI.
               </p>
             </div>
-            
+
             {/* Chat Messages */}
             <div className="p-4 flex flex-col h-[calc(100%-5rem)]">
               {chatMessages.length > 0 ? (
-                <div 
-                  className="space-y-4 mb-4 overflow-y-auto flex-grow pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" 
+                <div
+                  className="space-y-4 mb-4 overflow-y-auto flex-grow pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
                   style={{
                     scrollbarWidth: 'thin',
                     msOverflowStyle: 'none',
@@ -907,21 +907,19 @@ export default function JobPage({ params }: { params: { id: string } }) {
                   {chatMessages.map((message, index) => (
                     <div
                       key={index}
-                      className={`flex ${
-                        message.role === 'user' ? 'justify-end' : 'justify-start'
-                      }`}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
+                        }`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-lg p-2 text-sm ${
-                          message.role === 'user'
-                            ? 'bg-blue-500 text-white'
-                            : message.content.startsWith('Error:')
+                        className={`max-w-[80%] rounded-lg p-2 text-sm ${message.role === 'user'
+                          ? 'bg-blue-500 text-white'
+                          : message.content.startsWith('Error:')
                             ? 'bg-red-100 text-red-800'
                             : 'bg-gray-100 text-gray-800'
-                        }`}
+                          }`}
                       >
                         {message.role === 'assistant' ? (
-                          <div 
+                          <div
                             className="prose prose-xs max-w-none prose-p:leading-relaxed prose-p:text-sm prose-pre:p-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_li]:mb-1 [&_li]:text-sm [&_strong]:font-semibold"
                             dangerouslySetInnerHTML={{ __html: marked(message.content) }}
                           />
@@ -958,7 +956,7 @@ export default function JobPage({ params }: { params: { id: string } }) {
                 <div className="space-y-2 mb-4">
                   <p className="text-xs text-gray-500 mb-1">Domande suggerite:</p>
                   <div className="flex flex-wrap gap-2">
-                    <button 
+                    <button
                       onClick={() => {
                         setInputValue("Quali sono i requisiti principali?");
                         handleChatSubmit();
@@ -967,7 +965,7 @@ export default function JobPage({ params }: { params: { id: string } }) {
                     >
                       Quali sono i requisiti principali?
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         setInputValue("Quando scade il bando?");
                         handleChatSubmit();
@@ -976,7 +974,7 @@ export default function JobPage({ params }: { params: { id: string } }) {
                     >
                       Quando scade il bando?
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         setInputValue("Come prepararsi per il concorso?");
                         handleChatSubmit();
@@ -996,8 +994,8 @@ export default function JobPage({ params }: { params: { id: string } }) {
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
                 onSubmit={handleChatSubmit}
               >
-                <PromptInputTextarea 
-                  placeholder="Fai una domanda su questo concorso..." 
+                <PromptInputTextarea
+                  placeholder="Fai una domanda su questo concorso..."
                   value={inputValue}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
                   className="text-sm"
@@ -1032,7 +1030,7 @@ export default function JobPage({ params }: { params: { id: string } }) {
       }}>
         <div className="max-w-4xl mx-auto">
           {/* Header with Chevron */}
-          <div 
+          <div
             className="flex justify-between items-start p-4 cursor-pointer relative"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
           >
@@ -1063,13 +1061,12 @@ export default function JobPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* Expandable Content */}
-          <div className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out ${
-            isDrawerOpen ? 'max-h-[600px] p-4' : 'max-h-0'
-          }`}>
+          <div className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out ${isDrawerOpen ? 'max-h-[600px] p-4' : 'max-h-0'
+            }`}>
             {/* Chat Messages */}
             {chatMessages.length > 0 ? (
-              <div 
-                className="space-y-4 mb-4 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" 
+              <div
+                className="space-y-4 mb-4 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
                 style={{
                   scrollbarWidth: 'thin',
                   msOverflowStyle: 'none',
@@ -1078,21 +1075,19 @@ export default function JobPage({ params }: { params: { id: string } }) {
                 {chatMessages.map((message, index) => (
                   <div
                     key={index}
-                    className={`flex ${
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg p-2 text-sm ${
-                        message.role === 'user'
-                          ? 'bg-blue-500 text-white'
-                          : message.content.startsWith('Error:')
+                      className={`max-w-[80%] rounded-lg p-2 text-sm ${message.role === 'user'
+                        ? 'bg-blue-500 text-white'
+                        : message.content.startsWith('Error:')
                           ? 'bg-red-100 text-red-800'
                           : 'bg-gray-100 text-gray-800'
-                      }`}
+                        }`}
                     >
                       {message.role === 'assistant' ? (
-                        <div 
+                        <div
                           className="prose prose-xs max-w-none prose-p:leading-relaxed prose-p:text-sm prose-pre:p-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_li]:mb-1 [&_li]:text-sm [&_strong]:font-semibold"
                           dangerouslySetInnerHTML={{ __html: marked(message.content) }}
                         />
@@ -1129,7 +1124,7 @@ export default function JobPage({ params }: { params: { id: string } }) {
               <div className="space-y-2 mb-4">
                 <p className="text-xs text-gray-500 mb-1">Domande suggerite:</p>
                 <div className="flex flex-wrap gap-2">
-                  <button 
+                  <button
                     onClick={() => {
                       setInputValue("Quali sono i requisiti principali?");
                       handleChatSubmit();
@@ -1138,7 +1133,7 @@ export default function JobPage({ params }: { params: { id: string } }) {
                   >
                     Quali sono i requisiti principali?
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       setInputValue("Quando scade il bando?");
                       handleChatSubmit();
@@ -1147,7 +1142,7 @@ export default function JobPage({ params }: { params: { id: string } }) {
                   >
                     Quando scade il bando?
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       setInputValue("Come prepararsi per il concorso?");
                       handleChatSubmit();
@@ -1167,8 +1162,8 @@ export default function JobPage({ params }: { params: { id: string } }) {
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
               onSubmit={handleChatSubmit}
             >
-              <PromptInputTextarea 
-                placeholder="Fai una domanda su questo concorso..." 
+              <PromptInputTextarea
+                placeholder="Fai una domanda su questo concorso..."
                 value={inputValue}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
                 className="text-sm"

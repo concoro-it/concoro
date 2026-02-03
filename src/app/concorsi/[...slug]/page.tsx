@@ -4,14 +4,15 @@ import { unstable_cache } from 'next/cache';
 import { headers } from 'next/headers';
 import { getFirestoreForSEO } from '@/lib/firebase-admin';
 import { Concorso } from '@/types/concorso';
-import { 
-  generateConcorsoBreadcrumbs, 
-  parseConcorsoSlug, 
+import {
+  generateConcorsoBreadcrumbs,
+  parseConcorsoSlug,
   findConcorsoBySlug,
   isFirebaseDocumentId,
   generateSEOConcorsoUrl,
   generateConcorsoSlug
 } from '@/lib/utils/concorso-urls';
+import { formatItalianDate } from '@/lib/utils/date-utils';
 import ConcorsoClientWrapper from '@/components/concorsi/ConcorsoClientWrapper';
 import { generateConcorsoJobPostingStructuredData } from '@/lib/utils/jobposting-utils';
 import { Breadcrumbs } from '@/components/concorsi/Breadcrumbs';
@@ -21,9 +22,9 @@ import { ExpiredConcorso } from '@/components/concorsi/ExpiredConcorso';
 const activeRequests = new Map<string, Promise<{ concorso: Concorso | null; shouldRedirect?: string; isExpired?: boolean }>>();
 
 interface ConcorsoPageProps {
-  params: {
+  params: Promise<{
     slug: string[];
-  };
+  }>;
 }
 
 // Helper function to serialize Firestore data for client components
@@ -37,26 +38,24 @@ function serializeForClient(data: any): any {
     return data.map(item => serializeForClient(item));
   }
 
-  // Handle Firestore Timestamp objects
+  // Handle Firestore Timestamp objects and dates
   if (typeof data === 'object' && data !== null) {
-    // Check if it's a Timestamp-like object (has seconds and nanoseconds)
-    if ('seconds' in data && 'nanoseconds' in data && typeof data.seconds === 'number') {
-      // Convert to Italian date format string for consistent hydration
-      const date = new Date(data.seconds * 1000);
-      return date.toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    }
+    // Check if it's a Timestamp-like object (has seconds/nanoseconds or _seconds/_nanoseconds)
+    // or a Date object
+    const formattedDate = formatItalianDate(data);
+    // If formatItalianDate returns a non-empty string and it's not just the stringified object (optimization check), return it.
+    // However formatItalianDate returns empty string or original string if not a date. 
+    // We need to be careful not to swallow valid non-date objects that might look like dates to some heuristic, 
+    // but formatItalianDate is specific about seconds/nanoseconds or Date instance.
 
-    // Handle Date objects
-    if (data instanceof Date) {
-      return data.toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
+    // Check specific conditions to be sure we want to treat this as a date
+    const isTimestamp = ('seconds' in data && typeof data.seconds === 'number') ||
+      ('_seconds' in data && typeof data._seconds === 'number') ||
+      data instanceof Date;
+
+    if (isTimestamp) {
+      // Use our utility which now handles _seconds
+      return formatItalianDate(data);
     }
 
     // Handle regular objects recursively
@@ -78,106 +77,148 @@ const getConcorsoDataCached = unstable_cache(
   async (slugKey: string): Promise<{ concorso: Concorso | null; shouldRedirect?: string; isExpired?: boolean }> => {
     try {
       const slugArray = slugKey.split('/');
-      
+
       const db = getFirestoreForSEO();
-    
-    // Handle different URL formats
-    if (slugArray.length === 5) {
-      // NEW FORMAT: /concorsi/[localita]/[ente]/[title]/[date]/[id]
-      const fullSlug = slugArray.join('/');
-      const slugComponents = parseConcorsoSlug(fullSlug);
-      
-      // If we have an ID, fetch directly
-      if (slugComponents.id) {
-        const doc = await db.collection('concorsi').doc(slugComponents.id).get();
-        
-        if (!doc.exists) {
+
+      // Handle different URL formats
+      if (slugArray.length === 5) {
+        // NEW FORMAT: /concorsi/[localita]/[ente]/[title]/[date]/[id]
+        const fullSlug = slugArray.join('/');
+        const slugComponents = parseConcorsoSlug(fullSlug);
+
+        // If we have an ID, fetch directly
+        if (slugComponents.id) {
+          const doc = await db.collection('concorsi').doc(slugComponents.id).get();
+
+          if (!doc.exists) {
+            return { concorso: null };
+          }
+
+          const concorso = {
+            id: doc.id,
+            ...doc.data()
+          } as Concorso;
+
+          // Check if concorso is open
+          const validStates = ['open', 'aperto', 'OPEN', 'APERTO'];
+          const now = new Date();
+
+          const toDate = (value: any): Date | null => {
+            if (!value) return null;
+            if (typeof value === 'string') return new Date(value);
+            if (typeof value === 'object' && ('seconds' in value || '_seconds' in value)) {
+              const seconds = value.seconds || value._seconds;
+              return new Date(seconds * 1000);
+            }
+            return null;
+          };
+
+          const hasExpired = () => {
+            if (!concorso.Stato || !validStates.includes(concorso.Stato)) return true;
+            if (concorso.DataChiusura) {
+              const deadline = toDate(concorso.DataChiusura);
+              if (deadline && deadline < now) return true;
+            }
+            return false;
+          };
+
+          if (hasExpired()) {
+            // Concorso exists but is expired/closed - return 410
+            return { concorso, isExpired: true };
+          }
+
+          return { concorso };
+        } else {
           return { concorso: null };
         }
-        
-        const concorso = {
+      } else if (slugArray.length === 1) {
+        // Legacy format: single ID or old slug format
+        const fullSlug = slugArray[0];
+
+        // If it's a legacy Firebase ID without the full slug
+        if (isFirebaseDocumentId(fullSlug)) {
+          const doc = await db.collection('concorsi').doc(fullSlug).get();
+
+          if (!doc.exists) {
+            return { concorso: null };
+          }
+
+          const concorso = {
+            id: doc.id,
+            ...doc.data()
+          } as Concorso;
+
+          // Check if concorso is open
+          const validStates = ['open', 'aperto', 'OPEN', 'APERTO'];
+          const now = new Date();
+
+          const toDate = (value: any): Date | null => {
+            if (!value) return null;
+            if (typeof value === 'string') return new Date(value);
+            if (typeof value === 'object' && ('seconds' in value || '_seconds' in value)) {
+              const seconds = value.seconds || value._seconds;
+              return new Date(seconds * 1000);
+            }
+            return null;
+          };
+
+          const hasExpired = () => {
+            if (!concorso.Stato || !validStates.includes(concorso.Stato)) return true;
+            if (concorso.DataChiusura) {
+              const deadline = toDate(concorso.DataChiusura);
+              if (deadline && deadline < now) return true;
+            }
+            return false;
+          };
+
+          if (hasExpired()) {
+            // Concorso exists but is expired/closed - return 410
+            return { concorso, isExpired: true };
+          }
+
+          // Generate SEO-friendly URL and suggest redirect
+          const seoUrl = generateSEOConcorsoUrl(concorso);
+
+          return {
+            concorso,
+            shouldRedirect: seoUrl
+          };
+        }
+      } else if (slugArray.length === 4) {
+        // OLD FORMAT: /concorsi/[localita]/[ente]/[title]/[date] - Try to match by components
+        const slugComponents = parseConcorsoSlug(slugArray.join('/'));
+
+        // Fetch concorsi that might match
+        let query = db.collection('concorsi')
+          .where('Stato', 'in', ['open', 'aperto', 'OPEN', 'APERTO'])
+          .limit(100);
+
+        const snapshot = await query.get();
+        const concorsi = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        } as Concorso;
-        
-        // Check if concorso is open
-        const validStates = ['open', 'aperto', 'OPEN', 'APERTO'];
-        if (!concorso.Stato || !validStates.includes(concorso.Stato)) {
-          // Concorso exists but is expired/closed - return 410
-          return { concorso, isExpired: true };
+        })) as Concorso[];
+
+        // Find matching concorso by slug components
+        const concorso = findConcorsoBySlug(concorsi, slugComponents);
+
+        if (concorso) {
+          // Redirect to new format with ID
+          const seoUrl = generateSEOConcorsoUrl(concorso);
+          return {
+            concorso,
+            shouldRedirect: seoUrl
+          };
         }
-        
-        return { concorso };
-      } else {
+
         return { concorso: null };
       }
-    } else if (slugArray.length === 1) {
-      // Legacy format: single ID or old slug format
-      const fullSlug = slugArray[0];
-      
-      // If it's a legacy Firebase ID without the full slug
-      if (isFirebaseDocumentId(fullSlug)) {
-        const doc = await db.collection('concorsi').doc(fullSlug).get();
-        
-        if (!doc.exists) {
-          return { concorso: null };
-        }
-        
-        const concorso = {
-          id: doc.id,
-          ...doc.data()
-        } as Concorso;
-        
-        // Check if concorso is open
-        const validStates = ['open', 'aperto', 'OPEN', 'APERTO'];
-        if (!concorso.Stato || !validStates.includes(concorso.Stato)) {
-          // Concorso exists but is expired/closed - return 410
-          return { concorso, isExpired: true };
-        }
-        
-        // Generate SEO-friendly URL and suggest redirect
-        const seoUrl = generateSEOConcorsoUrl(concorso);
-        
-        return { 
-          concorso, 
-          shouldRedirect: seoUrl 
-        };
-      }
-    } else if (slugArray.length === 4) {
-      // OLD FORMAT: /concorsi/[localita]/[ente]/[title]/[date] - Try to match by components
-      const slugComponents = parseConcorsoSlug(slugArray.join('/'));
-      
-      // Fetch concorsi that might match
-      let query = db.collection('concorsi')
-        .where('Stato', 'in', ['open', 'aperto', 'OPEN', 'APERTO'])
-        .limit(100);
-        
-      const snapshot = await query.get();
-      const concorsi = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Concorso[];
-      
-      // Find matching concorso by slug components
-      const concorso = findConcorsoBySlug(concorsi, slugComponents);
-      
-      if (concorso) {
-        // Redirect to new format with ID
-        const seoUrl = generateSEOConcorsoUrl(concorso);
-        return { 
-          concorso,
-          shouldRedirect: seoUrl
-        };
-      }
-      
+
+      return { concorso: null };
+
+    } catch (error) {
       return { concorso: null };
     }
-    
-    return { concorso: null };
-    
-  } catch (error) {
-    return { concorso: null };
-  }
   },
   ['concorso-data-by-slug'], // Cache key prefix
   {
@@ -189,16 +230,16 @@ const getConcorsoDataCached = unstable_cache(
 // Wrapper function with request deduplication
 async function getConcorsoData(slugArray: string[]): Promise<{ concorso: Concorso | null; shouldRedirect?: string; isExpired?: boolean }> {
   const slugKey = slugArray.join('/');
-  
+
   // Check if there's already an active request for this slug
   if (activeRequests.has(slugKey)) {
     return activeRequests.get(slugKey)!;
   }
-  
+
   // Start new request and store the promise
   const requestPromise = getConcorsoDataCached(slugKey);
   activeRequests.set(slugKey, requestPromise);
-  
+
   try {
     const result = await requestPromise;
     return result;
@@ -210,15 +251,16 @@ async function getConcorsoData(slugArray: string[]): Promise<{ concorso: Concors
 
 // Metadata generation
 export async function generateMetadata({ params }: ConcorsoPageProps): Promise<Metadata> {
-  const { concorso, isExpired } = await getConcorsoData(params.slug);
-  
+  const resolvedParams = await params;
+  const { concorso, isExpired } = await getConcorsoData(resolvedParams.slug);
+
   if (!concorso) {
     return {
       title: 'Concorso Non Trovato - Concoro',
       description: 'Il concorso richiesto non è stato trovato o non è più disponibile.',
     };
   }
-  
+
   // Special metadata for expired concorsi
   if (isExpired) {
     return {
@@ -230,15 +272,15 @@ export async function generateMetadata({ params }: ConcorsoPageProps): Promise<M
       },
     };
   }
-  
+
   const title = `${concorso.Titolo} - ${concorso.Ente} | Concoro`;
-  const description = concorso.Descrizione 
+  const description = concorso.Descrizione
     ? `${concorso.Descrizione.substring(0, 160)}...`
     : `Concorso pubblico presso ${concorso.Ente}. Scopri i dettagli e candidati online.`;
-  
+
   // Generate canonical URL
   const canonicalUrl = `https://concoro.it${generateSEOConcorsoUrl(concorso)}`;
-    
+
   return {
     title,
     description,
@@ -265,46 +307,47 @@ export async function generateMetadata({ params }: ConcorsoPageProps): Promise<M
 }
 
 export default async function ConcorsoSlugPage({ params }: ConcorsoPageProps) {
-  const { concorso, shouldRedirect, isExpired } = await getConcorsoData(params.slug);
-  
+  const resolvedParams = await params;
+  const { concorso, shouldRedirect, isExpired } = await getConcorsoData(resolvedParams.slug);
+
   if (!concorso) {
     notFound();
   }
-  
+
   // Handle redirect from legacy ID URL to SEO URL
   if (shouldRedirect && !isExpired) {
     redirect(shouldRedirect);
   }
-  
+
   // Handle expired concorso - show special page
   if (isExpired) {
     // Note: The 410 Gone status is communicated via:
     // 1. robots: noindex (in generateMetadata) - prevents indexing
     // 2. Custom ExpiredConcorso component - provides user value
     // 3. For infrastructure-level 410 headers, check for x-concorso-status in middleware
-    
+
     // Serialize concorso data for the expired component
     const serializedConcorso = serializeForClient(concorso);
-    
+
     return <ExpiredConcorso concorso={serializedConcorso} />;
   }
-  
+
   // Serialize Firestore data (including nested Timestamps) for client component
   const serializedConcorso = serializeForClient(concorso);
-  
+
   // Generate the full concorso URL for structured data
   const concorsoUrl = `https://concoro.it${generateSEOConcorsoUrl(concorso)}`;
-  
+
   // Generate JobPosting structured data for Google Job Search
   const jobPostingStructuredData = generateConcorsoJobPostingStructuredData(
     concorso,
     concorsoUrl,
     'https://concoro.it'
   );
-  
+
   // Generate breadcrumbs
   const breadcrumbItems = generateConcorsoBreadcrumbs(concorso);
-  
+
   // Generate BreadcrumbList structured data
   const breadcrumbStructuredData = {
     "@context": "https://schema.org",
@@ -316,7 +359,7 @@ export default async function ConcorsoSlugPage({ params }: ConcorsoPageProps) {
       "item": `https://concoro.it${item.href}`
     }))
   };
-  
+
   // Render the client wrapper with the serialized concorso data
   return (
     <>
@@ -329,7 +372,7 @@ export default async function ConcorsoSlugPage({ params }: ConcorsoPageProps) {
           }}
         />
       )}
-      
+
       {/* BreadcrumbList Structured Data */}
       <script
         type="application/ld+json"
@@ -337,14 +380,14 @@ export default async function ConcorsoSlugPage({ params }: ConcorsoPageProps) {
           __html: JSON.stringify(breadcrumbStructuredData)
         }}
       />
-      
+
       {/* Breadcrumb Navigation */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-3">
           <Breadcrumbs items={breadcrumbItems} />
         </div>
       </div>
-      
+
       <ConcorsoClientWrapper concorso={serializedConcorso} />
     </>
   );

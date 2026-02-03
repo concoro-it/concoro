@@ -10,7 +10,7 @@ export function getScadenzaDateRange(scadenza: ScadenzaFilter): { start: Date; e
 
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  
+
   switch (scadenza) {
     case 'oggi':
       return {
@@ -46,10 +46,10 @@ export function formatDateRange(start: Date, end: Date): string {
     month: 'long',
     year: 'numeric'
   }
-  
+
   const startStr = start.toLocaleDateString('it-IT', options)
   const endStr = end.toLocaleDateString('it-IT', options)
-  
+
   return `${startStr} - ${endStr}`
 }
 
@@ -67,11 +67,11 @@ export function getRelativeTimeString(date: Date): string {
   const now = new Date()
   const diffTime = date.getTime() - now.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays === 0) return 'Oggi'
   if (diffDays === 1) return 'Domani'
   if (diffDays === -1) return 'Ieri'
-  
+
   if (diffDays > 0) {
     if (diffDays <= 7) return `Tra ${diffDays} giorni`
     if (diffDays <= 30) return `Tra ${Math.ceil(diffDays / 7)} settimane`
@@ -175,7 +175,7 @@ function parseItalianDate(dateStr: string): Date | null {
     };
 
     const parts = dateStr.trim().split(' ');
-    
+
     if (parts.length < 3) {
       return null;
     }
@@ -183,7 +183,7 @@ function parseItalianDate(dateStr: string): Date | null {
     const day = parseInt(parts[0], 10);
     const monthName = parts[1];
     const monthNum = monthMap[monthName];
-    
+
     if (isNaN(day) || monthNum === undefined) {
       return null;
     }
@@ -191,7 +191,7 @@ function parseItalianDate(dateStr: string): Date | null {
     let year = new Date().getFullYear();
     let hours = 0;
     let minutes = 0;
-    
+
     // Parse year and time if available
     if (parts.length >= 3) {
       const yearPart = parts[2];
@@ -199,7 +199,7 @@ function parseItalianDate(dateStr: string): Date | null {
         year = parseInt(yearPart, 10);
       }
     }
-    
+
     // Parse time if available
     if (parts.length >= 4) {
       const timePart = parts[3];
@@ -209,9 +209,9 @@ function parseItalianDate(dateStr: string): Date | null {
         minutes = parseInt(timeParts[1], 10) || 0;
       }
     }
-    
+
     const date = new Date(year, monthNum, day, hours, minutes);
-    
+
     return isNaN(date.getTime()) ? null : date;
   } catch (error) {
     return null;
@@ -223,7 +223,7 @@ function parseItalianDate(dateStr: string): Date | null {
  */
 export function formatMetodoValutazione(valutazione: string | undefined): string {
   if (!valutazione) return 'Non specificato';
-  
+
   // Common replacements
   const replacements: { [key: string]: string } = {
     'titoli': 'Valutazione dei titoli',
@@ -246,4 +246,69 @@ export function formatMetodoValutazione(valutazione: string | undefined): string
 
   // If no matches found, return the original value with first letter capitalized
   return valutazione.charAt(0).toUpperCase() + valutazione.slice(1);
+}
+
+/**
+ * Format any date-like input to Italian date string (DD/MM/YYYY)
+ * Handles: Date objects, Firestore Timestamps, {seconds, nanoseconds}, ISO strings
+ * 
+ * @param date - The date to format
+ * @param formatType - 'short' (DD/MM/YYYY) or 'long' (DD Month YYYY)
+ * @returns Formatted Italian date string or empty string/original value if invalid
+ */
+export function formatItalianDate(date: any, formatType: 'short' | 'long' = 'short'): string {
+  if (date === null || date === undefined) return '';
+
+  let dateObj: Date | null = null;
+
+  try {
+    // Already a Date object
+    if (date instanceof Date) {
+      dateObj = date;
+    }
+    // Firestore Timestamp
+    else if (date instanceof Timestamp) {
+      dateObj = date.toDate();
+    }
+    // Serialized Timestamp (standard)
+    else if (typeof date === 'object' && 'seconds' in date && typeof date.seconds === 'number') {
+      dateObj = new Date(date.seconds * 1000);
+    }
+    // Serialized Timestamp (internal/underscore - often from JSON serialization of Firestore objects)
+    else if (typeof date === 'object' && '_seconds' in date && (typeof date._seconds === 'number' || typeof (date as any)._seconds === 'number')) {
+      const seconds = typeof date._seconds === 'number' ? date._seconds : (date as any)._seconds;
+      dateObj = new Date(seconds * 1000);
+    }
+    // String - try parsing
+    else if (typeof date === 'string') {
+      // Try parsing using our existing robust parser for Italian dates
+      if (date.includes(' ') && !date.includes('T')) {
+        const parsed = parseItalianDate(date);
+        if (parsed) dateObj = parsed;
+      }
+
+      // If not parsed yet, try standard date constructor
+      if (!dateObj) {
+        const d = new Date(date);
+        if (!isNaN(d.getTime())) dateObj = d;
+      }
+    }
+  } catch (e) {
+    console.warn('Error formatting date:', e);
+    // If complex formatting fails, return string representation but avoid [object Object]
+    if (typeof date === 'object') return '';
+    return String(date);
+  }
+
+  if (!dateObj || isNaN(dateObj.getTime())) {
+    // Return empty for objects that failed to parse, otherwise the string itself might be useful
+    if (typeof date === 'object') return '';
+    return String(date);
+  }
+
+  const options: Intl.DateTimeFormatOptions = formatType === 'short'
+    ? { day: '2-digit', month: '2-digit', year: 'numeric' }
+    : { day: 'numeric', month: 'long', year: 'numeric' };
+
+  return dateObj.toLocaleDateString('it-IT', options);
 }

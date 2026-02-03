@@ -4,12 +4,13 @@ import { BlogPageClient } from './BlogPageClient'
 import { serializeArticles } from '@/lib/utils/firestore-serialization'
 
 interface BlogPageProps {
-  searchParams: { page?: string; tag?: string }
+  searchParams: Promise<{ page?: string; tag?: string }>
 }
 
 // ✅ SERVER-SIDE METADATA for Blog Listing (Critical SEO)
 export async function generateMetadata({ searchParams }: BlogPageProps): Promise<Metadata> {
-  const tag = searchParams.tag
+  const resolvedSearchParams = await searchParams;
+  const tag = resolvedSearchParams.tag
 
   // If tag is present, redirect will handle it - but provide metadata anyway
   if (tag) {
@@ -49,7 +50,7 @@ export async function generateMetadata({ searchParams }: BlogPageProps): Promise
       'pubblica amministrazione',
       'come prepararsi concorsi'
     ].join(', '),
-    
+
     robots: {
       index: true,
       follow: true,
@@ -94,16 +95,17 @@ export async function generateMetadata({ searchParams }: BlogPageProps): Promise
 
 // ✅ SERVER COMPONENT - Fetches data server-side for optimal SEO
 export default async function BlogPage({ searchParams }: BlogPageProps) {
+  const resolvedSearchParams = await searchParams;
   try {
     // ⚡ OPTIMIZED: Only fetch initial batch of articles (10 articles)
     // Client will use "Load More" for additional articles
     const initialLimit = 10
-    
+
     const articles = await getAllArticoliServer(initialLimit)
     const tags = await getAllTagsServer()
-    
+
     // Filter out placeholder articles
-    const validArticles = articles.filter(article => 
+    const validArticles = articles.filter(article =>
       !(article.articolo_title === "Non specificato" && article.articolo_subtitle === "Non specificato")
     )
 
@@ -111,10 +113,10 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
     const serializedArticles = serializeArticles(validArticles)
 
     return (
-      <BlogPageClient 
+      <BlogPageClient
         initialArticles={serializedArticles}
         tags={tags}
-        searchParams={searchParams}
+        searchParams={resolvedSearchParams}
       />
     )
   } catch (error) {

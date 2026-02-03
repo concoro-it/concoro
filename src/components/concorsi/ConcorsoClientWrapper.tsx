@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/prompt-input"
 import { marked } from 'marked'
 import { toItalianSentenceCase } from '@/lib/utils/italian-capitalization'
-import { formatMetodoValutazione } from '@/lib/utils/date-utils'
+import { formatMetodoValutazione, formatItalianDate } from '@/lib/utils/date-utils'
 import { getEnteUrl } from '@/lib/utils/ente-utils'
 import { getLocalitaUrl, splitLocationString } from '@/lib/utils/localita-utils'
 // Configure marked for safe HTML rendering
@@ -69,13 +69,13 @@ interface ConcorsoClientWrapperProps {
 
 const parseDate = (dateStr: string | undefined): Date | null => {
   if (!dateStr) return null;
-  
+
   try {
     const date = new Date(dateStr);
     if (!isNaN(date.getTime())) return date;
-    
+
     const datePart = dateStr.split(' ').slice(0, 3).join(' ');
-    
+
     const formats = [
       (str: string) => {
         const monthMap: Record<string, number> = {
@@ -84,39 +84,39 @@ const parseDate = (dateStr: string | undefined): Date | null => {
           'Lug': 6, 'Luglio': 6, 'Ago': 7, 'Agosto': 7, 'Set': 8, 'Settembre': 8,
           'Ott': 9, 'Ottobre': 9, 'Nov': 10, 'Novembre': 10, 'Dic': 11, 'Dicembre': 11
         };
-        
+
         const parts = str.split(' ');
         if (parts.length < 3) return null;
-        
+
         const day = parseInt(parts[0], 10);
         const month = monthMap[parts[1]];
         const year = parseInt(parts[2], 10);
-        
+
         if (isNaN(day) || month === undefined || isNaN(year)) return null;
-        
+
         return new Date(year, month, day);
       },
       (str: string) => {
         const parts = str.split('/');
         if (parts.length !== 3) return null;
-        
+
         const day = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10) - 1;
         const year = parseInt(parts[2], 10);
-        
+
         if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-        
+
         return new Date(year, month, day);
       }
     ];
-    
+
     for (const format of formats) {
       const parsedDate = format(datePart);
       if (parsedDate && !isNaN(parsedDate.getTime())) {
         return parsedDate;
       }
     }
-    
+
     return null;
   } catch (error) {
     console.error("Error parsing date:", error);
@@ -126,7 +126,7 @@ const parseDate = (dateStr: string | undefined): Date | null => {
 
 const getDeadlineStatus = (dateStr: any) => {
   if (!dateStr) return null;
-  
+
   if (typeof dateStr === 'object' && 'seconds' in dateStr && 'nanoseconds' in dateStr) {
     try {
       // Convert plain object with seconds to Date (without using Timestamp class)
@@ -142,16 +142,16 @@ const getDeadlineStatus = (dateStr: any) => {
       return null;
     }
   }
-  
+
   const date = parseDate(dateStr);
   if (!date) return null;
-  
+
   if (isToday(date)) {
     return { text: "Scade oggi", color: "#dc2626", textColor: "#dc2626" };
   } else if (isThisWeek(date, { weekStartsOn: 1 })) {
     return { text: "Scade questa settimana", color: "#f59e0b", textColor: "#f59e0b" };
   }
-  
+
   return null;
 };
 
@@ -162,7 +162,7 @@ const toSentenceCase = (str: string) => {
 const renderGroupedRegions = (concorso: ConcorsoData) => {
   const locationText = concorso.AreaGeografica || 'Località non specificata';
   const regions = splitLocationString(locationText);
-  
+
   if (regions.length > 1) {
     return (
       <div className="flex flex-wrap items-center gap-1">
@@ -170,7 +170,7 @@ const renderGroupedRegions = (concorso: ConcorsoData) => {
         <div className="flex flex-wrap gap-1">
           {regions.slice(0, 3).map((region: string, index: number) => (
             <React.Fragment key={region}>
-              <Link 
+              <Link
                 href={getLocalitaUrl(region)}
                 className="hover:text-foreground transition-colors text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md"
               >
@@ -193,11 +193,11 @@ const renderGroupedRegions = (concorso: ConcorsoData) => {
       </div>
     );
   }
-  
+
   return (
     <div className="flex items-center">
       <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-      <Link 
+      <Link
         href={getLocalitaUrl(locationText)}
         className="hover:text-foreground transition-colors"
       >
@@ -224,24 +224,11 @@ const safeText = (text: any): string => {
   if (text === null || text === undefined) return '';
   if (typeof text === 'string') return text;
   if (['number', 'boolean'].includes(typeof text)) return String(text);
-  if (text instanceof Date) {
-    return text.toLocaleDateString('it-IT', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  }
-  if (typeof text === 'object' && 'seconds' in text && 'nanoseconds' in text) {
-    try {
-      return new Date(text.seconds * 1000).toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    } catch (e) {
-      return 'Invalid date';
-    }
-  }
+
+  // Try to format as date first
+  const formatted = formatItalianDate(text);
+  if (formatted) return formatted;
+
   return JSON.stringify(text);
 };
 
@@ -249,7 +236,7 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
   const router = useRouter()
   const { user } = useAuth()
   const { isConcorsoSaved, toggleSaveConcorso } = useSavedConcorsi();
-  
+
   // Chat state
   const [inputValue, setInputValue] = useState("")
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([])
@@ -273,7 +260,7 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
 
   const handleSaveJob = async () => {
     if (!concorso) return;
-    
+
     try {
       if (!user) {
         toast.error("Effettua l'accesso per salvare i concorsi");
@@ -348,8 +335,8 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   {deadlineStatus ? (
-                    <Badge 
-                      className="flex-shrink-0 bg-transparent border-0 px-0" 
+                    <Badge
+                      className="flex-shrink-0 bg-transparent border-0 px-0"
                       style={{
                         color: deadlineStatus.textColor,
                         fontWeight: "600"
@@ -359,13 +346,13 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                     </Badge>
                   ) : (
                     <Badge className="inline-flex items-center justify-center px-4 py-1 whitespace-nowrap rounded-full text-sm font-medium transition-colors outline-offset-2 bg-primary text-primary-foreground">
-                      {concorso.Stato ? (safeText(concorso.Stato).toLowerCase() === 'open' ? 'Aperto' : 
+                      {concorso.Stato ? (safeText(concorso.Stato).toLowerCase() === 'open' ? 'Aperto' :
                         safeText(concorso.Stato).toLowerCase() === 'closed' ? 'Chiuso' : safeText(concorso.Stato)) : 'Aperto'}
                     </Badge>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <BookmarkIconButton 
+                  <BookmarkIconButton
                     isSaved={isConcorsoSaved(concorso.id)}
                     onClick={handleSaveJob}
                   />
@@ -385,7 +372,7 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                 <div className="flex items-center text-gray-600 mt-2">
                   <Building2 className="w-4 h-4 mr-1 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <Link 
+                    <Link
                       href={getEnteUrl(safeText(concorso.Ente))}
                       className="truncate hover:text-foreground transition-colors"
                       title={safeText(concorso.Ente)}
@@ -423,11 +410,11 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
 
               {/* Summary Section */}
               {concorso.sommario && (
-                <div className="rounded-lg p-4 md:p-6" style={{ 
+                <div className="rounded-lg p-4 md:p-6" style={{
                   backgroundImage: 'linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)'
                 }}>
                   <h2 className="text-lg font-semibold mb-2">Sommario</h2>
-                  <div dangerouslySetInnerHTML={{ 
+                  <div dangerouslySetInnerHTML={{
                     __html: safeText(concorso.sommario)
                       .replace(/<\/?[^>]+(>|$)/g, " ")
                       .replace(/\n/g, '<br />')
@@ -442,7 +429,7 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
             <h2 className="text-lg font-semibold">Informazioni sul Ruolo</h2>
             <div className="prose max-w-none">
               {concorso.Descrizione ? (
-                <div dangerouslySetInnerHTML={{ 
+                <div dangerouslySetInnerHTML={{
                   __html: safeText(concorso.Descrizione)
                     .replace(/<\/?[^>]+(>|$)/g, " ")
                 }} />
@@ -498,139 +485,139 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
           </div>
 
           {/* Organizational Details */}
-          {(concorso.collocazione_organizzativa || concorso.ambito_lavorativo || concorso.tipologia || concorso.categoria || 
+          {(concorso.collocazione_organizzativa || concorso.ambito_lavorativo || concorso.tipologia || concorso.categoria ||
             concorso.settore || concorso.regime || concorso.settore_professionale || concorso.regime_impegno) && (
-            <div className="bg-white rounded-lg border p-6 space-y-4">
-              <h2 className="text-lg font-semibold">Dettagli Organizzativi</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {concorso.collocazione_organizzativa && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Collocazione Organizzativa</p>
-                    <p className="font-medium">{safeText(concorso.collocazione_organizzativa)}</p>
-                  </div>
-                )}
-                {concorso.ambito_lavorativo && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Ambito Lavorativo</p>
-                    <p className="font-medium">{safeText(concorso.ambito_lavorativo)}</p>
-                  </div>
-                )}
-                {concorso.settore_professionale && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Settore Professionale</p>
-                    <p className="font-medium">{safeText(concorso.settore_professionale)}</p>
-                  </div>
-                )}
-                {concorso.regime_impegno && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Regime di Impegno</p>
-                    <p className="font-medium">{safeText(concorso.regime_impegno)}</p>
-                  </div>
-                )}
-                {concorso.tipologia && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Tipologia</p>
-                    <p className="font-medium">{safeText(concorso.tipologia)}</p>
-                  </div>
-                )}
-                {concorso.categoria && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Categoria</p>
-                    <p className="font-medium">{safeText(concorso.categoria)}</p>
-                  </div>
-                )}
-                {concorso.settore && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Settore</p>
-                    <p className="font-medium">{safeText(concorso.settore)}</p>
-                  </div>
-                )}
-                {concorso.regime && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Regime</p>
-                    <p className="font-medium">{safeText(concorso.regime)}</p>
-                  </div>
-                )}
+              <div className="bg-white rounded-lg border p-6 space-y-4">
+                <h2 className="text-lg font-semibold">Dettagli Organizzativi</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {concorso.collocazione_organizzativa && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Collocazione Organizzativa</p>
+                      <p className="font-medium">{safeText(concorso.collocazione_organizzativa)}</p>
+                    </div>
+                  )}
+                  {concorso.ambito_lavorativo && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Ambito Lavorativo</p>
+                      <p className="font-medium">{safeText(concorso.ambito_lavorativo)}</p>
+                    </div>
+                  )}
+                  {concorso.settore_professionale && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Settore Professionale</p>
+                      <p className="font-medium">{safeText(concorso.settore_professionale)}</p>
+                    </div>
+                  )}
+                  {concorso.regime_impegno && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Regime di Impegno</p>
+                      <p className="font-medium">{safeText(concorso.regime_impegno)}</p>
+                    </div>
+                  )}
+                  {concorso.tipologia && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Tipologia</p>
+                      <p className="font-medium">{safeText(concorso.tipologia)}</p>
+                    </div>
+                  )}
+                  {concorso.categoria && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Categoria</p>
+                      <p className="font-medium">{safeText(concorso.categoria)}</p>
+                    </div>
+                  )}
+                  {concorso.settore && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Settore</p>
+                      <p className="font-medium">{safeText(concorso.settore)}</p>
+                    </div>
+                  )}
+                  {concorso.regime && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-500">Regime</p>
+                      <p className="font-medium">{safeText(concorso.regime)}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Technical Requirements */}
-          {(hasValidContent(concorso.conoscenze_tecnico_specialistiche) || 
-            hasValidContent(concorso.capacita_richieste) || 
-            hasValidContent(concorso.programma_di_esame) || 
+          {(hasValidContent(concorso.conoscenze_tecnico_specialistiche) ||
+            hasValidContent(concorso.capacita_richieste) ||
+            hasValidContent(concorso.programma_di_esame) ||
             hasValidContent(concorso.requisiti_generali)) && (
-            <div className="bg-white rounded-lg border p-6 space-y-4">
-              <h2 className="text-lg font-semibold">Requisiti e Programma</h2>
-              <div className="space-y-6">
-                {hasValidContent(concorso.requisiti_generali) && (
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold mb-2">Requisiti Generali</h3>
-                    <ul className="list-disc pl-5">
-                      {Array.isArray(concorso.requisiti_generali) 
-                        ? concorso.requisiti_generali
+              <div className="bg-white rounded-lg border p-6 space-y-4">
+                <h2 className="text-lg font-semibold">Requisiti e Programma</h2>
+                <div className="space-y-6">
+                  {hasValidContent(concorso.requisiti_generali) && (
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold mb-2">Requisiti Generali</h3>
+                      <ul className="list-disc pl-5">
+                        {Array.isArray(concorso.requisiti_generali)
+                          ? concorso.requisiti_generali
                             .filter(item => item.trim() !== 'Non specificato')
                             .map((item: string, index: number) => (
                               <li key={index}>{formatListItem(item)}</li>
                             ))
-                        : <li>{formatListItem(String(concorso.requisiti_generali || ''))}</li>
-                      }
-                    </ul>
-                  </div>
-                )}
-                {hasValidContent(concorso.conoscenze_tecnico_specialistiche) && (
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold mb-2">Conoscenze Tecnico-Specialistiche</h3>
-                    <ul className="list-disc pl-5">
-                      {(() => {
-                        const knowledge = concorso.conoscenze_tecnico_specialistiche;
-                        if (Array.isArray(knowledge)) {
-                          return knowledge
-                            .filter(item => item.trim() !== 'Non specificato')
-                            .map((item: string, index: number) => (
-                              <li key={index}>{formatListItem(item)}</li>
-                            ));
+                          : <li>{formatListItem(String(concorso.requisiti_generali || ''))}</li>
                         }
-                        return knowledge && knowledge.trim() !== 'Non specificato' 
-                          ? <li>{formatListItem(String(knowledge))}</li>
-                          : null;
-                      })()}
-                    </ul>
-                  </div>
-                )}
-                {hasValidContent(concorso.capacita_richieste) && (
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold mb-2">Capacità Richieste</h3>
-                    <ul className="list-disc pl-5">
-                      {Array.isArray(concorso.capacita_richieste)
-                        ? concorso.capacita_richieste
+                      </ul>
+                    </div>
+                  )}
+                  {hasValidContent(concorso.conoscenze_tecnico_specialistiche) && (
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold mb-2">Conoscenze Tecnico-Specialistiche</h3>
+                      <ul className="list-disc pl-5">
+                        {(() => {
+                          const knowledge = concorso.conoscenze_tecnico_specialistiche;
+                          if (Array.isArray(knowledge)) {
+                            return knowledge
+                              .filter(item => item.trim() !== 'Non specificato')
+                              .map((item: string, index: number) => (
+                                <li key={index}>{formatListItem(item)}</li>
+                              ));
+                          }
+                          return knowledge && knowledge.trim() !== 'Non specificato'
+                            ? <li>{formatListItem(String(knowledge))}</li>
+                            : null;
+                        })()}
+                      </ul>
+                    </div>
+                  )}
+                  {hasValidContent(concorso.capacita_richieste) && (
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold mb-2">Capacità Richieste</h3>
+                      <ul className="list-disc pl-5">
+                        {Array.isArray(concorso.capacita_richieste)
+                          ? concorso.capacita_richieste
                             .filter((item: string) => item.trim() !== 'Non specificato')
                             .map((item: string, index: number) => (
                               <li key={index}>{formatListItem(item)}</li>
                             ))
-                        : <li>{formatListItem(String(concorso.capacita_richieste || ''))}</li>
-                      }
-                    </ul>
-                  </div>
-                )}
-                {hasValidContent(concorso.programma_di_esame) && (
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold mb-2">Programma d'Esame</h3>
-                    <ul className="list-disc pl-5">
-                      {Array.isArray(concorso.programma_di_esame)
-                        ? concorso.programma_di_esame
+                          : <li>{formatListItem(String(concorso.capacita_richieste || ''))}</li>
+                        }
+                      </ul>
+                    </div>
+                  )}
+                  {hasValidContent(concorso.programma_di_esame) && (
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold mb-2">Programma d'Esame</h3>
+                      <ul className="list-disc pl-5">
+                        {Array.isArray(concorso.programma_di_esame)
+                          ? concorso.programma_di_esame
                             .filter(item => item.trim() !== 'Non specificato')
                             .map((item: string, index: number) => (
                               <li key={index}>{formatListItem(item)}</li>
                             ))
-                        : <li>{formatListItem(String(concorso.programma_di_esame || ''))}</li>
-                      }
-                    </ul>
-                  </div>
-                )}
+                          : <li>{formatListItem(String(concorso.programma_di_esame || ''))}</li>
+                        }
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Contact Information */}
           {(concorso.contatti || concorso.pa_link) && (
@@ -646,14 +633,14 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                 {concorso.pa_link && (
                   <div className="space-y-2">
                     <p className="text-sm text-gray-500">Link PA</p>
-                    <Button 
-                      variant="ghost" 
-                      asChild 
+                    <Button
+                      variant="ghost"
+                      asChild
                       className="w-full justify-start p-2 h-auto"
                     >
-                      <a 
-                        href={safeText(concorso.pa_link)} 
-                        target="_blank" 
+                      <a
+                        href={safeText(concorso.pa_link)}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center text-left"
                       >
@@ -673,10 +660,10 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
               <h2 className="text-lg font-semibold">Documenti Aggiuntivi</h2>
               <div className="space-y-2">
                 {concorso.pdf_links.map((link, index) => (
-                  <Button 
-                    key={index} 
-                    variant="ghost" 
-                    asChild 
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    asChild
                     className="w-full justify-start"
                   >
                     <a href={link} target="_blank" rel="noopener noreferrer">
@@ -716,26 +703,26 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                 Domande su requisiti o scadenze? Chiedi a Genio, il tuo assistente AI.
               </p>
             </div>
-            
+
             {/* Check if user is authenticated */}
             {!user ? (
               <div className="p-4 flex flex-col h-[calc(100%-5rem)] items-center justify-center space-y-4">
                 <p className="text-center text-gray-600 mb-4">
                   Accedi per chattare con Genio e ottenere risposte personalizzate sui concorsi.
                 </p>
-                <Button 
+                <Button
                   className="w-full flex items-center justify-center gap-2"
                   onClick={() => router.push('/signin')}
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                   </svg>
                   Accedi con Google
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   className="w-full"
                   onClick={() => router.push('/signin')}
@@ -748,8 +735,8 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                 {/* Chat Messages */}
                 <div className="p-4 flex flex-col h-[calc(100%-5rem)]">
                   {chatMessages.length > 0 ? (
-                    <div 
-                      className="space-y-4 mb-4 overflow-y-auto flex-grow pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" 
+                    <div
+                      className="space-y-4 mb-4 overflow-y-auto flex-grow pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
                       style={{
                         scrollbarWidth: 'thin',
                         msOverflowStyle: 'none',
@@ -758,21 +745,19 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                       {chatMessages.map((message, index) => (
                         <div
                           key={index}
-                          className={`flex ${
-                            message.role === 'user' ? 'justify-end' : 'justify-start'
-                          }`}
+                          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
+                            }`}
                         >
                           <div
-                            className={`max-w-[80%] rounded-lg p-2 text-sm ${
-                              message.role === 'user'
+                            className={`max-w-[80%] rounded-lg p-2 text-sm ${message.role === 'user'
                                 ? 'bg-blue-500 text-white'
                                 : message.content.startsWith('Error:')
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
                           >
                             {message.role === 'assistant' ? (
-                              <div 
+                              <div
                                 className="prose prose-xs max-w-none prose-p:leading-relaxed prose-p:text-sm prose-pre:p-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_li]:mb-1 [&_li]:text-sm [&_strong]:font-semibold"
                                 dangerouslySetInnerHTML={{ __html: marked(message.content) }}
                               />
@@ -809,7 +794,7 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                     <div className="space-y-2 mb-4">
                       <p className="text-xs text-gray-500 mb-1">Domande suggerite:</p>
                       <div className="flex flex-wrap gap-2">
-                        <button 
+                        <button
                           onClick={() => {
                             setInputValue("Quali sono i requisiti principali?");
                             handleChatSubmit();
@@ -818,7 +803,7 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                         >
                           Quali sono i requisiti principali?
                         </button>
-                        <button 
+                        <button
                           onClick={() => {
                             setInputValue("Quando scade il bando?");
                             handleChatSubmit();
@@ -827,7 +812,7 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                         >
                           Quando scade il bando?
                         </button>
-                        <button 
+                        <button
                           onClick={() => {
                             setInputValue("Come prepararsi per il concorso?");
                             handleChatSubmit();
@@ -847,8 +832,8 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
                     onSubmit={handleChatSubmit}
                   >
-                    <PromptInputTextarea 
-                      placeholder="Fai una domanda su questo concorso..." 
+                    <PromptInputTextarea
+                      placeholder="Fai una domanda su questo concorso..."
                       value={inputValue}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
                       className="text-sm"
@@ -885,7 +870,7 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
       }}>
         <div className="max-w-4xl mx-auto">
           {/* Header with Chevron */}
-          <div 
+          <div
             className="flex justify-between items-start p-4 cursor-pointer relative"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
           >
@@ -916,27 +901,26 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
           </div>
 
           {/* Expandable Content */}
-          <div className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out ${
-            isDrawerOpen ? 'max-h-[600px] p-4' : 'max-h-0'
-          }`}>
+          <div className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out ${isDrawerOpen ? 'max-h-[600px] p-4' : 'max-h-0'
+            }`}>
             {!user ? (
               <div className="flex flex-col items-center justify-center space-y-4 py-8">
                 <p className="text-center text-gray-600 mb-4">
                   Accedi per chattare con Genio e ottenere risposte personalizzate sui concorsi.
                 </p>
-                <Button 
+                <Button
                   className="w-full flex items-center justify-center gap-2"
                   onClick={() => router.push('/signin')}
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                   </svg>
                   Accedi con Google
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   className="w-full"
                   onClick={() => router.push('/signin')}
@@ -948,8 +932,8 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
               <>
                 {/* Chat Messages */}
                 {chatMessages.length > 0 ? (
-                  <div 
-                    className="space-y-4 mb-4 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" 
+                  <div
+                    className="space-y-4 mb-4 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
                     style={{
                       scrollbarWidth: 'thin',
                       msOverflowStyle: 'none',
@@ -958,21 +942,19 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                     {chatMessages.map((message, index) => (
                       <div
                         key={index}
-                        className={`flex ${
-                          message.role === 'user' ? 'justify-end' : 'justify-start'
-                        }`}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
+                          }`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-lg p-2 text-sm ${
-                            message.role === 'user'
+                          className={`max-w-[80%] rounded-lg p-2 text-sm ${message.role === 'user'
                               ? 'bg-blue-500 text-white'
                               : message.content.startsWith('Error:')
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
                         >
                           {message.role === 'assistant' ? (
-                            <div 
+                            <div
                               className="prose prose-xs max-w-none prose-p:leading-relaxed prose-p:text-sm prose-pre:p-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_li]:mb-1 [&_li]:text-sm [&_strong]:font-semibold"
                               dangerouslySetInnerHTML={{ __html: marked(message.content) }}
                             />
@@ -1009,7 +991,7 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                   <div className="space-y-2 mb-4">
                     <p className="text-xs text-gray-500 mb-1">Domande suggerite:</p>
                     <div className="flex flex-wrap gap-2">
-                      <button 
+                      <button
                         onClick={() => {
                           setInputValue("Quali sono i requisiti principali?");
                           handleChatSubmit();
@@ -1018,7 +1000,7 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                       >
                         Quali sono i requisiti principali?
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           setInputValue("Quando scade il bando?");
                           handleChatSubmit();
@@ -1027,7 +1009,7 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                       >
                         Quando scade il bando?
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           setInputValue("Come prepararsi per il concorso?");
                           handleChatSubmit();
@@ -1047,8 +1029,8 @@ export default function ConcorsoClientWrapper({ concorso }: ConcorsoClientWrappe
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
                   onSubmit={handleChatSubmit}
                 >
-                  <PromptInputTextarea 
-                    placeholder="Fai una domanda su questo concorso..." 
+                  <PromptInputTextarea
+                    placeholder="Fai una domanda su questo concorso..."
                     value={inputValue}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
                     className="text-sm"

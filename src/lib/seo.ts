@@ -24,8 +24,8 @@ export function generateMetadata(config: SEOConfig): Metadata {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://concoro.it';
   const fullTitle = title.includes('Concoro') ? title : `${title} | Concoro`;
-  const fullDescription = description.length > 160 
-    ? description.substring(0, 157) + '...' 
+  const fullDescription = description.length > 160
+    ? description.substring(0, 157) + '...'
     : description;
 
   return {
@@ -108,10 +108,10 @@ export const seoConfigs = {
   },
 
   concorsi: {
-    title: 'Concorsi Pubblici 2025 - Trova il Tuo Lavoro nella Pubblica Amministrazione',
+    title: 'Concorsi Pubblici 2026 - Trova il Tuo Lavoro nella Pubblica Amministrazione',
     description: 'Scopri tutti i concorsi pubblici aperti in Italia. Filtra per ente, località e settore professionale. Candidati oggi per il tuo futuro nella PA.',
     keywords: [
-      'concorsi pubblici 2025',
+      'Concorsi Pubblici 2026',
       'bandi aperti',
       'concorsi statali',
       'concorsi regionali',
@@ -129,7 +129,7 @@ export const seoConfigs = {
       `concorsi ${location}`,
       `lavoro pubblico ${location}`,
       `bandi ${location}`,
-      'concorsi pubblici 2025',
+      'Concorsi Pubblici 2026',
       'pubblica amministrazione'
     ],
     canonical: `/concorsi?localita=${encodeURIComponent(location)}`,
@@ -141,7 +141,7 @@ export const seoConfigs = {
     keywords: [
       `concorsi ${organization}`,
       `lavoro ${organization}`,
-      'concorsi pubblici 2025',
+      'Concorsi Pubblici 2026',
       'bandi aperti',
       'pubblica amministrazione'
     ],
@@ -154,7 +154,7 @@ export const seoConfigs = {
     keywords: [
       `concorsi ${sector}`,
       `lavoro ${sector}`,
-      'concorsi pubblici 2025',
+      'Concorsi Pubblici 2026',
       'bandi aperti',
       'pubblica amministrazione'
     ],
@@ -168,7 +168,7 @@ export const seoConfigs = {
       `concorsi ${searchTerm}`,
       `lavoro ${searchTerm}`,
       `bandi ${searchTerm}`,
-      'concorsi pubblici 2025',
+      'Concorsi Pubblici 2026',
       'pubblica amministrazione',
       'lavoro pubblico',
       `${searchTerm} pa`,

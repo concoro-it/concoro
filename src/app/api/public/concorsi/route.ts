@@ -11,13 +11,13 @@ export const dynamic = 'force-dynamic';
 // Helper function to serialize Firestore data
 function serializeFirestoreData(data: any): any {
   if (!data) return data;
-  
+
   return JSON.parse(JSON.stringify(data, (key, value) => {
     // Use the preserveDateFormat utility for consistent date handling
     if (key === 'DataChiusura' || key === 'publication_date' || key === 'DataApertura') {
       return preserveDateFormat(value);
     }
-    
+
     // Convert Firestore Timestamps to objects with seconds/nanoseconds
     if (value && typeof value === 'object' && '_seconds' in value && '_nanoseconds' in value) {
       return {
@@ -60,10 +60,10 @@ interface ConcorsiResponse {
 
 export async function GET(request: NextRequest) {
   try {
-    
+
     const searchParams = request.nextUrl.searchParams;
-    
-    
+
+
     // Parse query parameters
     const query: ConcorsiQuery = {
       page: parseInt(searchParams.get('page') || '1'),
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
       search: searchParams.get('search') || undefined,
     };
 
-    
+
 
     // Check cache first
     const cacheKey = { ...query };
@@ -93,16 +93,16 @@ export async function GET(request: NextRequest) {
       return new NextResponse(JSON.stringify(cachedData), { headers });
     }
 
-    
+
     const db = getFirestoreForSEO();
     const concorsiCollection = db.collection('concorsi');
-    
-    
+
+
     // Build optimized query - avoid orderBy to prevent index issues
     let firestoreQuery = concorsiCollection
       .where('Stato', 'in', ['open', 'aperto', 'OPEN', 'APERTO'])
       .limit(2000); // Reasonable limit to prevent memory issues
-    
+
     // Apply filters that can be done at database level
     if (query.ente) {
       firestoreQuery = firestoreQuery.where('Ente', '==', decodeURIComponent(query.ente));
@@ -113,53 +113,24 @@ export async function GET(request: NextRequest) {
     }
 
     // Execute query
-    
+
     const snapshot = await firestoreQuery.get();
-    
-    
+
+
     let concorsi = snapshot.docs.map(doc => serializeFirestoreData({
       id: doc.id,
       ...doc.data()
     })) as Concorso[];
 
-    // Apply client-side filters for complex queries
-    if (query.localita) {
-      const localitaFilter = decodeURIComponent(query.localita).toLowerCase().trim();
-      concorsi = concorsi.filter(concorso => {
-        if (!concorso.AreaGeografica) return false;
-        
-        const areaGeografica = concorso.AreaGeografica.toLowerCase();
-        
-        // Split by comma to get individual locations/regions
-        const locations = areaGeografica.split(',').map(loc => loc.trim());
-        
-        // Check if any location starts with or equals the filter
-        return locations.some(location => 
-          location === localitaFilter || 
-          location.startsWith(localitaFilter + ' ') ||
-          location.startsWith(localitaFilter + ',')
-        );
-      });
-    }
-
-    if (query.search) {
-      const searchTerm = query.search.toLowerCase();
-      concorsi = concorsi.filter(concorso => 
-        concorso.Titolo?.toLowerCase().includes(searchTerm) ||
-        concorso.Descrizione?.toLowerCase().includes(searchTerm) ||
-        concorso.Ente?.toLowerCase().includes(searchTerm)
-      );
-    }
-
     // Helper function to convert Firestore Timestamp to Date
     const toDate = (value: any): Date | null => {
       if (!value) return null;
-      
+
       try {
         if (typeof value === 'string') {
           return new Date(value);
         }
-        
+
         if (typeof value === 'object') {
           // Handle Firestore timestamp objects
           if ('seconds' in value && typeof value.seconds === 'number') {
@@ -169,11 +140,11 @@ export async function GET(request: NextRequest) {
             return new Date(value._seconds * 1000);
           }
         }
-        
+
         if (value instanceof Date) {
           return value;
         }
-        
+
         return null;
       } catch (error) {
         console.error('Error converting to date:', error, value);
@@ -181,23 +152,68 @@ export async function GET(request: NextRequest) {
       }
     };
 
+    // Apply client-side filters for complex queries
+    const now = new Date();
+
+    concorsi = concorsi.filter(concorso => {
+      // 1. Filter out already expired concorsi by date
+      if (concorso.DataChiusura) {
+        const deadline = toDate(concorso.DataChiusura);
+        if (deadline && deadline < now) {
+          return false;
+        }
+      }
+
+      // 2. Località filter
+      if (query.localita) {
+        const localitaFilter = decodeURIComponent(query.localita).toLowerCase().trim();
+        if (!concorso.AreaGeografica) return false;
+
+        const areaGeografica = concorso.AreaGeografica.toLowerCase();
+
+        // Split by comma to get individual locations/regions
+        const locations = areaGeografica.split(',').map(loc => loc.trim());
+
+        // Check if any location starts with or equals the filter
+        if (!locations.some(location =>
+          location === localitaFilter ||
+          location.startsWith(localitaFilter + ' ') ||
+          location.startsWith(localitaFilter + ',')
+        )) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    if (query.search) {
+      const searchTerm = query.search.toLowerCase();
+      concorsi = concorsi.filter(concorso =>
+        concorso.Titolo?.toLowerCase().includes(searchTerm) ||
+        concorso.Descrizione?.toLowerCase().includes(searchTerm) ||
+        concorso.Ente?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+
     // Apply deadline filter (scadenza)
     if (query.scadenza) {
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
+
       concorsi = concorsi.filter(concorso => {
         if (!concorso.DataChiusura) return false;
-        
+
         const deadline = toDate(concorso.DataChiusura);
         if (!deadline) return false;
-        
+
         switch (query.scadenza) {
           case 'today':
             const endOfDay = new Date(startOfDay);
             endOfDay.setDate(endOfDay.getDate() + 1);
             return deadline >= startOfDay && deadline < endOfDay;
-          
+
           case 'week':
             const startOfWeek = new Date(startOfDay);
             const dayOfWeek = startOfDay.getDay();
@@ -206,12 +222,12 @@ export async function GET(request: NextRequest) {
             const endOfWeek = new Date(startOfWeek);
             endOfWeek.setDate(endOfWeek.getDate() + 7);
             return deadline >= startOfWeek && deadline < endOfWeek;
-          
+
           case 'month':
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
             const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
             return deadline >= startOfMonth && deadline < endOfMonth;
-          
+
           default:
             return true;
         }
@@ -228,11 +244,11 @@ export async function GET(request: NextRequest) {
           const aDeadline = aDeadlineDate ? aDeadlineDate.getTime() : Number.MAX_VALUE;
           const bDeadline = bDeadlineDate ? bDeadlineDate.getTime() : Number.MAX_VALUE;
           return aDeadline - bDeadline;
-        
+
         case 'posts-desc':
           // Sort by number of posts (descending)
           return (b.numero_di_posti || 0) - (a.numero_di_posti || 0);
-        
+
         case 'publication-desc':
         default:
           // Sort by publication date (most recent first)
@@ -293,7 +309,7 @@ export async function GET(request: NextRequest) {
     });
 
     return new NextResponse(JSON.stringify(response), { headers });
-    
+
   } catch (error) {
     console.error('Error fetching public concorsi:', error);
     console.error('Error details:', {
@@ -302,7 +318,7 @@ export async function GET(request: NextRequest) {
       name: error instanceof Error ? error.name : undefined,
     });
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch concorsi',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -313,7 +329,7 @@ export async function GET(request: NextRequest) {
 
 // Health check endpoint
 export async function HEAD() {
-  return new NextResponse(null, { 
+  return new NextResponse(null, {
     status: 200,
     headers: {
       'Cache-Control': 'public, max-age=60'

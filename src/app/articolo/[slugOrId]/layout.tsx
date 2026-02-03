@@ -8,40 +8,40 @@ import { getDeadlineCountdown } from '@/lib/utils/date-utils'
 
 type Props = {
   children: React.ReactNode
-  params: { slugOrId: string }
+  params: Promise<{ slugOrId: string }>
 }
 
 function toISOStringSafe(timestamp: unknown): string {
   if (!timestamp) return new Date().toISOString();
-  
+
   try {
     // Handle Firestore Timestamp objects with toDate method
     if (typeof timestamp === 'object' && timestamp !== null && 'toDate' in timestamp && typeof (timestamp as any).toDate === 'function') {
       return (timestamp as any).toDate().toISOString();
     }
-    
+
     // Handle Firestore timestamp objects with seconds/nanoseconds
     if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp && 'nanoseconds' in timestamp) {
       const ts = timestamp as { seconds: number; nanoseconds: number };
       return new Date(ts.seconds * 1000).toISOString();
     }
-    
+
     // Handle Firestore timestamp objects with _seconds/_nanoseconds
     if (typeof timestamp === 'object' && timestamp !== null && '_seconds' in timestamp && '_nanoseconds' in timestamp) {
       const ts = timestamp as { _seconds: number; _nanoseconds: number };
       return new Date(ts._seconds * 1000).toISOString();
     }
-    
+
     // Handle Date objects
     if (timestamp instanceof Date) {
       return timestamp.toISOString();
     }
-    
+
     // Handle string dates
     if (typeof timestamp === 'string') {
       return new Date(timestamp).toISOString();
     }
-    
+
     return new Date().toISOString();
   } catch (error) {
     console.error('Error converting timestamp to ISO string:', error);
@@ -50,10 +50,11 @@ function toISOStringSafe(timestamp: unknown): string {
 }
 
 export default async function ArticoloDetailLayout({ children, params }: Props) {
+  const resolvedParams = await params;
   const baseUrl = 'https://www.concoro.it'
 
   // Handle server-side redirects and fetch article + concorso
-  const article = await handleArticoloRedirect(params.slugOrId)
+  const article = await handleArticoloRedirect(resolvedParams.slugOrId)
 
   // If not found, render children as-is (client page will handle 404 UI)
   if (!article) {
@@ -66,8 +67,8 @@ export default async function ArticoloDetailLayout({ children, params }: Props) 
   const location = article.AreaGeografica || article.concorso?.AreaGeografica
   const role = article.concorso?.Titolo
     ? ['Istruttore', 'Dirigente', 'Funzionario', 'Assistente', 'Operatore', 'Tecnico'].find(r =>
-        article.concorso?.Titolo?.includes(r)
-      )
+      article.concorso?.Titolo?.includes(r)
+    )
     : undefined
 
   const socialImageUrl = generateSocialImage(
@@ -112,7 +113,7 @@ export default async function ArticoloDetailLayout({ children, params }: Props) 
     if (article.concorso) {
       const dc = (article.concorso as { DataChiusura: unknown }).DataChiusura
       let closing: Date | null = null
-      
+
       // Handle different date formats safely
       if (typeof dc === 'object' && dc !== null) {
         // Handle Firestore Timestamp objects with toDate method
@@ -152,11 +153,11 @@ export default async function ArticoloDetailLayout({ children, params }: Props) 
     <>
       {/* Server-side canonical link - critical for duplicate content resolution */}
       <link rel="canonical" href={canonicalUrl} />
-      
+
       {/* Server-side robots meta based on URL type */}
-      <meta 
-        name="robots" 
-        content={params.slugOrId === (article.slug || article.id) ? "index,follow" : "noindex,follow"} 
+      <meta
+        name="robots"
+        content={resolvedParams.slugOrId === (article.slug || article.id) ? "index,follow" : "noindex,follow"}
       />
 
       {/* SSR JSON-LD for Article */}

@@ -7,7 +7,6 @@ const withBundleAnalyzer = bundleAnalyzer({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   // Suppress specific image loading errors for favicon services
   logging: {
     fetches: {
@@ -22,25 +21,38 @@ const nextConfig = {
       },
     },
   }),
+  serverExternalPackages: ['firebase', 'firebase-admin'],
+  turbopack: {
+    resolveAlias: {
+      'fs': 'false',
+      'net': 'false',
+      'tls': 'false',
+      'crypto': 'false',
+      'http2': 'false',
+      'child_process': 'false',
+      'stream': 'false',
+      'url': 'false',
+      'buffer': 'false',
+      'util': 'false',
+      'assert': 'false',
+      'http': 'false',
+      'https': 'false',
+      'os': 'false',
+      'path': 'false',
+      'querystring': 'false',
+      'firebase-admin': 'false',
+      'farmhash-modern': 'false',
+    },
+  },
   experimental: {
-    serverComponentsExternalPackages: ['firebase', 'firebase-admin'],
     optimizeCss: true, // Enable CSS optimization
     optimizePackageImports: ['framer-motion', 'lodash', '@radix-ui/react-icons'], // Tree shake large packages
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
   },
   // Transpile packages that need to be processed by Next.js
   transpilePackages: [
     'marked'
   ],
   // Ensure proper script loading
-  optimizeFonts: true,
   poweredByHeader: false,
   compress: true,
   images: {
@@ -104,13 +116,13 @@ const nextConfig = {
         querystring: false,
         'firebase-admin': false,
       };
-      
+
       // Exclude problematic WebAssembly modules on client-side
       config.resolve.alias = {
         ...config.resolve.alias,
         'farmhash-modern': false,
       };
-      
+
       // Optimize chunk splitting for better main thread performance
       config.optimization.splitChunks = {
         chunks: 'all',
@@ -161,7 +173,7 @@ const nextConfig = {
         },
       };
     }
-    
+
     // Handle ESM packages
     config.module.rules.push({
       test: /\.m?js$/,
@@ -170,20 +182,20 @@ const nextConfig = {
         fullySpecified: false,
       },
     });
-    
+
     // Handle WebAssembly modules
     config.module.rules.push({
       test: /\.wasm$/,
       type: 'webassembly/async',
     });
-    
+
     // Enable WebAssembly support for packages like farmhash-modern
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
       syncWebAssembly: true,
     };
-    
+
     return config;
   },
 }
